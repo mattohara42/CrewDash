@@ -1,0 +1,165 @@
+---
+import Base from "../layouts/Base.astro";
+
+// Club-neutral. Club-specific tips will come from the admin editor with venue pages.
+// Results pages link to the ids below, so keep them stable.
+---
+
+<Base title="Rowing 101">
+  <p class="eyebrow">New to rowing?</p>
+  <h1>Rowing 101</h1>
+  <p class="muted">
+    A short guide to regattas and results for families new to the sport. Tap any underlined term on
+    a results page to jump here.
+  </p>
+
+  <section class="card" id="races">
+    <h2>Two kinds of race</h2>
+    <p id="head-race">
+      <strong>Head races</strong> are time trials, usually in the fall. Boats start one at a time,
+      about 10 to 20 seconds apart, and race against the clock over a winding course of a few
+      kilometres. You won't see who's winning from the bank. The order only becomes clear once every
+      boat has finished.
+    </p>
+    <p id="sprint">
+      <strong>Sprints</strong> are side-by-side races in lanes, usually in the spring, often over
+      1,500 or 2,000 metres. Big events have heats, and the fastest crews move on to a final.
+    </p>
+  </section>
+
+  <section class="card" id="boats">
+    <h2>Boats and event names</h2>
+    <p>
+      The number is how many rowers are in the boat. A <strong>+</strong> means it carries a
+      coxswain, a <strong>-</strong> means it doesn't, and an <strong>x</strong> means sculling,
+      where each rower has two oars.
+    </p>
+    <dl>
+      <dt>8+</dt>
+      <dd>An eight: eight rowers and a coxswain.</dd>
+      <dt>4+ / 4x</dt>
+      <dd>A coxed four, or a quad of four scullers.</dd>
+      <dt>2x / 1x</dt>
+      <dd>A double and a single, both sculling.</dd>
+    </dl>
+    <p id="events">
+      Event names add who can enter. <strong>U17</strong> and <strong>U19</strong> are age limits,{" "}
+      <strong>Novice</strong> usually means first-year rowers, and <strong>Masters</strong> are
+      adult rowers who race with an age handicap.
+    </p>
+  </section>
+
+  <section class="card" id="seats">
+    <h2>Who sits where</h2>
+    <p>
+      The <strong>coxswain</strong> steers and calls the race. Seats are numbered from the bow (the
+      front) to the <strong>stroke</strong> seat at the back, nearest the coxswain. The stroke sets
+      the rhythm for everyone else.
+    </p>
+    <p>Results only list the stroke's name, so that's the name CrewDash shows for each boat.</p>
+    <p id="bow-number">
+      The <strong>bow number</strong> is the number the regatta gives each boat. In a head race it
+      also sets the starting order.
+    </p>
+  </section>
+
+  <section class="card" id="results">
+    <h2>Reading a result</h2>
+    <dl>
+      <dt id="place">Place, "of" field size</dt>
+      <dd>
+        "4th of 12" means fourth out of twelve crews in the event. Field sizes change a lot, so the
+        place is always shown with the number of crews.
+      </dd>
+      <dt id="adjusted-time">Time</dt>
+      <dd>
+        The time shown is the <strong>adjusted time</strong>: the time on the water plus any
+        penalties and minus any age handicap. Places are decided on adjusted time.
+      </dd>
+      <dt id="margin">Margin</dt>
+      <dd>
+        "+0:12.3" means 12.3 seconds behind the winner. Weather and water affect every crew in a
+        race, so the margin is a fairer measure than the time alone.
+      </dd>
+      <dt id="penalties">Penalties</dt>
+      <dd>
+        Seconds added for breaking a rule, such as hitting a buoy or getting in another crew's way.
+      </dd>
+      <dt id="handicap">Handicap</dt>
+      <dd>
+        Masters crews get seconds taken off for the crew's average age, so older crews can race
+        younger ones fairly. CrewDash shows the time on the water ("raw time") and the handicap next
+        to the adjusted time.
+      </dd>
+    </dl>
+  </section>
+
+  <section class="card" id="exhibition">
+    <h2>Exhibition boats</h2>
+    <p>
+      An exhibition boat races but can't win a place or a medal. It usually happens when a crew has
+      to borrow a rower from another squad, for example a varsity rower filling in for a novice who
+      is sick. The boat races to give the crew the experience.
+    </p>
+    <p id="would-have-placed">
+      CrewDash shows where an exhibition boat <strong>would have placed</strong> on time, marked
+      unofficial. It never changes the official results.
+    </p>
+  </section>
+
+  <section class="card" id="statuses">
+    <h2>When there's no place</h2>
+    <dl>
+      <dt>No result yet</dt>
+      <dd>The boat hasn't finished, or the regatta hasn't posted it.</dd>
+      <dt>Did not start / Scratched</dt>
+      <dd>The boat didn't race.</dd>
+      <dt>Did not finish</dt>
+      <dd>The boat started but didn't cross the line.</dd>
+      <dt>Disqualified</dt>
+      <dd>The officials removed the result for a rule breach.</dd>
+    </dl>
+    <p class="muted">
+      Results are sometimes corrected after race day. CrewDash picks up corrections, and alerts send
+      an update when a result changes.
+    </p>
+  </section>
+
+  <section class="card" id="comparing">
+    <h2>Comparing times</h2>
+    <p>
+      Every course is a different length, and wind and current change from day to day, so a time at
+      one regatta says nothing about a time at another. CrewDash only compares times at the same
+      regatta from year to year, and even then the conditions can differ.
+    </p>
+  </section>
+
+  <section class="card" id="race-day">
+    <h2>On race day</h2>
+    <p>
+      Race schedules shift, so arrive early and check results often. Bring layers, rain gear and a
+      folding chair, because you may be outside all day. Keep off the docks and let crews focus
+      while they launch. The best place to cheer is usually near the finish. Turn on{" "}
+      <a href="/notifications">Alerts</a> to get a notification when each event's results are in.
+    </p>
+  </section>
+</Base>
+
+<style>
+  dl {
+    margin: 8px 0 0;
+  }
+  dt {
+    font-weight: 700;
+    margin-top: 8px;
+  }
+  dd {
+    margin: 2px 0 0;
+  }
+  :target {
+    scroll-margin-top: 16px;
+    outline: 2px solid var(--brand-3);
+    outline-offset: 4px;
+    border-radius: 6px;
+  }
+</style>
