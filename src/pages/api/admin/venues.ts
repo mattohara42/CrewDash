@@ -4,6 +4,7 @@ import { blobsStore } from "../../../lib/store.js";
 import {
   MAX_TEXT,
   deleteVenue,
+  safeUrl,
   parsePlaces,
   saveVenue,
   setSeriesVenue,
@@ -52,7 +53,14 @@ export const POST: APIRoute = async ({ request, redirect }) => {
       await store.putVenues(setSeriesVenue(data, field("series"), field("venue")));
       break;
     case "tips":
-      await store.putVenues({ ...data, clubTips: field("clubTips").slice(0, MAX_TEXT) });
+      if (field("chatUrl") && !safeUrl(field("chatUrl"))) {
+        return redirect(withError(back, "The chat link needs to start with https://"), 303);
+      }
+      await store.putVenues({
+        ...data,
+        clubTips: field("clubTips").slice(0, MAX_TEXT),
+        chatUrl: safeUrl(field("chatUrl")),
+      });
       break;
   }
   return redirect(back, 303);

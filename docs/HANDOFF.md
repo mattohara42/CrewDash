@@ -14,6 +14,8 @@ Phase 1.5 is built: web push alerts. Phones subscribe on the Alerts page. The sc
 
 Roadmap step 1 is built: a Rowing 101 page (`/guide`) for new families, linked from the menu. Terms on results pages (exhibition, margin, penalties, handicap, statuses) link to it. Step 2 is built: at `/admin/venues` the admin edits venues (places with map links, course length, tips for families), links each series to a venue and writes club tips for Rowing 101. Regatta and series pages show a venue card. Venue data is stored under the `venues` key of the `regattas` Blobs store, with a download button for backups.
 
+Step 3 is built: a coach login (`COACH_PASSWORD`) opens `/coach`, where coaches and admins post short announcements. They show as a banner at the top of every page until they expire (4 hours to 3 days) and can also go out as a push to every subscriber, whatever they follow. The admin can add the club's group chat link on the venues page, and it shows on Rowing 101. Announcements are stored under the `announcements` key of the `regattas` Blobs store.
+
 Phase 2 (lineups and rower pages) still needs a `boats.xls` sample. How quickly CrewTimer results appear on race day is still unmeasured.
 
 A season is a calendar year for now. If the club thinks in fall and spring seasons, the event page can split them.
@@ -23,7 +25,7 @@ A season is a calendar year for now. If the club thinks in fall and spring seaso
 - Netlify site `crewdash` on the FamilyHub team: https://crewdash.netlify.app (dashboard: https://app.netlify.com/projects/crewdash). Site ID `b4a0232e-e03c-458d-ae67-59de2a3a36aa`.
 - Deploys use Netlify credits, so they're batched and only made when the repo owner agrees, not after every merge.
 - Deploys are currently uploaded from a Claude session, not built from GitHub. Linking the repo in Netlify (Project configuration, Build and deploy, Link repository) would make every merge to `main` deploy automatically.
-- Environment variables, set by the repo owner in the Netlify dashboard for the production context only: `CLUB_PASSWORD`, `ADMIN_PASSWORD` and `SESSION_SECRET`. Deploy previews and branch deploys have no session secret, so they stay locked. Changing a variable needs a redeploy. Changing `SESSION_SECRET` logs everyone out.
+- Environment variables, set by the repo owner in the Netlify dashboard for the production context only: `CLUB_PASSWORD`, `ADMIN_PASSWORD`, `COACH_PASSWORD` (optional, needed for coach logins) and `SESSION_SECRET`. Deploy previews and branch deploys have no session secret, so they stay locked. Changing a variable needs a redeploy. Changing `SESSION_SECRET` logs everyone out.
 - The Netlify connector's environment-variable writes reported success but didn't save (seen twice on 2026-10-12). Set variables in the dashboard instead.
 - Results are stored in a site-wide Netlify Blobs store named `regattas`. Deploy previews share it with production.
 - `npm audit` flags high-severity advisories in Netlify's local dev and build tooling (`sharp`/`ipx`, `node-forge`, `braces`). None of it handles visitor requests. npm's only fix downgrades the adapter two major versions, so recheck when `@astrojs/netlify` updates.

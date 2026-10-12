@@ -4,6 +4,7 @@ import {
   memoryPushStore,
   parseFollow,
   parseSubscription,
+  broadcast,
   sendNotices,
   vapidKeys,
   wants,
@@ -127,5 +128,32 @@ describe("sendNotices", () => {
       removed: 0,
     });
     expect(send).not.toHaveBeenCalled();
+  });
+});
+
+describe("broadcast", () => {
+  it("sends to every subscriber whatever they follow, and drops gone ones", async () => {
+    const store = memoryPushStore();
+    for (const [endpoint, all] of [
+      ["https://a", true],
+      ["https://b", false],
+      ["https://gone", true],
+    ] as const) {
+      await store.put({ subscription: sub(endpoint), follow: { all, events: [] }, createdAt: "" });
+    }
+    const send = vi.fn<PushSender>(async (s) => {
+      if (s.endpoint === "https://gone") throw Object.assign(new Error("no"), { statusCode: 404 });
+    });
+    const payload = {
+      title: "Club announcement",
+      body: "Tent moved",
+      url: "/",
+      tag: "announcement:1",
+    };
+    expect(await broadcast(payload, store, send)).toEqual({ sent: 2, removed: 1 });
+    expect((await store.list()).map((s) => s.subscription.endpoint).sort()).toEqual([
+      "https://a",
+      "https://b",
+    ]);
   });
 });

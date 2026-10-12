@@ -1,0 +1,95 @@
+---
+import Base from "../layouts/Base.astro";
+import { EXPIRY_HOURS, MAX_ANNOUNCEMENT, active } from "../lib/announcements.js";
+import { blobsStore } from "../lib/store.js";
+
+const error = Astro.url.searchParams.get("error");
+const current = active(await blobsStore().getAnnouncements());
+const label = (h: number) => (h < 24 ? `${h} hours` : h === 24 ? "1 day" : `${h / 24} days`);
+---
+
+<Base title="Coach">
+  <h1>Announcements</h1>
+  <p class="muted">
+    A short message for every family, shown at the top of each page until it expires. It can also go
+    out as a notification to everyone who turned on alerts. People can't reply here, so add who to
+    contact if needed.
+  </p>
+  {error && <p class="card notice">{error}</p>}
+
+  <form method="post" action="/api/coach/announcements" class="card">
+    <label for="text">Message</label>
+    <textarea
+      id="text"
+      name="text"
+      rows="3"
+      maxlength={MAX_ANNOUNCEMENT}
+      required
+      placeholder="Team tent moved to the east lot. Lunch at the trailer at noon."
+    ></textarea>
+    <p class="muted small">
+      Up to {MAX_ANNOUNCEMENT} characters. Notifications show on lock screens, so don't name rowers.
+    </p>
+    <div class="row">
+      <label class="grow">
+        Show for
+        <select name="hours">
+          {EXPIRY_HOURS.map((h) => (
+            <option value={h} selected={h === 12}>
+              {label(h)}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label class="check">
+        <input type="checkbox" name="push" checked /> Also send a notification
+      </label>
+    </div>
+    <button type="submit">Post</button>
+  </form>
+
+  <h2>Showing now</h2>
+  {current.length === 0 && <p class="muted">Nothing right now.</p>}
+  {current.map((a) => (
+    <form method="post" action="/api/coach/announcements" class="card row">
+      <span class="grow">{a.text}</span>
+      <input type="hidden" name="action" value="remove" />
+      <input type="hidden" name="id" value={a.id} />
+      <button type="submit" class="secondary">
+        Take down
+      </button>
+    </form>
+  ))}
+</Base>
+
+<style>
+  textarea {
+    width: 100%;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font: inherit;
+  }
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 8px 12px;
+    margin: 10px 0;
+  }
+  .grow {
+    flex: 1 1 200px;
+    margin: 0;
+  }
+  .check {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0 0 10px;
+  }
+  .small {
+    font-size: 0.85rem;
+  }
+</style>

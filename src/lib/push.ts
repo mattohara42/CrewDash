@@ -165,6 +165,27 @@ export type PushSender = (
   payload: PushPayload,
 ) => Promise<void>;
 
+/** Sends one push, and records the subscription as expired if the push service says it's gone. */
+async function deliver(
+  sub: StoredSubscription,
+  payload: PushPayload,
+  send: PushSender,
+  expired: Set<string>,
+): Promise<boolean> {
+  try {
+    await send(sub.subscription, payload);
+    return true;
+  } catch (err) {
+    const status = (err as { statusCode?: number }).statusCode;
+    if (status === 404 || status === 410) {
+      expired.add(sub.subscription.endpoint);
+    } else {
+      console.error("Push failed:", status ?? err);
+    }
+    return false;
+  }
+}
+
 /** Sends each notice to the subscribers who follow its event, and drops expired subscriptions. */
 export async function sendNotices(
   notices: ResultNotice[],
@@ -180,26 +201,30 @@ export async function sendNotices(
     subs.map(async (sub) => {
       for (const notice of notices) {
         if (!wants(sub.follow, notice.eventKey) || expired.has(sub.subscription.endpoint)) continue;
-        try {
-          await send(sub.subscription, {
-            title: notice.title,
-            body: notice.body,
-            url: notice.url,
-            tag: `${notice.regattaId}:${notice.eventKey}`,
-          });
-          sent++;
-        } catch (err) {
-          const status = (err as { statusCode?: number }).statusCode;
-          if (status === 404 || status === 410) {
-            expired.add(sub.subscription.endpoint);
-          } else {
-            console.error("Push failed:", status ?? err);
-          }
-        }
+        const payload = {
+          title: notice.title,
+          body: notice.body,
+          url: notice.url,
+          tag: `${notice.regattaId}:${notice.eventKey}`,
+        };
+        if (await deliver(sub, payload, send, expired)) sent++;
       }
     }),
   );
 
   await Promise.all([...expired].map((endpoint) => store.delete(endpoint)));
   return { sent, removed: expired.size };
+}
+
+/** Sends one push to every subscriber, whatever they follow. Used for announcements. */
+export async function broadcast(
+  payload: PushPayload,
+  store: PushStore,
+  send: PushSender,
+): Promise<{ sent: number; removed: number }> {
+  const subs = await store.list();
+  const expired = new Set<string>();
+  const results = await Promise.all(subs.map((sub) => deliver(sub, payload, send, expired)));
+  await Promise.all([...expired].map((endpoint) => store.delete(endpoint)));
+  return { sent: results.filter(Boolean).length, removed: expired.size };
 }

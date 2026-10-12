@@ -5,7 +5,7 @@ import { blobsStore } from "../lib/store.js";
 
 // The guide itself is club-neutral. The club's own tips come from the admin's venues page.
 // Results pages link to the ids below, so keep them stable.
-const { clubTips } = await blobsStore().getVenues();
+const { clubTips, chatUrl } = await blobsStore().getVenues();
 ---
 
 <Base title="Rowing 101">
@@ -146,10 +146,15 @@ const { clubTips } = await blobsStore().getVenues();
       <a href="/notifications">Alerts</a> to get a notification when each event's results are in.
     </p>
   </section>
-  {clubTips && (
+  {(clubTips || chatUrl) && (
     <section class="card" id="club-tips">
       <h2>Tips from {club.name}</h2>
-      <p class="tips">{clubTips}</p>
+      {clubTips && <p class="tips">{clubTips}</p>}
+      {chatUrl && (
+        <p>
+          Questions? Ask in the <a href={chatUrl}>club group chat</a>.
+        </p>
+      )}
     </section>
   )}
 </Base>

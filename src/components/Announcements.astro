@@ -1,0 +1,53 @@
+---
+import type { Announcement } from "../lib/announcements.js";
+
+interface Props {
+  announcements: Announcement[];
+}
+
+const { announcements } = Astro.props;
+const time = (iso: string) =>
+  new Date(iso).toLocaleString("en-US", {
+    weekday: "short",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: "America/New_York",
+  });
+---
+
+{announcements.length > 0 && (
+  <section class="announcements" aria-label="Announcements">
+    {announcements.map((a) => (
+      <p>
+        <span class="text">{a.text}</span>
+        <span class="when">
+          {a.from === "admin" ? "From the club" : "From the coaches"} · {time(a.postedAt)}
+        </span>
+      </p>
+    ))}
+  </section>
+)}
+
+<style>
+  .announcements {
+    margin: 4px 0 12px;
+  }
+  p {
+    margin: 8px 0;
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--brand-3);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .text {
+    font-weight: 700;
+  }
+  .when {
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+</style>

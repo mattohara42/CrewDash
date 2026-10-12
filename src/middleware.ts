@@ -1,9 +1,10 @@
 import { defineMiddleware } from "astro:middleware";
-import { SESSION_COOKIE, authConfigFromEnv, verifySessionToken } from "./lib/auth.js";
+import { SESSION_COOKIE, authConfigFromEnv, canCoach, verifySessionToken } from "./lib/auth.js";
 
 const PUBLIC_PATHS = new Set(["/login", "/api/login", "/manifest.webmanifest"]);
 
-// Every page requires the club password. Admin pages require the admin password.
+// Every page requires the club password. Coach pages need the coach or admin password,
+// and admin pages the admin password.
 export const onRequest = defineMiddleware(async (context, next) => {
   const { pathname, search } = context.url;
   if (PUBLIC_PATHS.has(pathname)) return next();
@@ -13,9 +14,12 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const isAdminPath =
     pathname === "/admin" || pathname.startsWith("/admin/") || pathname.startsWith("/api/admin/");
 
-  if (!role || (isAdminPath && role !== "admin")) {
+  const isCoachPath =
+    pathname === "/coach" || pathname.startsWith("/coach/") || pathname.startsWith("/api/coach/");
+
+  if (!role || (isAdminPath && role !== "admin") || (isCoachPath && !canCoach(role))) {
     const params = new URLSearchParams({ next: pathname + search });
-    if (role) params.set("admin", "1");
+    if (role) params.set(isAdminPath ? "admin" : "coach", "1");
     return context.redirect(`/login?${params}`);
   }
 

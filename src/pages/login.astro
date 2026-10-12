@@ -6,6 +6,7 @@ const params = Astro.url.searchParams;
 const next = safeNext(params.get("next"));
 const failed = params.has("error");
 const needsAdmin = params.has("admin");
+const needsCoach = params.has("coach");
 const configured = isConfigured(authConfigFromEnv(process.env));
 ---
 
@@ -18,6 +19,7 @@ const configured = isConfigured(authConfigFromEnv(process.env));
     </p>
   )}
   {needsAdmin && <p class="card notice">That page needs the admin password.</p>}
+  {needsCoach && <p class="card notice">That page needs the coach or admin password.</p>}
   {failed && <p class="card notice">That password didn't work.</p>}
   <form method="post" action="/api/login" class="card">
     <input type="hidden" name="next" value={next} />

@@ -121,6 +121,16 @@ const blank: Venue = { id: "", name: "", courseLengthM: null, places: [], notes:
         set:text={data.clubTips}
       />
     </label>
+    <label>
+      Club group chat link (optional)
+      <input
+        type="text"
+        name="chatUrl"
+        inputmode="url"
+        value={data.chatUrl}
+        placeholder="https://chat.whatsapp.com/..."
+      />
+    </label>
     <button type="submit">Save tips</button>
   </form>
 

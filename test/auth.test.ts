@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  canCoach,
   createSessionToken,
   isConfigured,
   roleForPassword,
@@ -76,5 +77,29 @@ describe("safeNext", () => {
     ["/\\evil.example", "/"],
   ])("maps %j to %j", (input, output) => {
     expect(safeNext(input)).toBe(output);
+  });
+});
+
+describe("coach role", () => {
+  const withCoach = { ...config, coachPassword: "stroke" };
+
+  it("is granted by the coach password and survives a session round trip", () => {
+    expect(roleForPassword("stroke", withCoach)).toBe("coach");
+    expect(roleForPassword("stroke", config)).toBeNull();
+    const token = createSessionToken("coach", "s3cret", now);
+    expect(verifySessionToken(token, "s3cret", now)).toBe("coach");
+  });
+
+  it("lets coaches and admins post announcements, not members", () => {
+    expect(canCoach("coach")).toBe(true);
+    expect(canCoach("admin")).toBe(true);
+    expect(canCoach("member")).toBe(false);
+    expect(canCoach(undefined)).toBe(false);
+  });
+
+  it("rejects a forged role", () => {
+    const [, expires, signature] = createSessionToken("member", "s3cret", now).split(".");
+    expect(verifySessionToken(`admin.${expires}.${signature}`, "s3cret", now)).toBeNull();
+    expect(verifySessionToken(`owner.${expires}.${signature}`, "s3cret", now)).toBeNull();
   });
 });
