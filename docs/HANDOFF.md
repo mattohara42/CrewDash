@@ -71,15 +71,15 @@ Not yet seen: a sprint regatta. Sprint results may use fields the parser doesn't
 
 - **Club admin.** Unknown. They would add regattas after each race weekend and, in Phase 2, upload lineups. The repo owner is finding out who.
 - **RegattaCentral staff login.** Unknown whether Pittsford has one. A `boats.xls` lineup sample from a past regatta is needed before Phase 2.
-- **RegattaCentral API access.** Declined on 2026-10-13. API access is limited to approved timing vendors for now. They're considering broader access and invited specific requirements, with no timeline. Lineups are coach-entered instead (see Status). Don't scrape RegattaCentral's website as a workaround.
+- **RegattaCentral API access.** Declined on 2026-10-12. API access is limited to approved timing vendors for now. They're considering broader access and invited specific requirements, with no timeline. Our requirements reply (below) was sent on 2026-10-12. Lineups are coach-entered instead (see Status). Don't scrape RegattaCentral's website as a workaround.
 - **Sprint regatta link.** A CrewTimer link to a sprint regatta (for example the Pittsford Regatta) would let us test the parser on sprint results.
 - **Athlete-data policy.** The club should check whether it has a policy on publishing athlete information.
-- **Entazza (CrewTimer's developer).** Not yet contacted. The draft email is below.
+- **Entazza (CrewTimer's developer).** Emailed on 2026-10-12 (the draft below). Waiting for a reply.
 - **Repo About panel.** Not yet set. Suggested values are below.
 
 ## Draft email to Entazza
 
-Support contact from https://www.entazza.net/about-entazza.html: Glenn Engel, glenne@entazza.net. Updated 2026-10-13 to describe the live app.
+Support contact from https://www.entazza.net/about-entazza.html: Glenn Engel, glenne@entazza.net. Updated 2026-10-12 to describe the live app.
 
 > **Subject:** CrewDash: a club results view built on CrewTimer data
 >
@@ -106,9 +106,9 @@ If they point us to a supported API, only `src/crewtimer/fetch.ts` should need t
 
 ## RegattaCentral API
 
-**Outcome (2026-10-13):** Diego Sanabria (API Engineer) replied that API access is limited to approved timing vendors and their regatta timing workflows, so CrewDash can't have a key for now. They're considering broader capabilities for rowing organizations and third-party apps, with athlete privacy central to that, and welcomed specific requirements. They gave no timeline. The notes below stay as reference in case access opens up.
+**Outcome (2026-10-12):** Diego Sanabria (API Engineer) replied that API access is limited to approved timing vendors and their regatta timing workflows, so CrewDash can't have a key for now. They're considering broader capabilities for rowing organizations and third-party apps, with athlete privacy central to that, and welcomed specific requirements. They gave no timeline. The notes below stay as reference in case access opens up.
 
-From RegattaCentral's API V4 documentation (`https://api.regattacentral.com/v4/`, the cookbook PDF and the `rc-api.xsd` schema), read on 2026-10-13. The pages sit behind Cloudflare, so read them in a browser.
+From RegattaCentral's API V4 documentation (`https://api.regattacentral.com/v4/`, the cookbook PDF and the `rc-api.xsd` schema), read on 2026-10-12. The pages sit behind Cloudflare, so read them in a browser.
 
 **Access.** Every call needs credentials, and RegattaCentral issues them only to approved applications (contact api@regattacentral.com). A standard key is sent as an `API-Key` header and needs no user login. OAuth2 (password grant, with regatta staff access) is only needed for `/bulk` and the guaranteed-entry endpoints, and CrewDash needs neither. So CrewDash never has to handle anyone's RegattaCentral password.
 
@@ -146,7 +146,7 @@ From RegattaCentral's API V4 documentation (`https://api.regattacentral.com/v4/`
 3. How to find a regatta's RegattaCentral ID. The Search RegattaCentral pages (Regattas, Organizations) should cover this.
 4. Usage limits and terms.
 
-## Reply to RegattaCentral (requirements, as they invited)
+## Reply to RegattaCentral (requirements, as they invited, sent 2026-10-12)
 
 > Hi Diego,
 >
