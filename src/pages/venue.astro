@@ -22,7 +22,9 @@ const isAdmin = Astro.locals.role === "admin";
 ---
 
 <Base title={venue.name}>
-  <p class="eyebrow">Venue</p>
+  <p class="eyebrow">
+    <a href="/venues">Venues</a>
+  </p>
   <h1>{venue.name}</h1>
   {venue.courseLengthM && (
     <p class="muted">Course length {(venue.courseLengthM / 1000).toLocaleString("en-US")} km</p>

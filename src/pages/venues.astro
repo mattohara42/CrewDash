@@ -1,0 +1,57 @@
+---
+import Base from "../layouts/Base.astro";
+import { regattasInSeries, seriesName } from "../lib/history.js";
+import { blobsStore } from "../lib/store.js";
+
+// Every venue the admin has set up, with the regattas raced there.
+const store = blobsStore();
+const [records, data] = await Promise.all([store.list(), store.getVenues()]);
+const venues = [...data.venues]
+  .sort((a, b) => a.name.localeCompare(b.name))
+  .map((venue) => ({
+    venue,
+    regattas: Object.entries(data.seriesVenue)
+      .filter(([, id]) => id === venue.id)
+      .map(([key]) => regattasInSeries(records, key)[0])
+      .filter((r) => r !== undefined)
+      .map((r) => seriesName(r)),
+  }));
+const isAdmin = Astro.locals.role === "admin";
+---
+
+<Base title="Venues">
+  <h1>Venues</h1>
+  <p class="muted">Where we race: maps, parking and tips for families.</p>
+  {venues.length === 0 && (
+    <p class="card muted">
+      No venues yet. {isAdmin ? <a href="/admin/venues">Add one.</a> : "A club admin adds them."}
+    </p>
+  )}
+  {venues.map(({ venue, regattas }) => (
+    <a class="card plain venue" href={`/venue?id=${venue.id}`}>
+      <strong>{venue.name}</strong>
+      {venue.courseLengthM && (
+        <span class="muted">{(venue.courseLengthM / 1000).toLocaleString("en-US")} km course</span>
+      )}
+      {regattas.length > 0 && <span class="muted small">{regattas.join(" · ")}</span>}
+    </a>
+  ))}
+  {isAdmin && venues.length > 0 && (
+    <p>
+      <a href="/admin/venues">Edit venues</a>
+    </p>
+  )}
+</Base>
+
+<style>
+  .venue {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    color: inherit;
+    text-decoration: none;
+  }
+  .small {
+    font-size: 0.85rem;
+  }
+</style>
