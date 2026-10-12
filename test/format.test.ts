@@ -50,3 +50,15 @@ describe("formatStart", () => {
     expect(formatStart("After lunch")).toBe("After lunch");
   });
 });
+
+describe("gaps and pace", async () => {
+  const { formatGap, pacePer500 } = await import("../src/lib/format.js");
+  it("formats short gaps in seconds and long ones as times", () => {
+    expect(formatGap(940)).toBe("0.9 s");
+    expect(formatGap(12_349)).toBe("12.3 s");
+    expect(formatGap(75_000)).toBe("1:15.0");
+  });
+  it("spreads the time over each 500 m", () => {
+    expect(pacePer500(1_168_427, 5000)).toBe("1:56.8");
+  });
+});

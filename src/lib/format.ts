@@ -14,6 +14,16 @@ export function formatMargin(ms: number): string {
   return ms === 0 ? "winner" : `+${formatTime(ms)}`;
 }
 
+/** A gap between crews: "1.2 s" under a minute, "1:02.3" otherwise. */
+export function formatGap(ms: number): string {
+  return ms < 60_000 ? `${(Math.round(ms / 100) / 10).toFixed(1)} s` : formatTime(ms);
+}
+
+/** Pace per 500 m over a course, from the time on the water. */
+export function pacePer500(timeMs: number, courseLengthM: number): string {
+  return formatTime((timeMs * 500) / courseLengthM);
+}
+
 export function ordinal(n: number): string {
   const tens = n % 100;
   if (tens >= 11 && tens <= 13) return `${n}th`;

@@ -69,7 +69,12 @@ const updated = new Date(fetchedAt).toLocaleString("en-US", {
         Event {event.num}
         {event.start && ` · ${formatStart(event.start)}`} · {fieldSize} crews placed
       </p>
-      <BoatList boats={boats} fieldSize={fieldSize} clubName={club.name} />
+      <BoatList
+        boats={boats}
+        fieldSize={fieldSize}
+        clubName={club.name}
+        courseLengthM={venue?.courseLengthM}
+      />
     </section>
   ))}
 </Base>

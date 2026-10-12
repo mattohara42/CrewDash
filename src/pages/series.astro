@@ -65,7 +65,12 @@ const margins = marginComparison(regattas, club, settings);
               {row.eventName !== group.name && ` · raced as ${row.eventName}`}
             </span>
           </h3>
-          <BoatList boats={row.boats} fieldSize={row.fieldSize} clubName={club.name} />
+          <BoatList
+            boats={row.boats}
+            fieldSize={row.fieldSize}
+            clubName={club.name}
+            courseLengthM={venue?.courseLengthM}
+          />
         </div>
       ))}
       {group.rows.length < regattas.length && (
