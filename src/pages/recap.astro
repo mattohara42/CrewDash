@@ -1,0 +1,104 @@
+---
+import ShareCard from "../components/ShareCard.astro";
+import Base from "../layouts/Base.astro";
+import { loadContext } from "../lib/context.js";
+import { formatDate, formatGap, ordinal } from "../lib/format.js";
+import { regattaRecap } from "../lib/recap.js";
+
+const { records, settings, club } = await loadContext();
+const record = records.find((r) => r.regatta.id === Astro.url.searchParams.get("id"));
+if (!record) return new Response("Regatta not found", { status: 404 });
+
+const recap = regattaRecap(record, records, club, settings);
+const { regatta } = record;
+const finish = (f: { event: string; place: number; fieldSize: number }) =>
+  `${ordinal(f.place)} of ${f.fieldSize}, ${f.event}`;
+const lines = [
+  ...recap.medals.map(finish),
+  ...recap.gains.map(
+    (g) => `${g.event}: ${formatGap(g.savedMs)} closer to the winner than last year`,
+  ),
+].slice(0, 6);
+---
+
+<Base title={`Recap: ${regatta.title}`}>
+  <p class="eyebrow">Weekend recap</p>
+  <h1>{regatta.title}</h1>
+  <p class="muted">
+    {formatDate(regatta.date)} · <a href={`/regatta/${regatta.id}`}>Full results</a>
+  </p>
+
+  {recap.boats === 0 ? (
+    <p class="card">No {club.name} boats at this regatta.</p>
+  ) : (
+    <>
+      <section class="card">
+        <p class="big">
+          {recap.boats} {recap.boats === 1 ? "boat" : "boats"} raced · {recap.wins}{" "}
+          {recap.wins === 1 ? "win" : "wins"} · {recap.podiums} top three
+        </p>
+      </section>
+
+      {recap.medals.length > 0 && (
+        <section class="card">
+          <h2>Medals</h2>
+          <ul>
+            {recap.medals.map((f) => (
+              <li>{finish(f)}</li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {recap.medals.length === 0 && recap.best.length > 0 && (
+        <section class="card">
+          <h2>Best finishes</h2>
+          <ul>
+            {recap.best.map((f) => (
+              <li>{finish(f)}</li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {recap.gains.length > 0 && (
+        <section class="card">
+          <h2>Biggest gains on last year</h2>
+          <p class="muted">Best placed boat, closer to the winner than at last year's regatta.</p>
+          <ul>
+            {recap.gains.map((g) => (
+              <li>
+                <strong>{g.event}</strong>: {formatGap(g.savedMs)} closer ({ordinal(g.from.place)}{" "}
+                of {g.from.fieldSize} → {ordinal(g.to.place)} of {g.to.fieldSize})
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <ShareCard
+        title={regatta.title}
+        subtitle={formatDate(regatta.date)}
+        stats={[
+          { label: "Boats", value: recap.boats },
+          { label: "Wins", value: recap.wins },
+          { label: "Top three", value: recap.podiums },
+        ]}
+        lines={lines.length > 0 ? lines : recap.best.map(finish)}
+        filename={`${regatta.id}-recap.png`}
+      />
+    </>
+  )}
+</Base>
+
+<style>
+  .big {
+    font-size: 1.15rem;
+    font-weight: 800;
+    margin: 0;
+  }
+  ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+</style>

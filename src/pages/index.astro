@@ -77,6 +77,11 @@ const regattas = season.map(({ regatta }) => ({
         </section>
       )}
 
+      {stats.boats > 0 && (
+        <p>
+          <a href={`/wrapped?year=${year}`}>{year} Wrapped: the season in numbers</a>
+        </p>
+      )}
       <h2 class="section">Regattas</h2>
       {regattas.map(({ regatta, summary }) => (
         <a class="card regatta" href={`/regatta/${regatta.id}`}>

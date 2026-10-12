@@ -1,0 +1,149 @@
+---
+import { club } from "../lib/config.js";
+
+interface Props {
+  title: string;
+  subtitle: string;
+  stats: { label: string; value: string | number }[];
+  lines: string[];
+  filename: string;
+}
+
+// A club-level card drawn to an image in the browser, so nothing extra runs on the server.
+// It only ever holds events and places, never rowers' names.
+const { title, subtitle, stats, lines, filename } = Astro.props;
+const data = JSON.stringify({
+  club: club.name,
+  title,
+  subtitle,
+  stats,
+  lines,
+  filename,
+  colors: club.colors,
+});
+---
+
+<div class="share" data-share={data}>
+  <button type="button" data-share-button>
+    Save image to post
+  </button>
+  <p class="muted small">Shows events and places only, no names.</p>
+</div>
+
+<script>
+  type Card = {
+    club: string;
+    title: string;
+    subtitle: string;
+    stats: { label: string; value: string | number }[];
+    lines: string[];
+    filename: string;
+    colors: { primary: string; secondary: string; accent: string };
+  };
+
+  function wrap(ctx: CanvasRenderingContext2D, text: string, width: number): string[] {
+    const out: string[] = [];
+    let line = "";
+    for (const word of text.split(" ")) {
+      const next = line ? `${line} ${word}` : word;
+      if (ctx.measureText(next).width > width && line) {
+        out.push(line);
+        line = word;
+      } else line = next;
+    }
+    if (line) out.push(line);
+    return out;
+  }
+
+  function draw(card: Card): HTMLCanvasElement {
+    const W = 1080;
+    const H = 1350;
+    const canvas = document.createElement("canvas");
+    canvas.width = W;
+    canvas.height = H;
+    const ctx = canvas.getContext("2d")!;
+    const font = (weight: number, size: number) =>
+      `${weight} ${size}px system-ui, -apple-system, "Segoe UI", sans-serif`;
+    ctx.fillStyle = card.colors.primary;
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = card.colors.secondary;
+    ctx.fillRect(0, 0, W, 18);
+    ctx.fillStyle = card.colors.accent;
+    ctx.fillRect(0, 18, W, 18);
+
+    let y = 130;
+    ctx.fillStyle = card.colors.accent;
+    ctx.font = font(800, 40);
+    ctx.fillText(card.club.toUpperCase(), 80, y);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = font(800, 72);
+    for (const l of wrap(ctx, card.title, W - 160)) {
+      y += 88;
+      ctx.fillText(l, 80, y);
+    }
+    y += 56;
+    ctx.font = font(500, 38);
+    ctx.globalAlpha = 0.8;
+    ctx.fillText(card.subtitle, 80, y);
+    ctx.globalAlpha = 1;
+
+    y += 70;
+    const colW = (W - 160) / Math.max(1, card.stats.length);
+    card.stats.forEach((s, i) => {
+      const x = 80 + i * colW;
+      ctx.fillStyle = card.colors.accent;
+      ctx.font = font(900, 96);
+      ctx.fillText(String(s.value), x, y + 96);
+      ctx.fillStyle = "#ffffff";
+      ctx.font = font(600, 32);
+      ctx.fillText(s.label, x, y + 146);
+    });
+
+    y += 230;
+    ctx.font = font(600, 40);
+    ctx.fillStyle = "#ffffff";
+    for (const text of card.lines) {
+      for (const l of wrap(ctx, text, W - 160)) {
+        if (y > H - 80) break;
+        y += 58;
+        ctx.fillText(l, 80, y);
+      }
+      y += 18;
+    }
+    return canvas;
+  }
+
+  document.querySelectorAll<HTMLElement>("[data-share]").forEach((el) => {
+    const card = JSON.parse(el.dataset.share!) as Card;
+    el.querySelector("[data-share-button]")!.addEventListener("click", async () => {
+      const blob = await new Promise<Blob | null>((r) => draw(card).toBlob(r, "image/png"));
+      if (!blob) return;
+      const file = new File([blob], card.filename, { type: "image/png" });
+      // Phones get the share sheet, so the image can go straight to Instagram or messages.
+      if (navigator.canShare?.({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file] });
+          return;
+        } catch {
+          // Cancelled, or not allowed. Fall back to a download.
+        }
+      }
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = card.filename;
+      a.click();
+      // Revoking straight away can cancel the download in some browsers.
+      setTimeout(() => URL.revokeObjectURL(a.href), 10_000);
+    });
+  });
+</script>
+
+<style>
+  .share {
+    margin: 12px 0;
+  }
+  .small {
+    font-size: 0.85rem;
+    margin: 6px 0 0;
+  }
+</style>
