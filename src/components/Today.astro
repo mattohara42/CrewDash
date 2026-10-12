@@ -56,6 +56,9 @@ const { regattas } = Astro.props;
           </ul>
         </>
       )}
+      <p class="cal">
+        <a href={`/api/calendar?id=${record.regatta.id}`}>Add our events to your calendar</a>
+      </p>
       {venue && <VenueCard venue={venue} />}
     </div>
   ))}
@@ -80,6 +83,33 @@ const { regattas } = Astro.props;
   }
 
   const followed = load();
+
+  // If this phone gets alerts for chosen events, a star adds or removes the event there too.
+  // Phones that follow every result, or have alerts off, are left alone.
+  async function syncAlerts(key: string, on: boolean) {
+    try {
+      const reg = await navigator.serviceWorker?.getRegistration();
+      const sub = await reg?.pushManager.getSubscription();
+      if (!sub) return;
+      const post = async (path: string, body: unknown) =>
+        (await fetch(path, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        }).then((r) => r.json())) as { follow?: { all: boolean; events: string[] } | null };
+      const { follow } = await post("/api/push/status", { endpoint: sub.endpoint });
+      if (!follow || follow.all || follow.events.includes(key) === on) return;
+      const events = on ? [...follow.events, key] : follow.events.filter((k) => k !== key);
+      // Alerts need at least one event. Unstarring the last one leaves it on.
+      if (events.length === 0) return;
+      await post("/api/push/subscribe", {
+        subscription: sub.toJSON(),
+        follow: { all: false, events },
+      });
+    } catch {
+      // Alerts are a bonus here. The star still works on this phone.
+    }
+  }
   function render() {
     document.querySelectorAll<HTMLElement>("[data-today] .race").forEach((race) => {
       const only = race.querySelector<HTMLInputElement>("[data-only]")?.checked ?? false;
@@ -122,6 +152,7 @@ const { regattas } = Astro.props;
     else followed.add(key);
     save(followed);
     render();
+    void syncAlerts(key, followed.has(key));
   });
   document.addEventListener("change", (e) => {
     if ((e.target as HTMLElement).matches("[data-only]")) render();
@@ -139,6 +170,10 @@ const { regattas } = Astro.props;
 <style>
   .race {
     border-left: 5px solid var(--brand-3);
+  }
+  .cal {
+    font-size: 0.9rem;
+    margin: 8px 0 0;
   }
   .race h2 {
     margin-top: 2px;
