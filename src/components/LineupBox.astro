@@ -1,5 +1,8 @@
 ---
 import { seatLabels, type Lineup } from "../lib/lineups.js";
+import { rowerKey } from "../lib/rowers.js";
+
+const rowerHref = (name: string) => `/rower?${new URLSearchParams({ name: rowerKey(name) })}`;
 
 interface Props {
   regattaId: string;
@@ -19,12 +22,12 @@ const labels = lineup ? seatLabels(lineup.seats.length) : [];
   <p class="lineup">
     {lineup.seats.map((name, i) => (
       <span>
-        <span class="seat">{labels[i]}</span> {name}
+        <span class="seat">{labels[i]}</span> <a href={rowerHref(name)}>{name}</a>
       </span>
     ))}
     {lineup.cox && (
       <span>
-        <span class="seat">Cox</span> {lineup.cox}
+        <span class="seat">Cox</span> <a href={rowerHref(lineup.cox)}>{lineup.cox}</a>
       </span>
     )}
   </p>
