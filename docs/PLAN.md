@@ -54,7 +54,7 @@ Raw times are not compared across regattas. Head race courses differ in length a
 
 - Season view: regattas the club raced, with headline results.
 - Regatta page: only the club's boats, grouped by event, with place, time, penalties and official status.
-- Boat page: one entry followed across the season, labeled by event and stroke.
+- Event page: one event followed across a season, for example every Men's U19 4+ the club raced that year, with the stroke shown for each boat. This replaced a page per boat, because the stroke seat changes between regattas, so following one stroke would split a crew.
 - Admin page: paste a CrewTimer link to add a regatta, tag its series, and review possible club-name and event-name matches.
 - Year-over-year view for each regatta series.
 - Exhibition boats tagged, with an unofficial "would have placed".

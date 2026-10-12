@@ -1,0 +1,109 @@
+---
+import BoatList from "../components/BoatList.astro";
+import Base from "../layouts/Base.astro";
+import { loadContext } from "../lib/context.js";
+import { formatDate } from "../lib/format.js";
+import {
+  eventNames,
+  historyByEvent,
+  regattaYear,
+  regattasInSeries,
+  seriesKey,
+  seriesName,
+} from "../lib/history.js";
+
+const name = Astro.url.searchParams.get("name") ?? "";
+const error = Astro.url.searchParams.get("error");
+const { records, settings, club } = await loadContext();
+const regattas = regattasInSeries(records, seriesKey(name));
+if (regattas.length === 0) return new Response("Series not found", { status: 404 });
+
+const title = seriesName(regattas[0]!);
+const groups = historyByEvent(regattas, club, settings);
+const isAdmin = Astro.locals.role === "admin";
+const back = Astro.url.pathname + Astro.url.search;
+const allEvents = eventNames(regattas);
+---
+
+<Base title={title}>
+  <h1>{title}</h1>
+  <p class="muted">
+    {regattas.map((r) => regattaYear(r.regatta)).join(", ")} · {club.name} boats in each event,
+    newest year first
+  </p>
+  <p class="card notice">
+    Same course, but conditions change from year to year. Margin behind the winner is the fairest
+    comparison, because conditions affect every crew.
+  </p>
+  {error && <p class="card notice">{error}</p>}
+  {groups.map((group) => (
+    <section class="card">
+      <h2>{group.name}</h2>
+      {group.rows.map((row) => (
+        <div class="year">
+          <h3>
+            <a href={`/regatta/${row.regatta.id}`}>{regattaYear(row.regatta)}</a>
+            <span class="muted">
+              {" "}
+              · {formatDate(row.regatta.date)}
+              {row.eventName !== group.name && ` · raced as ${row.eventName}`}
+            </span>
+          </h3>
+          <BoatList boats={row.boats} fieldSize={row.fieldSize} clubName={club.name} />
+        </div>
+      ))}
+      {group.rows.length < regattas.length && (
+        <p class="muted">
+          No {club.name} boats in this event in{" "}
+          {regattas
+            .filter((r) => !group.rows.some((row) => row.regatta.id === r.regatta.id))
+            .map((r) => regattaYear(r.regatta))
+            .join(", ")}
+          .
+        </p>
+      )}
+    </section>
+  ))}
+  {isAdmin && (
+    <form method="post" action="/api/admin/event-aliases" class="card">
+      <h2>Group a renamed event</h2>
+      <p class="muted">
+        If an event was renamed between years, group the old name with the new one so they're
+        compared.
+      </p>
+      <input type="hidden" name="back" value={back} />
+      <p>
+        <label for="from">Event</label>
+        <select id="from" name="from">
+          {allEvents.map((e) => (
+            <option>{e}</option>
+          ))}
+        </select>
+      </p>
+      <p>
+        <label for="into">Compare it with</label>
+        <select id="into" name="into">
+          {allEvents.map((e) => (
+            <option>{e}</option>
+          ))}
+        </select>
+      </p>
+      <button type="submit">Group events</button>
+    </form>
+  )}
+</Base>
+
+<style>
+  .year {
+    margin-top: 10px;
+  }
+  h3 {
+    font-size: 1rem;
+    margin: 0;
+  }
+  select {
+    width: 100%;
+    padding: 8px;
+    font: inherit;
+  }
+</style>

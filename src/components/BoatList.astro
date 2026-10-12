@@ -1,0 +1,73 @@
+---
+import type { ClubBoat } from "../lib/club-view.js";
+import { formatMargin, formatTime, ordinal, statusLabel } from "../lib/format.js";
+
+interface Props {
+  boats: ClubBoat[];
+  fieldSize: number;
+  clubName: string;
+}
+
+// Exhibition boats never have a place, so their status label already marks them.
+const { boats, fieldSize, clubName } = Astro.props;
+---
+
+<ul class="boats">
+  {boats.map(({ entry, marginMs, wouldHavePlaced }) => (
+    <li>
+      <div class="result">
+        <strong class={entry.place === 1 ? "gold" : ""}>
+          {entry.place !== null ? `${ordinal(entry.place)} of ${fieldSize}` : statusLabel(entry)}
+        </strong>
+        {entry.adjustedTimeMs !== null && <span>{formatTime(entry.adjustedTimeMs)}</span>}
+        {marginMs !== null && <span class="muted">{formatMargin(marginMs)}</span>}
+      </div>
+      <div class="muted">
+        Bow {entry.bow}
+        {entry.stroke && ` · Stroke ${entry.stroke}`}
+        {entry.crew !== clubName && ` · ${entry.crew}`}
+      </div>
+      {wouldHavePlaced !== null && (
+        <div class="muted">
+          Would have placed {ordinal(wouldHavePlaced)} (unofficial; exhibition boats can't medal)
+        </div>
+      )}
+      {entry.penalties.length > 0 && (
+        <div class="muted">
+          Penalties:{" "}
+          {entry.penalties
+            .map((p) => (p.seconds !== null ? `${p.code} +${p.seconds}s` : p.code))
+            .join(", ")}
+        </div>
+      )}
+      {entry.handicapSeconds !== null &&
+        entry.handicapSeconds !== 0 &&
+        entry.rawTimeMs !== null && (
+          <div class="muted">
+            Raw time {formatTime(entry.rawTimeMs)}, handicap {entry.handicapSeconds}s
+          </div>
+        )}
+    </li>
+  ))}
+</ul>
+
+<style>
+  .boats {
+    list-style: none;
+    margin: 8px 0 0;
+    padding: 0;
+  }
+  li {
+    padding: 8px 0;
+    border-top: 1px solid var(--border);
+  }
+  .result {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    align-items: baseline;
+  }
+  .gold {
+    color: var(--gold);
+  }
+</style>
