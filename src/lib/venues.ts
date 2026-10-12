@@ -25,9 +25,11 @@ export interface VenueData {
   seriesVenue: Record<string, string>;
   // Shown at the bottom of the Rowing 101 page.
   clubTips: string;
+  // The group chat families already use. Announcements are one-way, so this is where replies go.
+  chatUrl: string;
 }
 
-export const EMPTY_VENUES: VenueData = { venues: [], seriesVenue: {}, clubTips: "" };
+export const EMPTY_VENUES: VenueData = { venues: [], seriesVenue: {}, clubTips: "", chatUrl: "" };
 
 // Plenty for a page of tips, and keeps one bad paste from bloating every page load.
 export const MAX_TEXT = 5000;
@@ -55,7 +57,17 @@ export function parseVenueData(value: unknown): VenueData {
     v.seriesVenue && typeof v.seriesVenue === "object"
       ? Object.fromEntries(Object.entries(v.seriesVenue).filter(([, id]) => typeof id === "string"))
       : {};
-  return { venues, seriesVenue, clubTips: str(v.clubTips) };
+  return { venues, seriesVenue, clubTips: str(v.clubTips), chatUrl: safeUrl(str(v.chatUrl)) };
+}
+
+/** An https link, or "" for anything else, so a stored value can't become a javascript: link. */
+export function safeUrl(text: string): string {
+  try {
+    const url = new URL(text.trim());
+    return url.protocol === "https:" ? url.href : "";
+  } catch {
+    return "";
+  }
 }
 
 function validLatLon(lat: unknown, lon: unknown): lat is number {

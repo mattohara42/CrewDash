@@ -94,6 +94,17 @@ describe("venues", () => {
       venues: [{ id: "a", name: "A", courseLengthM: null, places: [], notes: "" }],
       seriesVenue: { s: "a" },
       clubTips: "",
+      chatUrl: "",
     });
+  });
+});
+
+describe("chat link", () => {
+  it("keeps https links only", async () => {
+    const { safeUrl } = await import("../src/lib/venues.js");
+    expect(safeUrl(" https://chat.whatsapp.com/abc ")).toBe("https://chat.whatsapp.com/abc");
+    expect(safeUrl("javascript:alert(1)")).toBe("");
+    expect(safeUrl("http://example.com")).toBe("");
+    expect(parseVenueData({ chatUrl: "javascript:alert(1)" }).chatUrl).toBe("");
   });
 });

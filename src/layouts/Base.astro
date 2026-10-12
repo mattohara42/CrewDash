@@ -1,5 +1,9 @@
 ---
+import Announcements from "../components/Announcements.astro";
+import { active } from "../lib/announcements.js";
+import { canCoach } from "../lib/auth.js";
 import { club } from "../lib/config.js";
+import { blobsStore } from "../lib/store.js";
 
 interface Props {
   title: string;
@@ -31,8 +35,11 @@ const links = [
   { href: "/", label: "Season" },
   { href: "/notifications", label: "Alerts" },
   { href: "/guide", label: "Rowing 101" },
+  ...(canCoach(role) ? [{ href: "/coach", label: "Coach" }] : []),
   ...(role === "admin" ? [{ href: "/admin", label: "Admin" }] : []),
 ];
+// Logged-in pages show current announcements at the top.
+const announcements = role ? active(await blobsStore().getAnnouncements()) : [];
 ---
 
 <!doctype html>
@@ -78,6 +85,7 @@ const links = [
       <div class="stripes" aria-hidden="true"></div>
     </header>
     <main>
+      <Announcements announcements={announcements} />
       <slot />
     </main>
   </body>

@@ -1,14 +1,16 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-// One shared club password for viewing, and a separate admin password for
-// adding and refreshing regattas. Both come from environment variables set in
-// the Netlify dashboard, never from git.
+// One shared club password for viewing, a coach password for posting
+// announcements, and an admin password for everything else. All come from
+// environment variables set in the Netlify dashboard, never from git.
 
-export type Role = "member" | "admin";
+export type Role = "member" | "coach" | "admin";
+const ROLES: readonly string[] = ["member", "coach", "admin"];
 
 export interface AuthConfig {
   clubPassword?: string;
   adminPassword?: string;
+  coachPassword?: string;
   // Signs session cookies. A long random string.
   sessionSecret?: string;
 }
@@ -20,6 +22,7 @@ export function authConfigFromEnv(env: Record<string, string | undefined>): Auth
   return {
     clubPassword: env.CLUB_PASSWORD,
     adminPassword: env.ADMIN_PASSWORD,
+    coachPassword: env.COACH_PASSWORD,
     sessionSecret: env.SESSION_SECRET,
   };
 }
@@ -43,6 +46,7 @@ export function roleForPassword(password: string, config: AuthConfig): Role | nu
   const secret = config.sessionSecret;
   if (!secret || !config.clubPassword) return null;
   if (config.adminPassword && sameSecret(password, config.adminPassword, secret)) return "admin";
+  if (config.coachPassword && sameSecret(password, config.coachPassword, secret)) return "coach";
   if (sameSecret(password, config.clubPassword, secret)) return "member";
   return null;
 }
@@ -62,12 +66,17 @@ export function verifySessionToken(
   const parts = token.split(".");
   if (parts.length !== 3) return null;
   const [role, expires, signature] = parts as [string, string, string];
-  if (role !== "member" && role !== "admin") return null;
+  if (!ROLES.includes(role)) return null;
   const given = Buffer.from(signature, "base64url");
   const expected = sign(`${role}.${expires}`, secret);
   if (given.length !== expected.length || !timingSafeEqual(given, expected)) return null;
   if (!(Number(expires) > now.getTime())) return null;
-  return role;
+  return role as Role;
+}
+
+/** Coaches post announcements. Admins can do everything coaches can. */
+export function canCoach(role: Role | null | undefined): boolean {
+  return role === "coach" || role === "admin";
 }
 
 /** Only same-site paths, so a crafted login link can't redirect elsewhere. */

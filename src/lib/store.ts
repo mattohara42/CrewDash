@@ -1,6 +1,7 @@
 import { getStore } from "@netlify/blobs";
 import type { Regatta } from "../crewtimer/normalize.js";
 import { EMPTY_SETTINGS, parseSettings, type Settings } from "./settings.js";
+import { parseAnnouncements, type Announcement } from "./announcements.js";
 import { EMPTY_VENUES, parseVenueData, type VenueData } from "./venues.js";
 
 export interface StoredRegatta {
@@ -19,11 +20,14 @@ export interface RegattaStore {
   putSettings(settings: Settings): Promise<void>;
   getVenues(): Promise<VenueData>;
   putVenues(data: VenueData): Promise<void>;
+  getAnnouncements(): Promise<Announcement[]>;
+  putAnnouncements(list: Announcement[]): Promise<void>;
 }
 
 const PREFIX = "regatta/";
 const SETTINGS_KEY = "settings";
 const VENUES_KEY = "venues";
+const ANNOUNCEMENTS_KEY = "announcements";
 
 /** Netlify Blobs store. Shared by every deploy of the site, previews included. */
 export function blobsStore(): RegattaStore {
@@ -55,6 +59,12 @@ export function blobsStore(): RegattaStore {
     async putVenues(data) {
       await store.setJSON(VENUES_KEY, data);
     },
+    async getAnnouncements() {
+      return parseAnnouncements(await store.get(ANNOUNCEMENTS_KEY, { type: "json" }));
+    },
+    async putAnnouncements(list) {
+      await store.setJSON(ANNOUNCEMENTS_KEY, list);
+    },
   };
 }
 
@@ -63,6 +73,7 @@ export function memoryStore(): RegattaStore {
   const records = new Map<string, StoredRegatta>();
   let settings: Settings = EMPTY_SETTINGS;
   let venues: VenueData = EMPTY_VENUES;
+  let announcements: Announcement[] = [];
   return {
     async get(id) {
       return records.get(id) ?? null;
@@ -84,6 +95,12 @@ export function memoryStore(): RegattaStore {
     },
     async putVenues(next) {
       venues = next;
+    },
+    async getAnnouncements() {
+      return announcements;
+    },
+    async putAnnouncements(next) {
+      announcements = next;
     },
   };
 }
