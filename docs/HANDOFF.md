@@ -18,9 +18,8 @@ A season is a calendar year for now. If the club thinks in fall and spring seaso
 
 - Netlify site `crewdash` on the FamilyHub team: https://crewdash.netlify.app (dashboard: https://app.netlify.com/projects/crewdash). Site ID `b4a0232e-e03c-458d-ae67-59de2a3a36aa`.
 - Deploys are currently uploaded from a Claude session, not built from GitHub. Linking the repo in Netlify (Project configuration, Build and deploy, Link repository) would make every merge to `main` deploy automatically.
-- Environment variables, set in Netlify with Functions and Runtime scopes:
-  - `SESSION_SECRET` is set. Changing it logs everyone out.
-  - `CLUB_PASSWORD` and `ADMIN_PASSWORD` are for the repo owner to choose and set. Until `CLUB_PASSWORD` is set, nobody can log in. Changes need a redeploy to take effect.
+- Environment variables, set by the repo owner in the Netlify dashboard for the production context only: `CLUB_PASSWORD`, `ADMIN_PASSWORD` and `SESSION_SECRET`. Deploy previews and branch deploys have no session secret, so they stay locked. Changing a variable needs a redeploy. Changing `SESSION_SECRET` logs everyone out.
+- The Netlify connector's environment-variable writes reported success but didn't save (seen twice on 2026-10-12). Set variables in the dashboard instead.
 - Results are stored in a site-wide Netlify Blobs store named `regattas`. Deploy previews share it with production.
 - `npm audit` flags high-severity advisories in Netlify's local dev and build tooling (`sharp`/`ipx`, `node-forge`, `braces`). None of it handles visitor requests. npm's only fix downgrades the adapter two major versions, so recheck when `@astrojs/netlify` updates.
 - Logins have no rate limiting yet, so the club password should be long and not reused.
