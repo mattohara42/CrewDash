@@ -27,6 +27,21 @@ export interface ClubIdentity {
 
 export interface ClubConfig extends ClubIdentity {
   colors: ClubColors;
+  // IANA time zone for race-day times and "today". Defaults to US Eastern.
+  timezone: string;
+}
+
+export const DEFAULT_TIMEZONE = "America/New_York";
+
+function parseTimezone(value: unknown): string {
+  if (value === undefined) return DEFAULT_TIMEZONE;
+  try {
+    if (typeof value !== "string") throw new Error();
+    new Intl.DateTimeFormat("en-US", { timeZone: value });
+    return value;
+  } catch {
+    throw new Error('club.json timezone must be an IANA time zone like "America/New_York"');
+  }
 }
 
 export const DEFAULT_COLORS: ClubColors = {
@@ -85,6 +100,7 @@ export function parseClubConfig(value: unknown): ClubConfig {
     name: v.name,
     aliases: v.aliases,
     colors: parseColors((v as { colors?: unknown }).colors),
+    timezone: parseTimezone((v as { timezone?: unknown }).timezone),
   };
 }
 

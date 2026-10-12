@@ -25,7 +25,7 @@ const otherYears = regattasInSeries(records, seriesKey(series)).length > 1;
 const updated = new Date(fetchedAt).toLocaleString("en-US", {
   dateStyle: "medium",
   timeStyle: "short",
-  timeZone: "America/New_York",
+  timeZone: club.timezone,
 });
 ---
 

@@ -1,0 +1,184 @@
+---
+import type { TodayRegatta } from "../lib/today.js";
+import type { Venue } from "../lib/venues.js";
+import VenueCard from "./VenueCard.astro";
+
+interface Props {
+  regattas: (TodayRegatta & { venue: Venue | null })[];
+}
+
+const { regattas } = Astro.props;
+---
+
+<section class="today" data-today>
+  {regattas.map(({ record, when, events, venue }) => (
+    <div class="card race">
+      <p class="eyebrow">{when}</p>
+      <h2>
+        <a class="plain" href={`/regatta/${record.regatta.id}`}>
+          {record.regatta.title}
+        </a>
+      </h2>
+      <p class="next muted" data-next hidden />
+      {events.length === 0 ? (
+        <p class="muted">No club boats listed yet.</p>
+      ) : (
+        <>
+          <label class="only">
+            <input type="checkbox" data-only /> Only crews I follow
+          </label>
+          <ul class="events">
+            {events.map((e) => (
+              <li data-key={e.key} data-start={e.startAt ?? ""} data-done={e.done ? "1" : ""}>
+                <button
+                  type="button"
+                  class="star"
+                  data-star
+                  aria-pressed="false"
+                  aria-label={`Follow ${e.name}`}
+                >
+                  ☆
+                </button>
+                <div>
+                  <strong>{e.name}</strong>
+                  <span class="muted">{e.start ? ` · ${e.start}` : ""}</span>
+                  {e.boats.map((b) => (
+                    <div class="boat">{b}</div>
+                  ))}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+      {venue && <VenueCard venue={venue} />}
+    </div>
+  ))}
+</section>
+
+<script>
+  // Followed events are saved on this phone only. No accounts, nothing sent to the server.
+  const KEY = "crewdash-follow";
+  function load(): Set<string> {
+    try {
+      return new Set(JSON.parse(localStorage.getItem(KEY) ?? "[]") as string[]);
+    } catch {
+      return new Set();
+    }
+  }
+  function save(keys: Set<string>) {
+    try {
+      localStorage.setItem(KEY, JSON.stringify([...keys]));
+    } catch {
+      // Private browsing can block storage. Following just won't stick.
+    }
+  }
+
+  const followed = load();
+  function render() {
+    document.querySelectorAll<HTMLElement>("[data-today] .race").forEach((race) => {
+      const only = race.querySelector<HTMLInputElement>("[data-only]")?.checked ?? false;
+      race.querySelectorAll<HTMLLIElement>("li[data-key]").forEach((li) => {
+        const on = followed.has(li.dataset.key!);
+        const star = li.querySelector<HTMLButtonElement>("[data-star]")!;
+        star.textContent = on ? "★" : "☆";
+        star.setAttribute("aria-pressed", String(on));
+        li.classList.toggle("followed", on);
+        li.hidden = only && !on;
+      });
+    });
+  }
+
+  function minutesText(ms: number) {
+    const m = Math.round(ms / 60_000);
+    return m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${m % 60} min`;
+  }
+  // "Next up" counts down to the next club event that hasn't started.
+  function tick() {
+    const now = Date.now();
+    document.querySelectorAll<HTMLElement>("[data-today] .race").forEach((race) => {
+      const next = [...race.querySelectorAll<HTMLLIElement>("li[data-start]")].find(
+        (li) => li.dataset.start && Date.parse(li.dataset.start) > now && !li.dataset.done,
+      );
+      const out = race.querySelector<HTMLElement>("[data-next]")!;
+      out.hidden = !next;
+      if (next) {
+        const name = next.querySelector("strong")!.textContent;
+        out.textContent = `Next up: ${name} in ${minutesText(Date.parse(next.dataset.start!) - now)}`;
+      }
+    });
+  }
+
+  document.addEventListener("click", (e) => {
+    const star = (e.target as HTMLElement).closest<HTMLButtonElement>("[data-star]");
+    if (!star) return;
+    const key = star.closest<HTMLLIElement>("li")!.dataset.key!;
+    if (followed.has(key)) followed.delete(key);
+    else followed.add(key);
+    save(followed);
+    render();
+  });
+  document.addEventListener("change", (e) => {
+    if ((e.target as HTMLElement).matches("[data-only]")) render();
+  });
+
+  render();
+  tick();
+  setInterval(tick, 30_000);
+  // Results refresh every 5 minutes on race days, so reloading more often would only cost credits.
+  setInterval(() => {
+    if (document.visibilityState === "visible") location.reload();
+  }, 5 * 60_000);
+</script>
+
+<style>
+  .race {
+    border-left: 5px solid var(--brand-3);
+  }
+  .race h2 {
+    margin-top: 2px;
+  }
+  .next {
+    font-weight: 700;
+    color: var(--text);
+    margin: 6px 0;
+  }
+  .only {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.9rem;
+    margin: 8px 0 0;
+  }
+  .events {
+    list-style: none;
+    margin: 6px 0 0;
+    padding: 0;
+  }
+  .events li {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    padding: 8px 0;
+    border-top: 1px solid var(--border);
+  }
+  /* display: flex above would otherwise override the hidden attribute. */
+  .events li[hidden] {
+    display: none;
+  }
+  .events li.followed strong {
+    color: var(--link);
+  }
+  .boat {
+    font-size: 0.92rem;
+    color: var(--muted);
+  }
+  .star {
+    padding: 0 4px;
+    border: 0;
+    background: none;
+    color: var(--brand-3);
+    font-size: 1.3rem;
+    line-height: 1.2;
+  }
+</style>
