@@ -1,8 +1,11 @@
 ---
 import Base from "../layouts/Base.astro";
+import { club } from "../lib/config.js";
+import { blobsStore } from "../lib/store.js";
 
-// Club-neutral. Club-specific tips will come from the admin editor with venue pages.
+// The guide itself is club-neutral. The club's own tips come from the admin's venues page.
 // Results pages link to the ids below, so keep them stable.
+const { clubTips } = await blobsStore().getVenues();
 ---
 
 <Base title="Rowing 101">
@@ -143,9 +146,18 @@ import Base from "../layouts/Base.astro";
       <a href="/notifications">Alerts</a> to get a notification when each event's results are in.
     </p>
   </section>
+  {clubTips && (
+    <section class="card" id="club-tips">
+      <h2>Tips from {club.name}</h2>
+      <p class="tips">{clubTips}</p>
+    </section>
+  )}
 </Base>
 
 <style>
+  .tips {
+    white-space: pre-line;
+  }
   dl {
     margin: 8px 0 0;
   }

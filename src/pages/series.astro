@@ -1,6 +1,7 @@
 ---
 import BoatList from "../components/BoatList.astro";
 import MarginChart from "../components/charts/MarginChart.astro";
+import VenueCard from "../components/VenueCard.astro";
 import Base from "../layouts/Base.astro";
 import { loadContext } from "../lib/context.js";
 import { formatDate } from "../lib/format.js";
@@ -13,14 +14,16 @@ import {
   seriesName,
 } from "../lib/history.js";
 import { marginComparison } from "../lib/stats.js";
+import { venueForSeries } from "../lib/venues.js";
 
 const name = Astro.url.searchParams.get("name") ?? "";
 const error = Astro.url.searchParams.get("error");
-const { records, settings, club } = await loadContext();
+const { store, records, settings, club } = await loadContext();
 const regattas = regattasInSeries(records, seriesKey(name));
 if (regattas.length === 0) return new Response("Series not found", { status: 404 });
 
 const title = seriesName(regattas[0]!);
+const venue = venueForSeries(await store.getVenues(), title);
 const groups = historyByEvent(regattas, club, settings);
 const isAdmin = Astro.locals.role === "admin";
 const back = Astro.url.pathname + Astro.url.search;
@@ -34,6 +37,7 @@ const margins = marginComparison(regattas, club, settings);
     {regattas.map((r) => regattaYear(r.regatta)).join(", ")} · {club.name} boats in each event,
     newest year first
   </p>
+  {venue && <VenueCard venue={venue} />}
   <p class="card notice">
     Same course, but conditions change from year to year. Margin behind the winner is the fairest
     comparison, because conditions affect every crew.

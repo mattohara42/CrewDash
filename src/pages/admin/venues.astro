@@ -1,0 +1,168 @@
+---
+import Base from "../../layouts/Base.astro";
+import { seriesKey, seriesName } from "../../lib/history.js";
+import { blobsStore } from "../../lib/store.js";
+import { MAX_TEXT, formatPlaces, type Venue } from "../../lib/venues.js";
+
+const error = Astro.url.searchParams.get("error");
+const store = blobsStore();
+const [records, data] = await Promise.all([store.list(), store.getVenues()]);
+const series = [...new Map(records.map((r) => [seriesKey(seriesName(r)), seriesName(r)])).entries()]
+  .map(([key, name]) => ({ key, name }))
+  .sort((a, b) => a.name.localeCompare(b.name));
+const blank: Venue = { id: "", name: "", courseLengthM: null, places: [], notes: "" };
+---
+
+<Base title="Venues">
+  <p class="eyebrow">
+    <a href="/admin">Admin</a>
+  </p>
+  <h1>Venues and club tips</h1>
+  <p class="muted">
+    Venue pages show families where to go and what to expect. Link each regatta series to its venue
+    below, and the venue appears on that series' regatta pages.
+  </p>
+  {error && <p class="card notice">{error}</p>}
+
+  <h2>Venues</h2>
+  {[...data.venues, blank].map((venue) => (
+    <form method="post" action="/api/admin/venues" class="card">
+      <h3>{venue.id ? <a href={`/venue?id=${venue.id}`}>{venue.name}</a> : "Add a venue"}</h3>
+      <input type="hidden" name="id" value={venue.id} />
+      <label>
+        Name
+        <input type="text" name="name" value={venue.name} required />
+      </label>
+      <label>
+        Course length in km (optional)
+        <input
+          type="text"
+          name="courseLengthKm"
+          inputmode="decimal"
+          value={venue.courseLengthM ? String(venue.courseLengthM / 1000) : ""}
+        />
+      </label>
+      <label>
+        Places, one per line
+        <textarea
+          name="places"
+          rows="5"
+          placeholder={
+            "Launch: 43.1301, -77.6340\nFinish: https://maps.app.goo.gl/...\nParking: 43.1290, -77.6355"
+          }
+          set:text={formatPlaces(venue.places)}
+        />
+      </label>
+      <p class="muted small">
+        Write a label, a colon, then the coordinates or a Google Maps link. In Google Maps, press
+        and hold a spot to see its coordinates. Short "maps.app.goo.gl" links don't include
+        coordinates, so open them first and copy the full link from the address bar.
+      </p>
+      <label>
+        Tips for families
+        <textarea
+          name="notes"
+          rows="5"
+          maxlength={MAX_TEXT}
+          placeholder="Where the tent and trailer usually are, parking, food, the best spot to watch."
+          set:text={venue.notes}
+        />
+      </label>
+      <div class="row">
+        <button type="submit" name="action" value="save">
+          {venue.id ? "Save" : "Add venue"}
+        </button>
+        {venue.id && (
+          <button type="submit" name="action" value="delete" class="secondary" formnovalidate>
+            Delete
+          </button>
+        )}
+      </div>
+    </form>
+  ))}
+
+  <h2>Series venues</h2>
+  <div class="card">
+    {series.length === 0 && <p class="muted">Add a regatta first.</p>}
+    {data.venues.length === 0 && series.length > 0 && <p class="muted">Add a venue first.</p>}
+    {data.venues.length > 0 &&
+      series.map((s) => (
+        <form method="post" action="/api/admin/venues" class="row">
+          <input type="hidden" name="action" value="series" />
+          <input type="hidden" name="series" value={s.name} />
+          <label class="grow">
+            {s.name}
+            <select name="venue">
+              <option value="">No venue</option>
+              {data.venues.map((v) => (
+                <option value={v.id} selected={data.seriesVenue[s.key] === v.id}>
+                  {v.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button type="submit" class="secondary">
+            Save
+          </button>
+        </form>
+      ))}
+  </div>
+
+  <h2>Club tips</h2>
+  <form method="post" action="/api/admin/venues" class="card">
+    <input type="hidden" name="action" value="tips" />
+    <label>
+      Shown at the end of the Rowing 101 page
+      <textarea
+        name="clubTips"
+        rows="6"
+        maxlength={MAX_TEXT}
+        placeholder="What to bring, how the food tent works, who to ask."
+        set:text={data.clubTips}
+      />
+    </label>
+    <button type="submit">Save tips</button>
+  </form>
+
+  <h2>Backup</h2>
+  <div class="card">
+    <p class="muted">
+      Venue pages and tips aren't kept in git and have no undo. Download a copy now and then.
+    </p>
+    <a href="/api/admin/venues-export" download>
+      Download venues and tips
+    </a>
+  </div>
+</Base>
+
+<style>
+  label {
+    margin-top: 10px;
+  }
+  textarea {
+    width: 100%;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font: inherit;
+  }
+  h3 {
+    margin: 0 0 4px;
+  }
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 8px 12px;
+    margin: 10px 0 0;
+  }
+  .grow {
+    flex: 1 1 220px;
+    margin: 0;
+  }
+  .small {
+    font-size: 0.85rem;
+  }
+</style>

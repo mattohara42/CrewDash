@@ -10,7 +10,8 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   const config = authConfigFromEnv(process.env);
   const role = verifySessionToken(context.cookies.get(SESSION_COOKIE)?.value, config.sessionSecret);
-  const isAdminPath = pathname === "/admin" || pathname.startsWith("/api/admin/");
+  const isAdminPath =
+    pathname === "/admin" || pathname.startsWith("/admin/") || pathname.startsWith("/api/admin/");
 
   if (!role || (isAdminPath && role !== "admin")) {
     const params = new URLSearchParams({ next: pathname + search });
