@@ -1,5 +1,7 @@
 ---
 import type { ClubBoat } from "../lib/club-view.js";
+import { lineupKey, type RegattaLineups } from "../lib/lineups.js";
+import LineupBox from "./LineupBox.astro";
 import {
   formatGap,
   formatMargin,
@@ -15,10 +17,18 @@ interface Props {
   clubName: string;
   // From the venue, when known. Pace only makes sense on one course.
   courseLengthM?: number | null;
+  // On regatta pages: each boat's lineup, editable by coaches.
+  lineups?: {
+    regattaId: string;
+    eventNum: string;
+    byKey: RegattaLineups;
+    canEdit: boolean;
+    back: string;
+  };
 }
 
 // Exhibition boats never have a place, so their status label already marks them.
-const { boats, fieldSize, clubName, courseLengthM } = Astro.props;
+const { boats, fieldSize, clubName, courseLengthM, lineups } = Astro.props;
 
 // "1.2 s behind 2nd · 3.4 s off third · beat 8 crews"
 function analysis(boat: ClubBoat): string {
@@ -106,6 +116,16 @@ const MEDALS: Record<number, string> = { 1: "gold", 2: "silver", 3: "bronze" };
               {entry.handicapSeconds}s
             </div>
           )}
+        {lineups && (
+          <LineupBox
+            regattaId={lineups.regattaId}
+            eventNum={lineups.eventNum}
+            bow={entry.bow}
+            lineup={lineups.byKey[lineupKey(lineups.eventNum, entry.bow)]}
+            canEdit={lineups.canEdit}
+            back={lineups.back}
+          />
+        )}
       </li>
     );
   })}

@@ -25,7 +25,10 @@ const events = clubEvents(regatta, club);
 const summary = clubSummary(events);
 const year = regattaYear(regatta);
 const series = seriesName(record);
-const notes = await store.getNotes(regatta.id);
+const [notes, lineups] = await Promise.all([
+  store.getNotes(regatta.id),
+  store.getLineups(regatta.id),
+]);
 // Only today's and future regattas offer a calendar entry.
 const upcoming = regatta.date >= localDate(new Date(), club.timezone);
 const canNote = canCoach(Astro.locals.role);
@@ -100,6 +103,13 @@ const updated = new Date(fetchedAt).toLocaleString("en-US", {
         fieldSize={fieldSize}
         clubName={club.name}
         courseLengthM={venue?.courseLengthM}
+        lineups={{
+          regattaId: regatta.id,
+          eventNum: event.num,
+          byKey: lineups,
+          canEdit: canNote,
+          back,
+        }}
       />
       <NoteBox
         regattaId={regatta.id}

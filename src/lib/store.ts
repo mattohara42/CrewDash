@@ -2,6 +2,7 @@ import { getStore } from "@netlify/blobs";
 import type { Regatta } from "../crewtimer/normalize.js";
 import { EMPTY_SETTINGS, parseSettings, type Settings } from "./settings.js";
 import type { CachedConditions } from "./conditions.js";
+import { parseLineups, type RegattaLineups } from "./lineups.js";
 import { parseNotes, type RegattaNotes } from "./notes.js";
 import type { ResultTimes } from "./speed.js";
 import { parseAnnouncements, type Announcement } from "./announcements.js";
@@ -29,6 +30,8 @@ export interface RegattaStore {
   putAnnouncements(list: Announcement[]): Promise<void>;
   getNotes(regattaId: string): Promise<RegattaNotes>;
   putNotes(regattaId: string, notes: RegattaNotes): Promise<void>;
+  getLineups(regattaId: string): Promise<RegattaLineups>;
+  putLineups(regattaId: string, lineups: RegattaLineups): Promise<void>;
   // Weather per regatta, so Open-Meteo is asked once rather than on every page view.
   conditions: {
     get(id: string): Promise<CachedConditions | null>;
@@ -83,6 +86,12 @@ export function blobsStore(): RegattaStore {
     async putNotes(id, notes) {
       await store.setJSON(`notes/${id}`, notes);
     },
+    async getLineups(id) {
+      return parseLineups(await store.get(`lineups/${id}`, { type: "json" }));
+    },
+    async putLineups(id, lineups) {
+      await store.setJSON(`lineups/${id}`, lineups);
+    },
     conditions: {
       async get(id) {
         return (await store.get(`conditions/${id}`, { type: "json" })) as CachedConditions | null;
@@ -102,6 +111,7 @@ export function memoryStore(): RegattaStore {
   let announcements: Announcement[] = [];
   const conditions = new Map<string, CachedConditions>();
   const notes = new Map<string, RegattaNotes>();
+  const lineups = new Map<string, RegattaLineups>();
   return {
     async get(id) {
       return records.get(id) ?? null;
@@ -135,6 +145,12 @@ export function memoryStore(): RegattaStore {
     },
     async putNotes(id, next) {
       notes.set(id, next);
+    },
+    async getLineups(id) {
+      return lineups.get(id) ?? {};
+    },
+    async putLineups(id, next) {
+      lineups.set(id, next);
     },
     conditions: {
       async get(id) {
