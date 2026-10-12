@@ -69,7 +69,7 @@ Not yet seen: a sprint regatta. Sprint results may use fields the parser doesn't
 
 - **Club admin.** Unknown. They would add regattas after each race weekend and, in Phase 2, upload lineups. The repo owner is finding out who.
 - **RegattaCentral staff login.** Unknown whether Pittsford has one. A `boats.xls` lineup sample from a past regatta is needed before Phase 2.
-- **RegattaCentral API access.** Not yet requested. Findings and a draft email are below.
+- **RegattaCentral API access.** Not yet requested. A standard key would provide lineups and start times. Findings and a draft email are below.
 - **Sprint regatta link.** A CrewTimer link to a sprint regatta (for example the Pittsford Regatta) would let us test the parser on sprint results.
 - **Athlete-data policy.** The club should check whether it has a policy on publishing athlete information.
 - **Entazza (CrewTimer's developer).** Not yet contacted. The draft email is below.
@@ -103,32 +103,61 @@ If they point us to a supported API, only `src/crewtimer/fetch.ts` should need t
 
 ## RegattaCentral API
 
-From RegattaCentral's API documentation (https://api.regattacentral.com/v4/oauth2.jsp), read on 2026-10-13:
+From RegattaCentral's API V4 documentation (`https://api.regattacentral.com/v4/`, the cookbook PDF and the `rc-api.xsd` schema), read on 2026-10-13. The pages sit behind Cloudflare, so read them in a browser.
 
-- Every API call needs credentials, and RegattaCentral only issues them to "key clients and partners". Nothing can be built until they approve the club.
-- **Standard API key.** A key sent as an `API-Key` request header, with no user login. It covers "general information about regattas, including events, entries and results". If entries include boats, bow numbers and event times before race day, this would feed the Today card and per-boat start times without relying on CrewTimer (roadmap experiment A). The key would be a Netlify environment variable like the passwords.
-- **OAuth2 for detailed information**, probably including lineups. It uses the password grant: CrewDash would send a RegattaCentral username and password, with a client ID and secret, to `https://api.regattacentral.com/oauth2/api/token`. The response holds an access token (1 hour) and a refresh token. The account must have "staff" access to each regatta, granted by that regatta's director. A valid token can still get a 401 for a regatta the account isn't staff on.
-- **Open question:** whether a club's own staff account can read its own crews' lineups at regattas it enters, or only at regattas where it's on the organising staff. If only the latter, OAuth won't give lineups for away regattas and Phase 2 stays with `boats.xls` uploads.
-- **If OAuth is used:** the admin enters their RegattaCentral password once, CrewDash exchanges it for tokens and never stores it, and keeps only the refresh token in Blobs, with the client secret in a Netlify environment variable. The documentation doesn't say whether refresh tokens expire. A refresh token is a standing credential to a real person's account, so it should be revocable from the admin page.
+**Access.** Every call needs credentials, and RegattaCentral issues them only to approved applications (contact api@regattacentral.com). A standard key is sent as an `API-Key` header and needs no user login. OAuth2 (password grant, with regatta staff access) is only needed for `/bulk` and the guaranteed-entry endpoints, and CrewDash needs neither. So CrewDash never has to handle anyone's RegattaCentral password.
+
+**Pittsford's RegattaCentral organization ID is 2068.** It goes in `club.json` when the integration is built.
+
+**Endpoints that take a standard key** (all `GET https://api.regattacentral.com/v4.0/...`):
+
+| Path                                                                            | Returns                                                                                                  |
+| ------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `regattas/{RegattaId}`                                                          | Regatta details: dates, time zone, venue with latitude, longitude and course distances, `timingProvider` |
+| `regattas/{RegattaId}/organizations/{ClubId}/events`                            | Events the club entered                                                                                  |
+| `regattas/{RegattaId}/organizations/{ClubId}/lanes`                             | The club's lane draw (bow numbers)                                                                       |
+| `regattas/{RegattaId}/organizations/{ClubId}/races`                             | The club's races, with `scheduledStart`                                                                  |
+| `regattas/{RegattaId}/organizations/{ClubId}/results`                           | The club's results, when the timing system reports to RegattaCentral                                     |
+| `regattas/{RegattaId}/entries/{EntryId}`                                        | One entry with its lineup                                                                                |
+| `regattas/{RegattaId}/events/{EventId}/entries`, `/lanes`, `/races`, `/results` | The same for a whole event                                                                               |
+
+**Fields CrewDash would use** (from `rc-api.xsd`):
+
+- `Entry`: `entryId`, `eventId`, `organizationId`, `status`, `entryLabel` (e.g. "A"), `bow` (the registration bow number), `averageAge`, `handicap`, `entryParticipants`.
+- `EntryParticipant`: `name` (one full-name string), `sequence` (seat), `type` (`rower`, `coxswain`, `spare`, `coach`). Whether sequence 1 is bow or stroke is unconfirmed.
+- `Race`: `scheduledStart`, `actualStart`, `status` (`PreDraw`, `Draw`, `Racing`, `Unofficial`, `Official` and others), `displayNumber`, `stageName` (heat, final), `lanes`.
+- `Lane`: `displayNumber` (the bow or lane number the timing system uses), `entryId`, `status`, `results`. The schema warns this can differ from `Entry.bow`. Joins should prefer it when a race has lanes.
+- `Result`: `place`, `elapsedTime`, `adjustedTime`, `marginToFirst`, `penaltyTime`, `penaltyCode`, `status`.
+- `Venue`: `latitude`, `longitude`, and `courses[].distance`. These could prefill CrewDash venue pages.
+- `Organization.blade`: an OarSpotter blade image.
+- `Participant.birthdate` is blurred to January 1st of the birth year. CrewDash shouldn't store it.
+
+**What this means for the plan.** Lineups (Phase 2) and race start times (roadmap step 7) can come from the standard key, with no `boats.xls` uploads. The join to CrewTimer results is by event and bow number, as planned.
+
+**Still unknown:**
+
+1. Whether regattas timed by CrewTimer populate RegattaCentral races and lanes. If not, CrewDash still gets lineups and registration bow numbers, but no start times.
+2. How RegattaCentral events map to CrewTimer event numbers. The fallback is event name plus bow number.
+3. How to find a regatta's RegattaCentral ID. The Search RegattaCentral pages (Regattas, Organizations) should cover this.
+4. Usage limits and terms.
 
 ## Draft email to RegattaCentral
 
-Send to RegattaCentral support. The address isn't in the API documentation, so take it from their website's contact page.
-
-> **Subject:** API access for a club results app (Pittsford Crew)
+> **To:** api@regattacentral.com
+>
+> **Subject:** Standard API key request for a club results app (Pittsford Crew, org 2068)
 >
 > Hello,
 >
-> I'm a parent volunteer with Pittsford Crew in Rochester, NY. We've built a small web app called CrewDash so our families and coaches can follow only our club's boats at regattas. It sits behind a club password because most of our rowers are minors, and it isn't commercial.
+> I'm a parent volunteer with Pittsford Crew in Rochester, NY (RegattaCentral organization 2068). We've built a small, non-commercial web app called CrewDash so our families and coaches can follow only our club's boats at regattas. It sits behind a club password because most of our rowers are minors.
 >
-> We'd like to request a standard API key, and we have a few questions first:
+> We'd like to request a standard API key. We'd use the read-only organization endpoints (our club's events, lanes, races and results) and entry details for our own crews' lineups, a few requests per regatta, mostly in the days before and on race day. We don't need OAuth or staff access, and we wouldn't store birthdates.
 >
-> 1. Before race day, do the general entries returned with a standard key include each crew's bow number and event start time? We'd use these to show families when our boats race.
-> 2. Can a club's own RegattaCentral staff account use OAuth to read its own crews' lineups at regattas it enters but doesn't organise, or is lineup access limited to regatta staff?
-> 3. Do OAuth refresh tokens expire, and can they be revoked?
-> 4. Are there rate limits or usage terms we should follow? We'd make a few requests per regatta, mostly in the days before and on race day.
+> A few questions:
 >
-> If a key isn't possible, is the `boats.xls` download from a club staff account the right way for a club to get its own lineups?
+> 1. For regattas timed by CrewTimer, are races, scheduled start times and lane draws usually published to RegattaCentral before race day?
+> 2. Is there a reliable way to match a RegattaCentral event to the event number a timing system like CrewTimer uses?
+> 3. Are there rate limits or usage terms we should follow, including for showing our own athletes' names inside a password-protected club app?
 >
 > Thanks for your help.
 >
