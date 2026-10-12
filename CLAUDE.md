@@ -6,3 +6,4 @@ Start with `docs/HANDOFF.md` for current status, decisions and open items, then 
 - Keep code club-neutral. Anything club-specific goes in `club.json`.
 - Run `npm run check` before pushing.
 - The repo owner wants PRs merged automatically once CI is green.
+- Don't deploy to Netlify after every merge. Deploys use Netlify credits. Batch changes and ask the repo owner before deploying.
