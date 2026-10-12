@@ -1,0 +1,67 @@
+---
+import { MAX_NOTE, type Note } from "../lib/notes.js";
+
+interface Props {
+  regattaId: string;
+  event: string;
+  note: Note | undefined;
+  canEdit: boolean;
+  back: string;
+}
+
+// Shows a coach's note, with an edit box for coaches and admins.
+const { regattaId, event, note, canEdit, back } = Astro.props;
+---
+
+{note && (
+  <p class="note">
+    <span class="who">{note.from === "admin" ? "Note" : "Coach's note"}:</span> {note.text}
+  </p>
+)}
+{canEdit && (
+  <details class="edit">
+    <summary>{note ? "Edit note" : "Add a note"}</summary>
+    <form method="post" action="/api/coach/notes">
+      <input type="hidden" name="id" value={regattaId} />
+      <input type="hidden" name="event" value={event} />
+      <input type="hidden" name="back" value={back} />
+      <textarea name="text" rows="3" maxlength={MAX_NOTE} set:text={note?.text ?? ""} />
+      <button type="submit">Save</button>
+      <span class="muted small">
+        Everyone in the club can read notes. Leave it blank to remove.
+      </span>
+    </form>
+  </details>
+)}
+
+<style>
+  .note {
+    margin: 8px 0;
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: var(--surface-2);
+    white-space: pre-line;
+  }
+  .who {
+    font-weight: 700;
+  }
+  .edit summary {
+    cursor: pointer;
+    color: var(--link);
+    font-size: 0.9rem;
+  }
+  textarea {
+    width: 100%;
+    margin: 6px 0;
+    padding: 8px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font: inherit;
+  }
+  .small {
+    font-size: 0.85rem;
+    margin-left: 8px;
+  }
+</style>
