@@ -1,0 +1,196 @@
+---
+import ShareCard from "../components/ShareCard.astro";
+import Base from "../layouts/Base.astro";
+import { loadContext } from "../lib/context.js";
+import { formatGap, ordinal } from "../lib/format.js";
+import { regattaYear } from "../lib/history.js";
+import { seasonWrapped } from "../lib/recap.js";
+
+const { store, records, settings, club } = await loadContext();
+const years = [...new Set(records.map((r) => regattaYear(r.regatta)))].sort().reverse();
+const asked = Astro.url.searchParams.get("year");
+const year = asked && years.includes(asked) ? asked : years[0];
+if (!year) return Astro.redirect("/");
+const w = seasonWrapped(year, records, club, settings, await store.getVenues());
+
+// One big fact per slide. Banquet mode shows them full screen, one at a time.
+const slides = [
+  { big: String(w.regattas), text: w.regattas === 1 ? "regatta raced" : "regattas raced" },
+  { big: String(w.boats), text: w.boats === 1 ? "boat on the water" : "boats on the water" },
+  ...(w.km > 0
+    ? [{ big: `${w.km} km`, text: w.unmeasured > 0 ? "raced, at least" : "raced" }]
+    : []),
+  { big: String(w.podiums), text: "top-three finishes" },
+  { big: String(w.wins), text: w.wins === 1 ? "win" : "wins" },
+  ...(w.best
+    ? [
+        {
+          big: ordinal(w.best.place),
+          text: `of ${w.best.fieldSize} in ${w.best.event}, our best finish`,
+        },
+      ]
+    : []),
+  ...(w.improved
+    ? [
+        {
+          big: formatGap(w.improved.savedMs),
+          text: `closer to the winner in ${w.improved.event} than last year, our biggest gain`,
+        },
+      ]
+    : []),
+];
+const cardLines = [
+  ...(w.best
+    ? [`Best finish: ${ordinal(w.best.place)} of ${w.best.fieldSize}, ${w.best.event}`]
+    : []),
+  ...(w.improved
+    ? [`Biggest gain: ${w.improved.event}, ${formatGap(w.improved.savedMs)} closer to the winner`]
+    : []),
+  ...(w.km > 0 ? [`${w.unmeasured > 0 ? "At least " : ""}${w.km} km raced`] : []),
+];
+---
+
+<Base title={`${year} Wrapped`}>
+  <p class="eyebrow">{club.name}</p>
+  <h1>{year} Wrapped</h1>
+  <p class="muted">
+    The season in numbers. Tap <strong>Banquet mode</strong> to show it full screen, one slide at a
+    time.
+  </p>
+  {years.length > 1 && (
+    <p>
+      {years.map((y) => (
+        <>
+          <a href={`/wrapped?year=${y}`} aria-current={y === year ? "page" : undefined}>
+            {y}
+          </a>{" "}
+        </>
+      ))}
+    </p>
+  )}
+  <button type="button" data-present>
+    Banquet mode
+  </button>
+
+  <div class="slides" data-slides>
+    <button type="button" class="close" data-close aria-label="Leave banquet mode">
+      ✕
+    </button>
+    {slides.map((s) => (
+      <section class="slide">
+        <span class="big">{s.big}</span>
+        <span class="text">{s.text}</span>
+      </section>
+    ))}
+  </div>
+
+  <ShareCard
+    title={`${year} season`}
+    subtitle={`${w.regattas} ${w.regattas === 1 ? "regatta" : "regattas"}`}
+    stats={[
+      { label: "Boats", value: w.boats },
+      { label: "Wins", value: w.wins },
+      { label: "Top three", value: w.podiums },
+    ]}
+    lines={cardLines}
+    filename={`${year}-wrapped.png`}
+  />
+</Base>
+
+<script>
+  const slides = document.querySelector<HTMLElement>("[data-slides]")!;
+  document.querySelector("[data-present]")!.addEventListener("click", () => {
+    slides.classList.add("presenting");
+    slides.scrollTo({ top: 0 });
+    slides.requestFullscreen?.().catch(() => {});
+  });
+  const exit = () => {
+    slides.classList.remove("presenting");
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  };
+  // iPhones can't make a page full screen, so there's always a close button.
+  document.querySelector("[data-close]")!.addEventListener("click", (e) => {
+    e.stopPropagation();
+    exit();
+  });
+  document.addEventListener("fullscreenchange", () => {
+    if (!document.fullscreenElement) exit();
+  });
+  // Tap, space or the arrow keys move to the next slide.
+  const step = (dir: number) =>
+    slides.scrollBy({ top: dir * slides.clientHeight, behavior: "smooth" });
+  slides.addEventListener("click", () => slides.classList.contains("presenting") && step(1));
+  document.addEventListener("keydown", (e) => {
+    if (!slides.classList.contains("presenting")) return;
+    if (["ArrowDown", "ArrowRight", " "].includes(e.key)) step(1);
+    if (["ArrowUp", "ArrowLeft"].includes(e.key)) step(-1);
+    if (e.key === "Escape") exit();
+  });
+</script>
+
+<style>
+  .slides {
+    display: grid;
+    gap: 12px;
+    margin: 16px 0;
+  }
+  .slide {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 24px;
+    border-radius: 14px;
+    background: var(--brand);
+    color: #ffffff;
+    border-top: 6px solid var(--brand-3);
+  }
+  .big {
+    font-size: 2.6rem;
+    font-weight: 900;
+    color: var(--brand-3);
+    line-height: 1.1;
+  }
+  .text {
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+  .close {
+    display: none;
+  }
+  .presenting .close {
+    display: block;
+    position: fixed;
+    top: calc(12px + env(safe-area-inset-top));
+    right: 12px;
+    z-index: 11;
+    background: transparent;
+    border-color: #ffffff;
+    color: #ffffff;
+  }
+  .slides.presenting {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    margin: 0;
+    gap: 0;
+    overflow-y: auto;
+    scroll-snap-type: y mandatory;
+    background: var(--brand);
+  }
+  .presenting .slide {
+    height: 100vh;
+    scroll-snap-align: start;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    border-radius: 0;
+    padding: 10vh 8vw;
+  }
+  .presenting .big {
+    font-size: 18vmin;
+  }
+  .presenting .text {
+    font-size: 5vmin;
+    max-width: 22ch;
+  }
+</style>

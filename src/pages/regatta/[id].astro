@@ -33,7 +33,8 @@ const updated = new Date(fetchedAt).toLocaleString("en-US", {
   <h1>{regatta.title}</h1>
   <p class="muted">
     {formatDate(regatta.date)} · Results fetched {updated} ET ·{" "}
-    <a href={`https://www.crewtimer.com/regatta/${regatta.id}`}>Full results on CrewTimer</a>
+    <a href={`https://www.crewtimer.com/regatta/${regatta.id}`}>Full results on CrewTimer</a> ·{" "}
+    <a href={`/recap?id=${regatta.id}`}>Weekend recap</a>
   </p>
   {otherYears && (
     <p>
