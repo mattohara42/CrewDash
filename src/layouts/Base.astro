@@ -34,6 +34,7 @@ const clubCss = `
 const links = [
   { href: "/", label: "Season" },
   { href: "/rowers", label: "Following" },
+  { href: "/venues", label: "Venues" },
   { href: "/guide", label: "Rowing 101" },
   ...(canCoach(role) ? [{ href: "/coach", label: "Coach" }] : []),
   ...(role === "admin" ? [{ href: "/admin", label: "Admin" }] : []),
