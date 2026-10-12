@@ -1,0 +1,47 @@
+---
+import Base from "../layouts/Base.astro";
+import { clubEvents, clubSummary } from "../lib/club-view.js";
+import { club } from "../lib/config.js";
+import { formatDate } from "../lib/format.js";
+import { blobsStore } from "../lib/store.js";
+
+const regattas = (await blobsStore().list())
+  .map(({ regatta }) => ({ regatta, summary: clubSummary(clubEvents(regatta, club)) }))
+  .sort((a, b) => b.regatta.date.localeCompare(a.regatta.date));
+---
+
+<Base title="Season">
+  <h1>Season</h1>
+  {regattas.length === 0 && (
+    <p class="card">
+      No regattas yet.
+      {Astro.locals.role === "admin" ? (
+        <a href="/admin">Add one from its CrewTimer link.</a>
+      ) : (
+        "A club admin adds them after each race weekend."
+      )}
+    </p>
+  )}
+  {regattas.map(({ regatta, summary }) => (
+    <a class="card regatta" href={`/regatta/${regatta.id}`}>
+      <h2>{regatta.title}</h2>
+      <p class="muted">{formatDate(regatta.date)}</p>
+      <p>
+        {summary.boats === 0
+          ? `No ${club.name} boats found`
+          : `${summary.boats} boats · ${summary.wins} wins · ${summary.podiums} top three`}
+      </p>
+    </a>
+  ))}
+</Base>
+
+<style>
+  .regatta {
+    display: block;
+    color: inherit;
+    text-decoration: none;
+  }
+  .regatta p {
+    margin: 2px 0 0;
+  }
+</style>

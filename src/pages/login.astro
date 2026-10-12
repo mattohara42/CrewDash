@@ -1,0 +1,36 @@
+---
+import Base from "../layouts/Base.astro";
+import { authConfigFromEnv, isConfigured, safeNext } from "../lib/auth.js";
+
+const params = Astro.url.searchParams;
+const next = safeNext(params.get("next"));
+const failed = params.has("error");
+const needsAdmin = params.has("admin");
+const configured = isConfigured(authConfigFromEnv(process.env));
+---
+
+<Base title="Log in">
+  <h1>Log in</h1>
+  {!configured && (
+    <p class="card notice">
+      CrewDash isn't set up yet. The site owner needs to set CLUB_PASSWORD and SESSION_SECRET in
+      Netlify.
+    </p>
+  )}
+  {needsAdmin && <p class="card notice">That page needs the admin password.</p>}
+  {failed && <p class="card notice">That password didn't work.</p>}
+  <form method="post" action="/api/login" class="card">
+    <input type="hidden" name="next" value={next} />
+    <p>
+      <label for="password">Club password</label>
+      <input
+        id="password"
+        name="password"
+        type="password"
+        autocomplete="current-password"
+        required
+      />
+    </p>
+    <button type="submit">Log in</button>
+  </form>
+</Base>

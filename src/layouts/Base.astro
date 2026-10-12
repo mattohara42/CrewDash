@@ -1,0 +1,164 @@
+---
+import { club } from "../lib/config.js";
+
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
+const role = Astro.locals.role;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>{title} · CrewDash</title>
+  </head>
+  <body>
+    <header>
+      <a class="brand" href="/">
+        {club.name}
+      </a>
+      {role && (
+        <nav>
+          <a href="/">Season</a>
+          {role === "admin" && <a href="/admin">Admin</a>}
+          <form method="post" action="/api/logout">
+            <button type="submit" class="link">
+              Log out
+            </button>
+          </form>
+        </nav>
+      )}
+    </header>
+    <main>
+      <slot />
+    </main>
+  </body>
+</html>
+
+<style is:global>
+  :root {
+    --bg: #f7f8fa;
+    --surface: #ffffff;
+    --text: #1b1f24;
+    --muted: #5b6470;
+    --border: #dde1e6;
+    --accent: #1f5fa8;
+    --gold: #9a6b00;
+    --warn: #8a4b00;
+    color-scheme: light dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #111418;
+      --surface: #1a1f25;
+      --text: #e8ebef;
+      --muted: #9aa4b0;
+      --border: #2c333b;
+      --accent: #7fb2ee;
+      --gold: #e0b44c;
+      --warn: #e5a660;
+    }
+  }
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font:
+      16px/1.45 system-ui,
+      -apple-system,
+      "Segoe UI",
+      sans-serif;
+  }
+  header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px 16px;
+    padding: 12px 16px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .brand {
+    font-weight: 700;
+    color: var(--text);
+    text-decoration: none;
+  }
+  nav {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  nav form {
+    margin: 0;
+  }
+  main {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 16px;
+  }
+  a {
+    color: var(--accent);
+  }
+  h1 {
+    font-size: 1.4rem;
+    margin: 8px 0 4px;
+  }
+  h2 {
+    font-size: 1.05rem;
+    margin: 0;
+  }
+  .muted {
+    color: var(--muted);
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin: 12px 0;
+  }
+  .notice {
+    border-left: 4px solid var(--warn);
+  }
+  button,
+  input {
+    font: inherit;
+  }
+  button {
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: var(--surface);
+    cursor: pointer;
+  }
+  button.secondary {
+    background: transparent;
+    color: var(--accent);
+  }
+  button.link {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--accent);
+    text-decoration: underline;
+  }
+  input[type="text"],
+  input[type="password"] {
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+  }
+</style>
