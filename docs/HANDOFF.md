@@ -69,6 +69,7 @@ Not yet seen: a sprint regatta. Sprint results may use fields the parser doesn't
 
 - **Club admin.** Unknown. They would add regattas after each race weekend and, in Phase 2, upload lineups. The repo owner is finding out who.
 - **RegattaCentral staff login.** Unknown whether Pittsford has one. A `boats.xls` lineup sample from a past regatta is needed before Phase 2.
+- **RegattaCentral API access.** Not yet requested. Findings and a draft email are below.
 - **Sprint regatta link.** A CrewTimer link to a sprint regatta (for example the Pittsford Regatta) would let us test the parser on sprint results.
 - **Athlete-data policy.** The club should check whether it has a policy on publishing athlete information.
 - **Entazza (CrewTimer's developer).** Not yet contacted. The draft email is below.
@@ -99,6 +100,40 @@ Support contact from https://www.entazza.net/about-entazza.html: Glenn Engel, gl
 > Pittsford Crew
 
 If they point us to a supported API, only `src/crewtimer/fetch.ts` should need to change. If they ask for a lower polling rate, race-day notifications get slower, and nothing else changes.
+
+## RegattaCentral API
+
+From RegattaCentral's API documentation (https://api.regattacentral.com/v4/oauth2.jsp), read on 2026-10-13:
+
+- Every API call needs credentials, and RegattaCentral only issues them to "key clients and partners". Nothing can be built until they approve the club.
+- **Standard API key.** A key sent as an `API-Key` request header, with no user login. It covers "general information about regattas, including events, entries and results". If entries include boats, bow numbers and event times before race day, this would feed the Today card and per-boat start times without relying on CrewTimer (roadmap experiment A). The key would be a Netlify environment variable like the passwords.
+- **OAuth2 for detailed information**, probably including lineups. It uses the password grant: CrewDash would send a RegattaCentral username and password, with a client ID and secret, to `https://api.regattacentral.com/oauth2/api/token`. The response holds an access token (1 hour) and a refresh token. The account must have "staff" access to each regatta, granted by that regatta's director. A valid token can still get a 401 for a regatta the account isn't staff on.
+- **Open question:** whether a club's own staff account can read its own crews' lineups at regattas it enters, or only at regattas where it's on the organising staff. If only the latter, OAuth won't give lineups for away regattas and Phase 2 stays with `boats.xls` uploads.
+- **If OAuth is used:** the admin enters their RegattaCentral password once, CrewDash exchanges it for tokens and never stores it, and keeps only the refresh token in Blobs, with the client secret in a Netlify environment variable. The documentation doesn't say whether refresh tokens expire. A refresh token is a standing credential to a real person's account, so it should be revocable from the admin page.
+
+## Draft email to RegattaCentral
+
+Send to RegattaCentral support. The address isn't in the API documentation, so take it from their website's contact page.
+
+> **Subject:** API access for a club results app (Pittsford Crew)
+>
+> Hello,
+>
+> I'm a parent volunteer with Pittsford Crew in Rochester, NY. We've built a small web app called CrewDash so our families and coaches can follow only our club's boats at regattas. It sits behind a club password because most of our rowers are minors, and it isn't commercial.
+>
+> We'd like to request a standard API key, and we have a few questions first:
+>
+> 1. Before race day, do the general entries returned with a standard key include each crew's bow number and event start time? We'd use these to show families when our boats race.
+> 2. Can a club's own RegattaCentral staff account use OAuth to read its own crews' lineups at regattas it enters but doesn't organise, or is lineup access limited to regatta staff?
+> 3. Do OAuth refresh tokens expire, and can they be revoked?
+> 4. Are there rate limits or usage terms we should follow? We'd make a few requests per regatta, mostly in the days before and on race day.
+>
+> If a key isn't possible, is the `boats.xls` download from a club staff account the right way for a club to get its own lineups?
+>
+> Thanks for your help.
+>
+> [Your name]
+> Pittsford Crew
 
 ## Suggested repo About panel
 
