@@ -16,6 +16,9 @@ const merges = Object.entries(settings.eventAliases).sort(([a], [b]) => a.locale
 
 <Base title="Admin">
   <h1>Admin</h1>
+  <p>
+    <a href="/admin/venues">Venues and club tips</a>
+  </p>
   {error && <p class="card notice">{error}</p>}
 
   <form method="post" action="/api/admin/regattas" class="card">

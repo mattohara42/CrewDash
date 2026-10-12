@@ -1,0 +1,26 @@
+---
+import type { Venue } from "../lib/venues.js";
+
+interface Props {
+  venue: Venue;
+}
+
+const { venue } = Astro.props;
+---
+
+<a class="card plain venue" href={`/venue?id=${venue.id}`}>
+  <span class="eyebrow">Venue</span>
+  <strong>{venue.name}</strong>
+  <span class="muted">Map, parking and tips for families</span>
+</a>
+
+<style>
+  .venue {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .eyebrow {
+    margin: 0;
+  }
+</style>

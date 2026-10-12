@@ -1,0 +1,98 @@
+---
+import Base from "../layouts/Base.astro";
+import { regattasInSeries, seriesName } from "../lib/history.js";
+import { blobsStore } from "../lib/store.js";
+import { mapLinks } from "../lib/venues.js";
+
+const store = blobsStore();
+const [records, data] = await Promise.all([store.list(), store.getVenues()]);
+const venue = data.venues.find((v) => v.id === Astro.url.searchParams.get("id"));
+if (!venue) return new Response("Venue not found", { status: 404 });
+
+// The series raced here, each linking to its newest regatta.
+const raced = Object.entries(data.seriesVenue)
+  .filter(([, id]) => id === venue.id)
+  .map(([key]) => regattasInSeries(records, key)[0])
+  .filter((r) => r !== undefined)
+  .map((r) => ({
+    name: seriesName(r),
+    href: `/series?${new URLSearchParams({ name: seriesName(r) })}`,
+  }));
+const isAdmin = Astro.locals.role === "admin";
+---
+
+<Base title={venue.name}>
+  <p class="eyebrow">Venue</p>
+  <h1>{venue.name}</h1>
+  {venue.courseLengthM && (
+    <p class="muted">Course length {(venue.courseLengthM / 1000).toLocaleString("en-US")} km</p>
+  )}
+
+  {venue.places.length > 0 && (
+    <section class="card">
+      <h2>Places</h2>
+      <ul class="places">
+        {venue.places.map((place) => {
+          const links = mapLinks(place);
+          return (
+            <li>
+              <strong>{place.label}</strong>
+              <span>
+                <a href={links.apple}>Apple Maps</a> · <a href={links.google}>Google Maps</a>
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  )}
+
+  {venue.notes && (
+    <section class="card">
+      <h2>Tips for families</h2>
+      <p class="notes">{venue.notes}</p>
+    </section>
+  )}
+
+  {raced.length > 0 && (
+    <section class="card">
+      <h2>Regattas here</h2>
+      <ul>
+        {raced.map((r) => (
+          <li>
+            <a href={r.href}>{r.name}</a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )}
+
+  <p class="muted">
+    New to regattas? Read <a href="/guide">Rowing 101</a>.
+    {isAdmin && (
+      <>
+        {" "}
+        <a href="/admin/venues">Edit venues</a>
+      </>
+    )}
+  </p>
+</Base>
+
+<style>
+  .places {
+    list-style: none;
+    margin: 8px 0 0;
+    padding: 0;
+  }
+  .places li {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 4px 12px;
+    padding: 8px 0;
+    border-top: 1px solid var(--border);
+  }
+  .notes {
+    white-space: pre-line;
+  }
+</style>
