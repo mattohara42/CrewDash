@@ -1,4 +1,4 @@
-import { normalizeName, type ClubConfig } from "../club.js";
+import { normalizeName, type ClubIdentity } from "../club.js";
 
 // Admin choices that live in the app instead of in git, so an admin can make
 // them without editing club.json.
@@ -27,7 +27,7 @@ export function parseSettings(value: unknown): Settings {
 }
 
 /** The club config with the admin's extra aliases added. */
-export function effectiveClub(club: ClubConfig, settings: Settings): ClubConfig {
+export function effectiveClub<T extends ClubIdentity>(club: T, settings: Settings): T {
   const seen = new Set(club.aliases.map(normalizeName));
   const extra = settings.extraAliases.filter((a) => !seen.has(normalizeName(a)));
   return { ...club, aliases: [...club.aliases, ...extra] };
