@@ -2,9 +2,13 @@
 import Base from "../layouts/Base.astro";
 import { EXPIRY_HOURS, MAX_ANNOUNCEMENT, active } from "../lib/announcements.js";
 import { blobsStore } from "../lib/store.js";
+import { regattaYear } from "../lib/history.js";
 
 const error = Astro.url.searchParams.get("error");
-const current = active(await blobsStore().getAnnouncements());
+const store = blobsStore();
+const [list, records] = await Promise.all([store.getAnnouncements(), store.list()]);
+const current = active(list);
+const years = [...new Set(records.map((r) => regattaYear(r.regatta)))].sort().reverse();
 const label = (h: number) => (h < 24 ? `${h} hours` : h === 24 ? "1 day" : `${h / 24} days`);
 ---
 
@@ -60,6 +64,22 @@ const label = (h: number) => (h < 24 ? `${h} hours` : h === 24 ? "1 day" : `${h 
       </button>
     </form>
   ))}
+  <h2>Results spreadsheet</h2>
+  <div class="card">
+    <p class="muted">
+      Every club boat in a season, one row each, for your own spreadsheet. It includes stroke names,
+      so keep the file private.
+    </p>
+    {years.length === 0 && <p class="muted">No regattas yet.</p>}
+    {years.map((y) => (
+      <p>
+        <a href={`/api/coach/export?year=${y}`} download>
+          Download {y} results (CSV)
+        </a>
+      </p>
+    ))}
+  </div>
+  <p class="muted">Add notes on a regatta or an event from that regatta's page.</p>
 </Base>
 
 <style>

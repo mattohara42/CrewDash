@@ -1,5 +1,6 @@
 ---
 import BoatList from "../../components/BoatList.astro";
+import NoteBox from "../../components/NoteBox.astro";
 import StatTiles from "../../components/StatTiles.astro";
 import ConditionsLine from "../../components/ConditionsLine.astro";
 import VenueCard from "../../components/VenueCard.astro";
@@ -13,6 +14,7 @@ import { eventKey } from "../../lib/settings.js";
 import { venueForSeries } from "../../lib/venues.js";
 import { regattaConditions } from "../../lib/conditions.js";
 import { localDate } from "../../lib/today.js";
+import { canCoach } from "../../lib/auth.js";
 
 const { store, records, settings, club } = await loadContext();
 const record = records.find((r) => r.regatta.id === Astro.params.id);
@@ -23,6 +25,9 @@ const events = clubEvents(regatta, club);
 const summary = clubSummary(events);
 const year = regattaYear(regatta);
 const series = seriesName(record);
+const notes = await store.getNotes(regatta.id);
+const canNote = canCoach(Astro.locals.role);
+const back = `/regatta/${regatta.id}`;
 const venue = venueForSeries(await store.getVenues(), series);
 const conditions = await regattaConditions(record, venue, store.conditions, {
   timeZone: club.timezone,
@@ -66,6 +71,7 @@ const updated = new Date(fetchedAt).toLocaleString("en-US", {
       ]}
     />
   )}
+  <NoteBox regattaId={regatta.id} event="" note={notes[""]} canEdit={canNote} back={back} />
   {events.length === 0 && <p class="card">No {club.name} boats found at this regatta.</p>}
   {events.map(({ event, fieldSize, boats }) => (
     <section class="card">
@@ -86,6 +92,13 @@ const updated = new Date(fetchedAt).toLocaleString("en-US", {
         fieldSize={fieldSize}
         clubName={club.name}
         courseLengthM={venue?.courseLengthM}
+      />
+      <NoteBox
+        regattaId={regatta.id}
+        event={eventKey(event.name, settings)}
+        note={notes[eventKey(event.name, settings)]}
+        canEdit={canNote}
+        back={back}
       />
     </section>
   ))}
