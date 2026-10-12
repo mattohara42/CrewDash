@@ -1,5 +1,6 @@
 import { fetchRegattaResults } from "../crewtimer/fetch.js";
 import { normalizeRegatta } from "../crewtimer/normalize.js";
+import { recordResultTimes } from "./speed.js";
 import type { RegattaStore, StoredRegatta } from "./store.js";
 
 // CrewTimer's "pending official" flag can stay set forever, so regattas are
@@ -21,7 +22,12 @@ export async function fetchAndStore(
   const regatta = normalizeRegatta(id, await fetchRegattaResults(id, fetchImpl));
   // Keep what an admin set, such as the series name, across refreshes.
   const previous = await store.get(id);
-  const record = { ...previous, regatta, fetchedAt: now.toISOString() };
+  const record: StoredRegatta = {
+    ...previous,
+    regatta,
+    fetchedAt: now.toISOString(),
+    resultTimes: recordResultTimes(previous, regatta, now),
+  };
   await store.put(record);
   return { record, previous };
 }

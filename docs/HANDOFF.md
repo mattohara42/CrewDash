@@ -20,7 +20,7 @@ Step 4 is built: on the day before and the day of a regatta, the home page leads
 
 Step 5 is half built. Each placed boat shows its winning margin or the gap to the crew one place up, the gap to third, and how many crews it beat, all from adjusted times in the same race. Pace per 500 m (from raw time) shows on regatta and series pages when the venue has a course length. Each regatta has a weekend recap (`/recap?id=`) with medals, best finishes and the biggest gains on last year, and each season a Wrapped page (`/wrapped?year=`) with a full-screen banquet mode. Both can save a club-level image to post, drawn in the browser, with events and places but no names. Kilometres raced count only venues with a course length. Rival head-to-head was dropped. CSV export and coach's notes are still to come.
 
-Phase 2 (lineups and rower pages) still needs a `boats.xls` sample. How quickly CrewTimer results appear on race day is still unmeasured.
+Phase 2 (lineups and rower pages) still needs a `boats.xls` sample. How quickly CrewTimer results appear on race day is still unmeasured, but the refresh now logs it: each regatta records when every event's first and last results appeared (`resultTimes`, accurate to the 5-minute refresh), and the admin page shows the median minutes after the start. Check it after the next race weekend.
 
 A season is a calendar year for now. If the club thinks in fall and spring seasons, the event page can split them.
 
