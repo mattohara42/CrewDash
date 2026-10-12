@@ -2,6 +2,7 @@ import { getStore } from "@netlify/blobs";
 import type { Regatta } from "../crewtimer/normalize.js";
 import { EMPTY_SETTINGS, parseSettings, type Settings } from "./settings.js";
 import type { CachedConditions } from "./conditions.js";
+import { parseNotes, type RegattaNotes } from "./notes.js";
 import type { ResultTimes } from "./speed.js";
 import { parseAnnouncements, type Announcement } from "./announcements.js";
 import { EMPTY_VENUES, parseVenueData, type VenueData } from "./venues.js";
@@ -26,6 +27,8 @@ export interface RegattaStore {
   putVenues(data: VenueData): Promise<void>;
   getAnnouncements(): Promise<Announcement[]>;
   putAnnouncements(list: Announcement[]): Promise<void>;
+  getNotes(regattaId: string): Promise<RegattaNotes>;
+  putNotes(regattaId: string, notes: RegattaNotes): Promise<void>;
   // Weather per regatta, so Open-Meteo is asked once rather than on every page view.
   conditions: {
     get(id: string): Promise<CachedConditions | null>;
@@ -74,6 +77,12 @@ export function blobsStore(): RegattaStore {
     async putAnnouncements(list) {
       await store.setJSON(ANNOUNCEMENTS_KEY, list);
     },
+    async getNotes(id) {
+      return parseNotes(await store.get(`notes/${id}`, { type: "json" }));
+    },
+    async putNotes(id, notes) {
+      await store.setJSON(`notes/${id}`, notes);
+    },
     conditions: {
       async get(id) {
         return (await store.get(`conditions/${id}`, { type: "json" })) as CachedConditions | null;
@@ -92,6 +101,7 @@ export function memoryStore(): RegattaStore {
   let venues: VenueData = EMPTY_VENUES;
   let announcements: Announcement[] = [];
   const conditions = new Map<string, CachedConditions>();
+  const notes = new Map<string, RegattaNotes>();
   return {
     async get(id) {
       return records.get(id) ?? null;
@@ -119,6 +129,12 @@ export function memoryStore(): RegattaStore {
     },
     async putAnnouncements(next) {
       announcements = next;
+    },
+    async getNotes(id) {
+      return notes.get(id) ?? {};
+    },
+    async putNotes(id, next) {
+      notes.set(id, next);
     },
     conditions: {
       async get(id) {
