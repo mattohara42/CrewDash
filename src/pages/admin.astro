@@ -1,0 +1,61 @@
+---
+import Base from "../layouts/Base.astro";
+import { nearMatches } from "../lib/club-view.js";
+import { club } from "../lib/config.js";
+import { formatDate } from "../lib/format.js";
+import { blobsStore } from "../lib/store.js";
+
+const error = Astro.url.searchParams.get("error");
+const regattas = (await blobsStore().list())
+  .map(({ regatta, fetchedAt }) => ({ regatta, fetchedAt, near: nearMatches(regatta, club) }))
+  .sort((a, b) => b.regatta.date.localeCompare(a.regatta.date));
+---
+
+<Base title="Admin">
+  <h1>Admin</h1>
+  {error && <p class="card notice">{error}</p>}
+
+  <form method="post" action="/api/admin/regattas" class="card">
+    <p>
+      <label for="link">CrewTimer link or regatta ID</label>
+      <input
+        id="link"
+        name="link"
+        type="text"
+        placeholder="https://www.crewtimer.com/regatta/r16329"
+        required
+      />
+    </p>
+    <button type="submit">Add or refresh regatta</button>
+  </form>
+
+  <h2>Regattas</h2>
+  {regattas.length === 0 && <p class="muted">None yet.</p>}
+  {regattas.map(({ regatta, fetchedAt, near }) => (
+    <div class="card">
+      <a href={`/regatta/${regatta.id}`}>{regatta.title}</a>
+      <p class="muted">
+        {formatDate(regatta.date)} · {regatta.id} · fetched{" "}
+        {new Date(fetchedAt).toISOString().slice(0, 16).replace("T", " ")} UTC
+      </p>
+      {near.length > 0 && (
+        <p class="notice-text">
+          Possible {club.name} names not counted: {near.join(", ")}. To count them, add them to the
+          aliases in club.json.
+        </p>
+      )}
+      <form method="post" action="/api/admin/regattas">
+        <input type="hidden" name="link" value={regatta.id} />
+        <button type="submit" class="secondary">
+          Refresh now
+        </button>
+      </form>
+    </div>
+  ))}
+</Base>
+
+<style>
+  .notice-text {
+    color: var(--warn);
+  }
+</style>

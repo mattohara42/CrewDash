@@ -7,3 +7,4 @@ dist/
 # It lives only in the deployed app's storage, never in git.
 data/
 *.local.json
+.astro/

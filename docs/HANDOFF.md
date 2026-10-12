@@ -6,9 +6,22 @@ Last updated 2026-10-12.
 
 ## Status
 
-Phase 0 is done and merged. The CrewTimer parser (`src/crewtimer/`) fetches a regatta's public results JSON and normalizes it into regattas, events and entries. Club matching reads `club.json`. `npm run check` runs lint, formatting, type checking and 52 tests, and CI runs the same check on every PR.
+Phase 0 is done: the CrewTimer parser (`src/crewtimer/`) and club matching (`club.json`).
 
-Phase 1 has not started. It needs a front-end framework choice (Astro or SvelteKit were the candidates, with tradeoffs still to write up) and a Netlify site connected to this repo.
+Phase 1a is built: an Astro app with the club password gate, admin page, season page, regatta page and a scheduled refresh. `npm run check` runs lint, formatting, `astro check`, the tests and the production build. CI runs the same check on every PR.
+
+Phase 1b is next: year-over-year with series tags, the boat page, and alias and event-name review.
+
+## Deployment
+
+- Netlify site `crewdash` on the FamilyHub team: https://crewdash.netlify.app (dashboard: https://app.netlify.com/projects/crewdash). Site ID `b4a0232e-e03c-458d-ae67-59de2a3a36aa`.
+- Deploys are currently uploaded from a Claude session, not built from GitHub. Linking the repo in Netlify (Project configuration, Build and deploy, Link repository) would make every merge to `main` deploy automatically.
+- Environment variables, set in Netlify with Functions and Runtime scopes:
+  - `SESSION_SECRET` is set. Changing it logs everyone out.
+  - `CLUB_PASSWORD` and `ADMIN_PASSWORD` are for the repo owner to choose and set. Until `CLUB_PASSWORD` is set, nobody can log in. Changes need a redeploy to take effect.
+- Results are stored in a site-wide Netlify Blobs store named `regattas`. Deploy previews share it with production.
+- `npm audit` flags high-severity advisories in Netlify's local dev and build tooling (`sharp`/`ipx`, `node-forge`, `braces`). None of it handles visitor requests. npm's only fix downgrades the adapter two major versions, so recheck when `@astrojs/netlify` updates.
+- Logins have no rate limiting yet, so the club password should be long and not reused.
 
 ## Decisions made
 

@@ -1,0 +1,107 @@
+---
+import Base from "../../layouts/Base.astro";
+import { clubEvents } from "../../lib/club-view.js";
+import { club } from "../../lib/config.js";
+import {
+  formatDate,
+  formatMargin,
+  formatStart,
+  formatTime,
+  ordinal,
+  statusLabel,
+} from "../../lib/format.js";
+import { isRecent } from "../../lib/refresh.js";
+import { blobsStore } from "../../lib/store.js";
+
+const record = await blobsStore().get(Astro.params.id ?? "");
+if (!record) return new Response("Regatta not found", { status: 404 });
+
+const { regatta, fetchedAt } = record;
+const events = clubEvents(regatta, club);
+const updated = new Date(fetchedAt).toLocaleString("en-US", {
+  dateStyle: "medium",
+  timeStyle: "short",
+  timeZone: "America/New_York",
+});
+---
+
+<Base title={regatta.title}>
+  <h1>{regatta.title}</h1>
+  <p class="muted">
+    {formatDate(regatta.date)} · Results fetched {updated} ET ·{" "}
+    <a href={`https://www.crewtimer.com/regatta/${regatta.id}`}>Full results on CrewTimer</a>
+  </p>
+  {isRecent(regatta.date) && <p class="card notice">Results may still change.</p>}
+  {events.length === 0 && <p class="card">No {club.name} boats found at this regatta.</p>}
+  {events.map(({ event, fieldSize, boats }) => (
+    <section class="card">
+      <h2>{event.name}</h2>
+      <p class="muted">
+        Event {event.num}
+        {event.start && ` · ${formatStart(event.start)}`} · {fieldSize} crews placed
+      </p>
+      <ul>
+        {boats.map(({ entry, marginMs, wouldHavePlaced }) => (
+          <li>
+            <div class="result">
+              <strong class={entry.place === 1 ? "gold" : ""}>
+                {entry.place !== null
+                  ? `${ordinal(entry.place)} of ${fieldSize}`
+                  : statusLabel(entry)}
+              </strong>
+              {entry.adjustedTimeMs !== null && <span>{formatTime(entry.adjustedTimeMs)}</span>}
+              {marginMs !== null && <span class="muted">{formatMargin(marginMs)}</span>}
+            </div>
+            <div class="muted">
+              Bow {entry.bow}
+              {entry.stroke && ` · Stroke ${entry.stroke}`}
+              {entry.crew !== club.name && ` · ${entry.crew}`}
+            </div>
+            {wouldHavePlaced !== null && (
+              <div class="muted">
+                Would have placed {ordinal(wouldHavePlaced)} (unofficial; exhibition boats can't
+                medal)
+              </div>
+            )}
+            {entry.penalties.length > 0 && (
+              <div class="muted">
+                Penalties:{" "}
+                {entry.penalties
+                  .map((p) => (p.seconds !== null ? `${p.code} +${p.seconds}s` : p.code))
+                  .join(", ")}
+              </div>
+            )}
+            {entry.handicapSeconds !== null &&
+              entry.handicapSeconds !== 0 &&
+              entry.rawTimeMs !== null && (
+                <div class="muted">
+                  Raw time {formatTime(entry.rawTimeMs)}, handicap {entry.handicapSeconds}s
+                </div>
+              )}
+          </li>
+        ))}
+      </ul>
+    </section>
+  ))}
+</Base>
+
+<style>
+  ul {
+    list-style: none;
+    margin: 8px 0 0;
+    padding: 0;
+  }
+  li {
+    padding: 8px 0;
+    border-top: 1px solid var(--border);
+  }
+  .result {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    align-items: baseline;
+  }
+  .gold {
+    color: var(--gold);
+  }
+</style>
