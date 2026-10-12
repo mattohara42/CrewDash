@@ -1,0 +1,120 @@
+---
+import Base from "../layouts/Base.astro";
+import { loadContext } from "../lib/context.js";
+import { formatDate, formatTime, ordinal, statusLabel } from "../lib/format.js";
+import { regattaYear, regattasInYear } from "../lib/history.js";
+import { eventKey } from "../lib/settings.js";
+import { parseBoatFilter, seasonBoats, type BoatFilter } from "../lib/stats.js";
+
+// The boats behind a number on the season page: every boat, wins, top three, or one place.
+const { records, settings, club } = await loadContext();
+const years = [...new Set(records.map((r) => regattaYear(r.regatta)))].sort().reverse();
+const asked = Astro.url.searchParams.get("year");
+const year = asked && years.includes(asked) ? asked : years[0];
+const show = parseBoatFilter(Astro.url.searchParams.get("show"));
+const groups = year ? seasonBoats(regattasInYear(records, year), club, show) : [];
+const count = groups.reduce((n, g) => n + g.rows.length, 0);
+
+const TITLES: Record<BoatFilter, string> = {
+  all: "Every boat raced",
+  wins: "Wins",
+  top3: "Top-three finishes",
+  "1st": "Boats that finished 1st",
+  "2nd": "Boats that finished 2nd",
+  "3rd": "Boats that finished 3rd",
+  "4th": "Boats that finished 4th",
+  "5th+": "Boats that finished 5th or lower",
+};
+const FILTERS: BoatFilter[] = ["all", "wins", "top3"];
+const link = (s: BoatFilter) => `/boats?${new URLSearchParams({ year: year ?? "", show: s })}`;
+---
+
+<Base title={`${TITLES[show]}, ${year ?? ""}`}>
+  <p class="eyebrow">
+    <a href={`/?year=${year ?? ""}`}>{year} season</a>
+  </p>
+  <h1>{TITLES[show]}</h1>
+  <p class="muted">
+    {count} {count === 1 ? "boat" : "boats"} in {year}
+  </p>
+  <nav class="filters" aria-label="Show">
+    {FILTERS.map((f) => (
+      <a href={link(f)} aria-current={f === show ? "page" : undefined}>
+        {f === "all" ? "All" : f === "wins" ? "Wins" : "Top three"}
+      </a>
+    ))}
+  </nav>
+
+  {count === 0 && <p class="card">None this season.</p>}
+  {groups.map(({ record, rows }) => (
+    <section class="card">
+      <h2>
+        <a class="plain" href={`/regatta/${record.regatta.id}`}>
+          {record.regatta.title}
+        </a>
+      </h2>
+      <p class="muted">{formatDate(record.regatta.date)}</p>
+      <ul class="rows">
+        {rows.map(({ event, fieldSize, boat }) => (
+          <li>
+            <a
+              class="plain"
+              href={`/event?${new URLSearchParams({ name: eventKey(event.name, settings), year: year ?? "" })}`}
+            >
+              <strong>{event.name}</strong>
+            </a>
+            <span>
+              {boat.entry.place !== null ? (
+                <span class={`medal ${["", "gold", "silver", "bronze"][boat.entry.place] ?? ""}`}>
+                  {ordinal(boat.entry.place)}
+                </span>
+              ) : (
+                statusLabel(boat.entry)
+              )}
+              {boat.entry.place !== null && <span class="muted"> of {fieldSize}</span>}
+              {boat.entry.adjustedTimeMs !== null && (
+                <span class="muted"> · {formatTime(boat.entry.adjustedTimeMs)}</span>
+              )}
+              <span class="muted"> · Bow {boat.entry.bow}</span>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  ))}
+</Base>
+
+<style>
+  .filters {
+    display: flex;
+    gap: 6px;
+    margin: 10px 0;
+  }
+  .filters a {
+    padding: 4px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    text-decoration: none;
+    font-weight: 700;
+  }
+  .filters a[aria-current="page"] {
+    background: var(--button);
+    border-color: var(--button);
+    color: var(--button-text);
+  }
+  .rows {
+    list-style: none;
+    margin: 8px 0 0;
+    padding: 0;
+  }
+  .rows li {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 2px 12px;
+    padding: 8px 0;
+    border-top: 1px solid var(--border);
+  }
+</style>

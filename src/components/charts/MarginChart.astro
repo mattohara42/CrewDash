@@ -71,12 +71,16 @@ const describe = (m: MarginComparison["older"]) =>
               y2="12"
               class="link"
             ></line>
-            <circle cx={x(r.older.marginMs)} cy="12" r="6" class="older">
-              <title>{describe(r.older)}</title>
-            </circle>
-            <circle cx={x(r.newer.marginMs)} cy="12" r="6" class="newer">
-              <title>{describe(r.newer)}</title>
-            </circle>
+            <a href={`/regatta/${r.older.regattaId}`}>
+              <circle cx={x(r.older.marginMs)} cy="12" r="6" class="older">
+                <title>{describe(r.older)}</title>
+              </circle>
+            </a>
+            <a href={`/regatta/${r.newer.regattaId}`}>
+              <circle cx={x(r.newer.marginMs)} cy="12" r="6" class="newer">
+                <title>{describe(r.newer)}</title>
+              </circle>
+            </a>
           </svg>
         </li>
       );

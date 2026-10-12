@@ -5,9 +5,11 @@ import { PLACE_BUCKETS, type PlaceBucket } from "../../lib/stats.js";
 // no legend; every column carries its value, and the table view repeats them.
 interface Props {
   places: Record<PlaceBucket, number>;
+  // When given, each column links to the boats that finished there.
+  hrefFor?: (place: PlaceBucket) => string;
 }
 
-const { places } = Astro.props;
+const { places, hrefFor } = Astro.props;
 const WIDTH = 320;
 const BASE = 140;
 const PLOT = 110;
@@ -34,19 +36,34 @@ const total = PLACE_BUCKETS.reduce((n, b) => n + places[b], 0);
 <figure class="place-chart">
   <svg viewBox={`0 0 ${WIDTH} 170`} role="group" aria-label="Finishing places of placed boats">
     <line x1="0" x2={WIDTH} y1={BASE + 0.5} y2={BASE + 0.5} class="baseline"></line>
-    {bars.map((b, i) => (
-      <g class="bar" tabindex="0" role="img" aria-label={`${b.label}: ${b.count} boats`}>
-        <title>{`${b.label}: ${b.count} ${b.count === 1 ? "boat" : "boats"}`}</title>
-        <rect class="hit" x={i * BAND} y="0" width={BAND} height="170"></rect>
-        {b.d && <path class="mark" d={b.d}></path>}
-        <text class="value" x={b.cx} y={b.y - 6} text-anchor="middle">
-          {b.count}
-        </text>
-        <text class="axis" x={b.cx} y={BASE + 20} text-anchor="middle">
-          {b.label}
-        </text>
-      </g>
-    ))}
+    {bars.map((b, i) => {
+      const body = (
+        <>
+          <title>{`${b.label}: ${b.count} ${b.count === 1 ? "boat" : "boats"}`}</title>
+          <rect class="hit" x={i * BAND} y="0" width={BAND} height="170"></rect>
+          {b.d && <path class="mark" d={b.d}></path>}
+          <text class="value" x={b.cx} y={b.y - 6} text-anchor="middle">
+            {b.count}
+          </text>
+          <text class="axis" x={b.cx} y={BASE + 20} text-anchor="middle">
+            {b.label}
+          </text>
+        </>
+      );
+      return hrefFor && b.count > 0 ? (
+        <a
+          class="bar"
+          href={hrefFor(b.label)}
+          aria-label={`${b.label}: ${b.count} boats. Show them.`}
+        >
+          {body}
+        </a>
+      ) : (
+        <g class="bar" tabindex="0" role="img" aria-label={`${b.label}: ${b.count} boats`}>
+          {body}
+        </g>
+      );
+    })}
   </svg>
   <details class="table-view">
     <summary>Show as table</summary>
@@ -93,6 +110,9 @@ const total = PLACE_BUCKETS.reduce((n, b) => n + places[b], 0);
   .mark {
     fill: var(--chart-strong);
     transition: opacity 120ms ease;
+  }
+  a.bar {
+    cursor: pointer;
   }
   .bar:hover .mark,
   .bar:focus .mark {

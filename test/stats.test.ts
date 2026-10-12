@@ -104,3 +104,20 @@ describe("marginComparison", () => {
     ]);
   });
 });
+
+describe("seasonBoats", async () => {
+  const { normalizeRegatta } = await import("../src/crewtimer/normalize.js");
+  const { parseBoatFilter, seasonBoats } = await import("../src/lib/stats.js");
+  const fixture = (await import("./fixtures/regatta.json", { with: { type: "json" } })).default;
+  const club = { name: "Lakeview Rowing Club", aliases: ["Lakeview Rowing Club"] };
+  const record = { regatta: normalizeRegatta("r1", fixture as never), fetchedAt: "" };
+
+  it("filters the club's boats by result", () => {
+    const count = (show: string) =>
+      seasonBoats([record], club, parseBoatFilter(show)).reduce((n, g) => n + g.rows.length, 0);
+    expect(count("all")).toBe(2);
+    expect(count("wins")).toBe(2);
+    expect(count("2nd")).toBe(0);
+    expect(count("nonsense")).toBe(2);
+  });
+});

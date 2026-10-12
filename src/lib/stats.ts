@@ -18,7 +18,7 @@ export interface SeasonStats {
   places: Record<PlaceBucket, number>;
 }
 
-function bucket(place: number): PlaceBucket {
+export function bucket(place: number): PlaceBucket {
   return place >= 5 ? "5th+" : PLACE_BUCKETS[place - 1]!;
 }
 
@@ -100,4 +100,35 @@ export function marginComparison(
     if (newer && older) result.push({ eventName: group.name, older, newer });
   }
   return result;
+}
+
+/** What a season drill-down shows: every boat, wins, top three, or one finishing place. */
+export type BoatFilter = "all" | "wins" | "top3" | PlaceBucket;
+
+export function parseBoatFilter(value: string | null): BoatFilter {
+  const allowed: string[] = ["all", "wins", "top3", ...PLACE_BUCKETS];
+  return value && allowed.includes(value) ? (value as BoatFilter) : "all";
+}
+
+function matches(place: number | null, filter: BoatFilter): boolean {
+  if (filter === "all") return true;
+  if (place === null || place < 1) return false;
+  if (filter === "wins") return place === 1;
+  if (filter === "top3") return place <= 3;
+  return bucket(place) === filter;
+}
+
+/** The season's club boats that match a filter, grouped by regatta, newest regatta first. */
+export function seasonBoats(records: StoredRegatta[], club: ClubIdentity, filter: BoatFilter) {
+  return [...records]
+    .sort((a, b) => b.regatta.date.localeCompare(a.regatta.date))
+    .map((record) => ({
+      record,
+      rows: clubEvents(record.regatta, club).flatMap(({ event, fieldSize, boats }) =>
+        boats
+          .filter((b) => matches(b.entry.place, filter))
+          .map((boat) => ({ event, fieldSize, boat })),
+      ),
+    }))
+    .filter((g) => g.rows.length > 0);
 }
