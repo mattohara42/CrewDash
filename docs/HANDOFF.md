@@ -39,6 +39,7 @@ A season is a calendar year for now. If the club thinks in fall and spring seaso
 - Push notifications are Phase 1.5.
 - PRs merge automatically once CI is green and there are no open review comments.
 - The repo is private. No real rower data goes into git either way.
+- The next updates are in [ROADMAP.md](ROADMAP.md): Rowing 101, venue pages, coach login with announcements, then a race-day view, analysis, conditions and schedules. Venue pages are edited on the admin page, coaches get their own login, and announcements replace two-way chat.
 
 ## Verified against real data
 
@@ -99,6 +100,6 @@ These have to be set in the GitHub web UI: the gear icon next to "About" on the 
 
 ## Resuming in a new session
 
-1. Read this file and PLAN.md.
+1. Read this file, PLAN.md and ROADMAP.md.
 2. Run `npm install` and `npm run check`.
 3. To test against real data, save results JSON into `data/` (gitignored). Never commit it.
