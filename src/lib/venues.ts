@@ -14,6 +14,9 @@ export interface Venue {
   id: string;
   name: string;
   courseLengthM: number | null;
+  // Compass direction crews row from start to finish, in degrees. Used to turn wind into
+  // headwind or tailwind.
+  courseBearing: number | null;
   places: Place[];
   // Free text: parking, where the tent goes, what to bring.
   notes: string;
@@ -49,6 +52,7 @@ export function parseVenueData(value: unknown): VenueData {
           id: x.id,
           name: x.name,
           courseLengthM: typeof x.courseLengthM === "number" ? x.courseLengthM : null,
+          courseBearing: typeof x.courseBearing === "number" ? x.courseBearing : null,
           places: Array.isArray(x.places) ? x.places.filter(isPlace) : [],
           notes: str(x.notes),
         }))
@@ -123,6 +127,45 @@ export function parsePlaces(text: string): { places: Place[] } | { error: string
 /** The places box text for a venue, so the admin can edit what's saved. */
 export function formatPlaces(places: Place[]): string {
   return places.map((p) => `${p.label}: ${p.lat}, ${p.lon}`).join("\n");
+}
+
+const COMPASS = [
+  "N",
+  "NNE",
+  "NE",
+  "ENE",
+  "E",
+  "ESE",
+  "SE",
+  "SSE",
+  "S",
+  "SSW",
+  "SW",
+  "WSW",
+  "W",
+  "WNW",
+  "NW",
+  "NNW",
+];
+
+/** "SW", "225" or "" -> degrees or null. Returns undefined for text it can't read. */
+export function parseBearing(text: string): number | null | undefined {
+  const t = text.trim().toUpperCase();
+  if (!t) return null;
+  const point = COMPASS.indexOf(t);
+  if (point >= 0) return point * 22.5;
+  const n = Number(t);
+  return Number.isFinite(n) && n >= 0 && n <= 360 ? n % 360 : undefined;
+}
+
+/** Degrees -> the nearest of 16 compass points. */
+export function compassPoint(degrees: number): string {
+  return COMPASS[Math.round((((degrees % 360) + 360) % 360) / 22.5) % 16]!;
+}
+
+/** Where to look up weather: the finish if there is one, else the first place. */
+export function weatherPlace(venue: Venue): Place | null {
+  return venue.places.find((p) => /finish/i.test(p.label)) ?? venue.places[0] ?? null;
 }
 
 export function slugify(name: string): string {

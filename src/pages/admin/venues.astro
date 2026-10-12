@@ -2,7 +2,7 @@
 import Base from "../../layouts/Base.astro";
 import { seriesKey, seriesName } from "../../lib/history.js";
 import { blobsStore } from "../../lib/store.js";
-import { MAX_TEXT, formatPlaces, type Venue } from "../../lib/venues.js";
+import { MAX_TEXT, compassPoint, formatPlaces, type Venue } from "../../lib/venues.js";
 
 const error = Astro.url.searchParams.get("error");
 const store = blobsStore();
@@ -10,7 +10,14 @@ const [records, data] = await Promise.all([store.list(), store.getVenues()]);
 const series = [...new Map(records.map((r) => [seriesKey(seriesName(r)), seriesName(r)])).entries()]
   .map(([key, name]) => ({ key, name }))
   .sort((a, b) => a.name.localeCompare(b.name));
-const blank: Venue = { id: "", name: "", courseLengthM: null, places: [], notes: "" };
+const blank: Venue = {
+  id: "",
+  name: "",
+  courseLengthM: null,
+  courseBearing: null,
+  places: [],
+  notes: "",
+};
 ---
 
 <Base title="Venues">
@@ -40,6 +47,21 @@ const blank: Venue = { id: "", name: "", courseLengthM: null, places: [], notes:
           name="courseLengthKm"
           inputmode="decimal"
           value={venue.courseLengthM ? String(venue.courseLengthM / 1000) : ""}
+        />
+      </label>
+      <label>
+        Course direction, start to finish (optional)
+        <input
+          type="text"
+          name="courseBearing"
+          placeholder="A compass point like SW, or degrees"
+          value={
+            venue.courseBearing === null
+              ? ""
+              : venue.courseBearing % 22.5 === 0
+                ? compassPoint(venue.courseBearing)
+                : String(venue.courseBearing)
+          }
         />
       </label>
       <label>

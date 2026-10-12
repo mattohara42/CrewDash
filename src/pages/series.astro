@@ -1,6 +1,7 @@
 ---
 import BoatList from "../components/BoatList.astro";
 import MarginChart from "../components/charts/MarginChart.astro";
+import ConditionsLine from "../components/ConditionsLine.astro";
 import VenueCard from "../components/VenueCard.astro";
 import Base from "../layouts/Base.astro";
 import { loadContext } from "../lib/context.js";
@@ -15,6 +16,8 @@ import {
 } from "../lib/history.js";
 import { marginComparison } from "../lib/stats.js";
 import { venueForSeries } from "../lib/venues.js";
+import { conditionsFor } from "../lib/conditions.js";
+import { localDate } from "../lib/today.js";
 
 const name = Astro.url.searchParams.get("name") ?? "";
 const error = Astro.url.searchParams.get("error");
@@ -24,6 +27,12 @@ if (regattas.length === 0) return new Response("Series not found", { status: 404
 
 const title = seriesName(regattas[0]!);
 const venue = venueForSeries(await store.getVenues(), title);
+// Weather each year, so a slow year has an explanation.
+const weather = await conditionsFor(
+  regattas.map((record) => ({ record, venue })),
+  store.conditions,
+  { timeZone: club.timezone, units: club.units, today: localDate(new Date(), club.timezone) },
+);
 const groups = historyByEvent(regattas, club, settings);
 const isAdmin = Astro.locals.role === "admin";
 const back = Astro.url.pathname + Astro.url.search;
@@ -42,6 +51,23 @@ const margins = marginComparison(regattas, club, settings);
     Same course, but conditions change from year to year. Margin behind the winner is the fairest
     comparison, because conditions affect every crew.
   </p>
+  {weather.size > 0 && (
+    <section class="card">
+      <h2>Conditions each year</h2>
+      {regattas.map((r) => {
+        const c = weather.get(r.regatta.id);
+        return (
+          c && (
+            <ConditionsLine
+              conditions={c}
+              courseBearing={venue?.courseBearing ?? null}
+              label={regattaYear(r.regatta)}
+            />
+          )
+        );
+      })}
+    </section>
+  )}
   {error && <p class="card notice">{error}</p>}
   {margins.length > 0 && (
     <section class="card">

@@ -1,0 +1,34 @@
+---
+import { ATTRIBUTION, describeConditions, type Conditions } from "../lib/conditions.js";
+
+interface Props {
+  conditions: Conditions;
+  courseBearing: number | null;
+  label?: string;
+}
+
+const { conditions, courseBearing, label } = Astro.props;
+---
+
+<p class="conditions">
+  <span class="label">{label ?? (conditions.forecast ? "Forecast" : "Conditions")}:</span>{" "}
+  {describeConditions(conditions, courseBearing)}
+  <a class="credit" href={ATTRIBUTION.url}>
+    {ATTRIBUTION.text}
+  </a>
+</p>
+
+<style>
+  .conditions {
+    margin: 6px 0;
+    font-size: 0.92rem;
+  }
+  .label {
+    font-weight: 700;
+  }
+  .credit {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+</style>

@@ -1,6 +1,7 @@
 import { getStore } from "@netlify/blobs";
 import type { Regatta } from "../crewtimer/normalize.js";
 import { EMPTY_SETTINGS, parseSettings, type Settings } from "./settings.js";
+import type { CachedConditions } from "./conditions.js";
 import type { ResultTimes } from "./speed.js";
 import { parseAnnouncements, type Announcement } from "./announcements.js";
 import { EMPTY_VENUES, parseVenueData, type VenueData } from "./venues.js";
@@ -25,6 +26,11 @@ export interface RegattaStore {
   putVenues(data: VenueData): Promise<void>;
   getAnnouncements(): Promise<Announcement[]>;
   putAnnouncements(list: Announcement[]): Promise<void>;
+  // Weather per regatta, so Open-Meteo is asked once rather than on every page view.
+  conditions: {
+    get(id: string): Promise<CachedConditions | null>;
+    put(id: string, value: CachedConditions): Promise<void>;
+  };
 }
 
 const PREFIX = "regatta/";
@@ -68,6 +74,14 @@ export function blobsStore(): RegattaStore {
     async putAnnouncements(list) {
       await store.setJSON(ANNOUNCEMENTS_KEY, list);
     },
+    conditions: {
+      async get(id) {
+        return (await store.get(`conditions/${id}`, { type: "json" })) as CachedConditions | null;
+      },
+      async put(id, value) {
+        await store.setJSON(`conditions/${id}`, value);
+      },
+    },
   };
 }
 
@@ -77,6 +91,7 @@ export function memoryStore(): RegattaStore {
   let settings: Settings = EMPTY_SETTINGS;
   let venues: VenueData = EMPTY_VENUES;
   let announcements: Announcement[] = [];
+  const conditions = new Map<string, CachedConditions>();
   return {
     async get(id) {
       return records.get(id) ?? null;
@@ -104,6 +119,14 @@ export function memoryStore(): RegattaStore {
     },
     async putAnnouncements(next) {
       announcements = next;
+    },
+    conditions: {
+      async get(id) {
+        return conditions.get(id) ?? null;
+      },
+      async put(id, value) {
+        conditions.set(id, value);
+      },
     },
   };
 }

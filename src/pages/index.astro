@@ -6,19 +6,28 @@ import Base from "../layouts/Base.astro";
 import { clubEvents, clubSummary } from "../lib/club-view.js";
 import { loadContext } from "../lib/context.js";
 import { formatDate } from "../lib/format.js";
-import { regattaYear, regattasInYear } from "../lib/history.js";
+import { regattaYear, regattasInYear, seriesName } from "../lib/history.js";
 import { seasonStats } from "../lib/stats.js";
-import { todayRegattas } from "../lib/today.js";
-import { seriesName } from "../lib/history.js";
+import { localDate, todayRegattas } from "../lib/today.js";
 import { venueForSeries } from "../lib/venues.js";
+import { conditionsFor } from "../lib/conditions.js";
 
 const { store, records, settings, club } = await loadContext();
 // On race days the page leads with today's and tomorrow's regattas.
 const raceDay = todayRegattas(records, club, settings, club.timezone);
 const venues = raceDay.length > 0 ? await store.getVenues() : null;
-const today = raceDay.map((r) => ({
+const withVenues = raceDay.map((r) => ({
   ...r,
   venue: venues ? venueForSeries(venues, seriesName(r.record)) : null,
+}));
+const forecasts = await conditionsFor(withVenues, store.conditions, {
+  timeZone: club.timezone,
+  units: club.units,
+  today: localDate(new Date(), club.timezone),
+});
+const today = withVenues.map((r) => ({
+  ...r,
+  conditions: forecasts.get(r.record.regatta.id) ?? null,
 }));
 const years = [...new Set(records.map((r) => regattaYear(r.regatta)))].sort().reverse();
 const asked = Astro.url.searchParams.get("year");

@@ -29,6 +29,8 @@ export interface ClubConfig extends ClubIdentity {
   colors: ClubColors;
   // IANA time zone for race-day times and "today". Defaults to US Eastern.
   timezone: string;
+  // Units for weather: mph and °F, or km/h and °C.
+  units: "imperial" | "metric";
 }
 
 export const DEFAULT_TIMEZONE = "America/New_York";
@@ -101,6 +103,7 @@ export function parseClubConfig(value: unknown): ClubConfig {
     aliases: v.aliases,
     colors: parseColors((v as { colors?: unknown }).colors),
     timezone: parseTimezone((v as { timezone?: unknown }).timezone),
+    units: (v as { units?: unknown }).units === "metric" ? "metric" : "imperial",
   };
 }
 
