@@ -34,6 +34,7 @@ const asked = Astro.url.searchParams.get("year");
 const year = asked && years.includes(asked) ? asked : years[0];
 const season = year ? regattasInYear(records, year) : [];
 const stats = seasonStats(season, club);
+const boatsLink = (show: string) => `/boats?${new URLSearchParams({ year: year ?? "", show })}`;
 const regattas = season.map(({ regatta }) => ({
   regatta,
   summary: clubSummary(clubEvents(regatta, club)),
@@ -69,10 +70,10 @@ const regattas = season.map(({ regatta }) => ({
     <>
       <StatTiles
         tiles={[
-          { label: "Regattas", value: stats.regattas },
-          { label: "Boats raced", value: stats.boats },
-          { label: "Wins", value: stats.wins },
-          { label: "Top three", value: stats.podiums },
+          { label: "Regattas", value: stats.regattas, href: "#regattas" },
+          { label: "Boats raced", value: stats.boats, href: boatsLink("all") },
+          { label: "Wins", value: stats.wins, href: boatsLink("wins") },
+          { label: "Top three", value: stats.podiums, href: boatsLink("top3") },
         ]}
       />
 
@@ -82,7 +83,7 @@ const regattas = season.map(({ regatta }) => ({
           <p class="muted">
             Placed boats across {year}. Exhibition boats and non-finishers aren't counted.
           </p>
-          <PlaceChart places={stats.places} />
+          <PlaceChart places={stats.places} hrefFor={boatsLink} />
         </section>
       )}
 
@@ -91,7 +92,9 @@ const regattas = season.map(({ regatta }) => ({
           <a href={`/wrapped?year=${year}`}>{year} Wrapped: the season in numbers</a>
         </p>
       )}
-      <h2 class="section">Regattas</h2>
+      <h2 class="section" id="regattas">
+        Regattas
+      </h2>
       {regattas.map(({ regatta, summary }) => (
         <a class="card regatta" href={`/regatta/${regatta.id}`}>
           <div>

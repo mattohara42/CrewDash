@@ -3,6 +3,8 @@ interface Tile {
   label: string;
   value: number;
   hint?: string;
+  // Makes the tile a link to the boats behind the number.
+  href?: string;
 }
 
 interface Props {
@@ -13,13 +15,21 @@ const { tiles } = Astro.props;
 ---
 
 <dl class="tiles">
-  {tiles.map((t) => (
-    <div class="tile">
-      <dt>{t.label}</dt>
-      <dd>{t.value.toLocaleString("en-US")}</dd>
-      {t.hint && <p class="muted">{t.hint}</p>}
-    </div>
-  ))}
+  {tiles.map((t) => {
+    const Tag = t.href ? "a" : "div";
+    return (
+      <Tag class:list={["tile", { link: t.href }]} href={t.href}>
+        <dt>{t.label}</dt>
+        <dd>{t.value.toLocaleString("en-US")}</dd>
+        {t.hint && <p class="muted">{t.hint}</p>}
+        {t.href && (
+          <span class="more" aria-hidden="true">
+            ›
+          </span>
+        )}
+      </Tag>
+    );
+  })}
 </dl>
 
 <style>
@@ -39,6 +49,26 @@ const { tiles } = Astro.props;
     border: 1px solid var(--border);
     border-radius: 14px;
     padding: 12px 14px;
+  }
+  a.tile {
+    position: relative;
+    display: block;
+    color: inherit;
+    text-decoration: none;
+    transition:
+      transform 120ms ease,
+      box-shadow 120ms ease;
+  }
+  a.tile:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgb(14 26 69 / 0.12);
+  }
+  .more {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    font-size: 1.3rem;
+    color: var(--muted);
   }
   .tile::before {
     content: "";
