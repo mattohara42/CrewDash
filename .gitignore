@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.netlify/
+.env*
+
+# Real regatta data contains rowers' names, most of them minors.
+# It lives only in the deployed app's storage, never in git.
+data/
+*.local.json
