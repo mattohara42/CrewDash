@@ -1,4 +1,4 @@
-import { matchClub, type ClubConfig } from "../club.js";
+import { matchClub, type ClubIdentity } from "../club.js";
 import type { Entry, Event, Regatta } from "../crewtimer/normalize.js";
 
 export interface ClubBoat {
@@ -30,7 +30,7 @@ function boatOrder(a: ClubBoat, b: ClubBoat): number {
 }
 
 /** The events this club raced in, with only the club's boats in each. */
-export function clubEvents(regatta: Regatta, club: ClubConfig): ClubEvent[] {
+export function clubEvents(regatta: Regatta, club: ClubIdentity): ClubEvent[] {
   const result: ClubEvent[] = [];
   for (const event of regatta.events) {
     const ours = event.entries.filter((e) => matchClub(e.crew, club) === "match");
@@ -68,7 +68,7 @@ export function clubSummary(events: ClubEvent[]): ClubSummary {
 }
 
 /** Crew names that look like this club but aren't one of its aliases, for an admin to review. */
-export function nearMatches(regatta: Regatta, club: ClubConfig): string[] {
+export function nearMatches(regatta: Regatta, club: ClubIdentity): string[] {
   const names = new Set<string>();
   for (const event of regatta.events) {
     for (const entry of event.entries) {

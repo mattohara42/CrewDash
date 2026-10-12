@@ -1,4 +1,4 @@
-import type { ClubConfig } from "../club.js";
+import type { ClubIdentity } from "../club.js";
 import type { Event, Regatta } from "../crewtimer/normalize.js";
 import { clubEvents, type ClubBoat } from "./club-view.js";
 import { formatTime, ordinal, statusLabel } from "./format.js";
@@ -33,7 +33,7 @@ function describe(boat: ClubBoat, fieldSize: number): string {
   return `bow ${entry.bow} ${result}`;
 }
 
-function clubSummaries(regatta: Regatta, club: ClubConfig): Map<string, string> {
+function clubSummaries(regatta: Regatta, club: ClubIdentity): Map<string, string> {
   const summaries = new Map<string, string>();
   for (const { event, fieldSize, boats } of clubEvents(regatta, club)) {
     if (!isComplete(event)) continue;
@@ -50,7 +50,7 @@ function clubSummaries(regatta: Regatta, club: ClubConfig): Map<string, string> 
 export function resultNotices(
   before: Regatta | null,
   after: Regatta,
-  club: ClubConfig,
+  club: ClubIdentity,
   settings: Settings,
 ): ResultNotice[] {
   if (!before) return [];

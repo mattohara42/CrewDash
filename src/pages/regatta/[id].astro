@@ -1,7 +1,8 @@
 ---
 import BoatList from "../../components/BoatList.astro";
+import StatTiles from "../../components/StatTiles.astro";
 import Base from "../../layouts/Base.astro";
-import { clubEvents } from "../../lib/club-view.js";
+import { clubEvents, clubSummary } from "../../lib/club-view.js";
 import { loadContext } from "../../lib/context.js";
 import { formatDate, formatStart } from "../../lib/format.js";
 import { regattaYear, regattasInSeries, seriesKey, seriesName } from "../../lib/history.js";
@@ -14,6 +15,7 @@ if (!record) return new Response("Regatta not found", { status: 404 });
 
 const { regatta, fetchedAt } = record;
 const events = clubEvents(regatta, club);
+const summary = clubSummary(events);
 const year = regattaYear(regatta);
 const series = seriesName(record);
 const otherYears = regattasInSeries(records, seriesKey(series)).length > 1;
@@ -38,6 +40,16 @@ const updated = new Date(fetchedAt).toLocaleString("en-US", {
     </p>
   )}
   {isRecent(regatta.date) && <p class="card notice">Results may still change.</p>}
+  {events.length > 0 && (
+    <StatTiles
+      tiles={[
+        { label: "Events", value: events.length },
+        { label: "Boats", value: summary.boats },
+        { label: "Wins", value: summary.wins },
+        { label: "Top three", value: summary.podiums },
+      ]}
+    />
+  )}
   {events.length === 0 && <p class="card">No {club.name} boats found at this regatta.</p>}
   {events.map(({ event, fieldSize, boats }) => (
     <section class="card">

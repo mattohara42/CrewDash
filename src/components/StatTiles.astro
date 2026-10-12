@@ -1,0 +1,66 @@
+---
+interface Tile {
+  label: string;
+  value: number;
+  hint?: string;
+}
+
+interface Props {
+  tiles: Tile[];
+}
+
+const { tiles } = Astro.props;
+---
+
+<dl class="tiles">
+  {tiles.map((t) => (
+    <div class="tile">
+      <dt>{t.label}</dt>
+      <dd>{t.value.toLocaleString("en-US")}</dd>
+      {t.hint && <p class="muted">{t.hint}</p>}
+    </div>
+  ))}
+</dl>
+
+<style>
+  .tiles {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin: 12px 0;
+  }
+  @media (min-width: 640px) {
+    .tiles {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+  .tile {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 12px 14px;
+  }
+  .tile::before {
+    content: "";
+    display: block;
+    width: 28px;
+    height: 4px;
+    border-radius: 999px;
+    margin-bottom: 8px;
+    background: linear-gradient(90deg, var(--brand-2) 0 50%, var(--brand-3) 50% 100%);
+  }
+  dt {
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+  dd {
+    margin: 2px 0 0;
+    font-size: 2rem;
+    font-weight: 800;
+    line-height: 1.1;
+  }
+  .tile p {
+    margin: 2px 0 0;
+    font-size: 0.8rem;
+  }
+</style>

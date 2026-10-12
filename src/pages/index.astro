@@ -1,58 +1,143 @@
 ---
+import PlaceChart from "../components/charts/PlaceChart.astro";
+import StatTiles from "../components/StatTiles.astro";
 import Base from "../layouts/Base.astro";
 import { clubEvents, clubSummary } from "../lib/club-view.js";
 import { loadContext } from "../lib/context.js";
 import { formatDate } from "../lib/format.js";
-import { regattaYear } from "../lib/history.js";
+import { regattaYear, regattasInYear } from "../lib/history.js";
+import { seasonStats } from "../lib/stats.js";
 
 const { records, club } = await loadContext();
-const regattas = records
-  .map(({ regatta }) => ({ regatta, summary: clubSummary(clubEvents(regatta, club)) }))
-  .sort((a, b) => b.regatta.date.localeCompare(a.regatta.date));
-const years = [...new Set(regattas.map((r) => regattaYear(r.regatta)))];
+const years = [...new Set(records.map((r) => regattaYear(r.regatta)))].sort().reverse();
+const asked = Astro.url.searchParams.get("year");
+const year = asked && years.includes(asked) ? asked : years[0];
+const season = year ? regattasInYear(records, year) : [];
+const stats = seasonStats(season, club);
+const regattas = season.map(({ regatta }) => ({
+  regatta,
+  summary: clubSummary(clubEvents(regatta, club)),
+}));
 ---
 
-<Base title="Season">
-  {regattas.length === 0 && (
-    <>
-      <h1>Season</h1>
-      <p class="card">
-        No regattas yet.
-        {Astro.locals.role === "admin" ? (
-          <a href="/admin">Add one from its CrewTimer link.</a>
-        ) : (
-          "A club admin adds them after each race weekend."
-        )}
-      </p>
-    </>
+<Base title={year ? `${year} season` : "Season"}>
+  <h1>{year ? `${year} season` : "Season"}</h1>
+
+  {years.length === 0 && (
+    <p class="card">
+      No regattas yet.{" "}
+      {Astro.locals.role === "admin" ? (
+        <a href="/admin">Add one from its CrewTimer link.</a>
+      ) : (
+        "A club admin adds them after each race weekend."
+      )}
+    </p>
   )}
-  {years.map((year) => (
-    <section>
-      <h1>{year}</h1>
-      {regattas
-        .filter((r) => regattaYear(r.regatta) === year)
-        .map(({ regatta, summary }) => (
-          <a class="card regatta" href={`/regatta/${regatta.id}`}>
+
+  {years.length > 1 && (
+    <nav class="years" aria-label="Season">
+      {years.map((y) => (
+        <a href={`/?year=${y}`} aria-current={y === year ? "page" : undefined}>
+          {y}
+        </a>
+      ))}
+    </nav>
+  )}
+
+  {year && (
+    <>
+      <StatTiles
+        tiles={[
+          { label: "Regattas", value: stats.regattas },
+          { label: "Boats raced", value: stats.boats },
+          { label: "Wins", value: stats.wins },
+          { label: "Top three", value: stats.podiums },
+        ]}
+      />
+
+      {stats.boats > 0 && (
+        <section class="card">
+          <h2>How our boats finished</h2>
+          <p class="muted">
+            Placed boats across {year}. Exhibition boats and non-finishers aren't counted.
+          </p>
+          <PlaceChart places={stats.places} />
+        </section>
+      )}
+
+      <h2 class="section">Regattas</h2>
+      {regattas.map(({ regatta, summary }) => (
+        <a class="card regatta" href={`/regatta/${regatta.id}`}>
+          <div>
             <h2>{regatta.title}</h2>
             <p class="muted">{formatDate(regatta.date)}</p>
-            <p>
-              {summary.boats === 0
-                ? `No ${club.name} boats found`
-                : `${summary.boats} boats · ${summary.wins} wins · ${summary.podiums} top three`}
+          </div>
+          {summary.boats === 0 ? (
+            <p class="muted">No {club.name} boats found</p>
+          ) : (
+            <p class="chips">
+              <span class="chip">{summary.boats} boats</span>
+              {summary.wins > 0 && (
+                <span class="medal gold">
+                  {summary.wins} {summary.wins === 1 ? "win" : "wins"}
+                </span>
+              )}
+              {summary.podiums > 0 && <span class="medal silver">{summary.podiums} top three</span>}
             </p>
-          </a>
-        ))}
-    </section>
-  ))}
+          )}
+        </a>
+      ))}
+    </>
+  )}
 </Base>
 
 <style>
+  .years {
+    display: flex;
+    gap: 6px;
+    margin: 10px 0 4px;
+  }
+  .years a {
+    padding: 4px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    text-decoration: none;
+    font-weight: 700;
+  }
+  .years a[aria-current="page"] {
+    background: var(--button);
+    border-color: var(--button);
+    color: var(--button-text);
+  }
+  h2.section {
+    margin: 22px 0 0;
+  }
   .regatta {
-    display: block;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px 16px;
     color: inherit;
     text-decoration: none;
+    border-left: 5px solid var(--brand-2);
   }
   .regatta p {
     margin: 2px 0 0;
+  }
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .chip {
+    display: inline-block;
+    padding: 1px 9px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    background: var(--surface-2);
   }
 </style>

@@ -1,5 +1,6 @@
 ---
 import BoatList from "../components/BoatList.astro";
+import MarginChart from "../components/charts/MarginChart.astro";
 import Base from "../layouts/Base.astro";
 import { loadContext } from "../lib/context.js";
 import { formatDate } from "../lib/format.js";
@@ -11,6 +12,7 @@ import {
   seriesKey,
   seriesName,
 } from "../lib/history.js";
+import { marginComparison } from "../lib/stats.js";
 
 const name = Astro.url.searchParams.get("name") ?? "";
 const error = Astro.url.searchParams.get("error");
@@ -23,6 +25,7 @@ const groups = historyByEvent(regattas, club, settings);
 const isAdmin = Astro.locals.role === "admin";
 const back = Astro.url.pathname + Astro.url.search;
 const allEvents = eventNames(regattas);
+const margins = marginComparison(regattas, club, settings);
 ---
 
 <Base title={title}>
@@ -36,6 +39,15 @@ const allEvents = eventNames(regattas);
     comparison, because conditions affect every crew.
   </p>
   {error && <p class="card notice">{error}</p>}
+  {margins.length > 0 && (
+    <section class="card">
+      <h2>Closest finish behind the winner</h2>
+      <p class="muted">
+        Events {club.name} placed in both years. Each dot is our best placed boat that year.
+      </p>
+      <MarginChart rows={margins} />
+    </section>
+  )}
   {groups.map((group) => (
     <section class="card">
       <h2>{group.name}</h2>

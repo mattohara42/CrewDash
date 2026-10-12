@@ -1,0 +1,182 @@
+---
+import { formatMargin, ordinal } from "../../lib/format.js";
+import type { MarginComparison } from "../../lib/stats.js";
+
+// Year over year at the same regatta: the club's closest finish behind the winner in
+// each event, last year (muted dot) against this year (strong dot). Further left is
+// closer to the winner. Two shades of one hue, a legend, and the values written out
+// beside each row, so color is never the only cue.
+interface Props {
+  rows: MarginComparison[];
+}
+
+const { rows } = Astro.props;
+const olderYear = rows[0]?.older.year ?? "";
+const newerYear = rows[0]?.newer.year ?? "";
+
+// Clean tick steps (15s up to 10 min), picked so the axis has at most four steps.
+const STEPS = [15, 30, 60, 120, 300, 600].map((s) => s * 1000);
+const rawMax = Math.max(0, ...rows.flatMap((r) => [r.older.marginMs, r.newer.marginMs]));
+const step = STEPS.find((s) => rawMax / s <= 4) ?? STEPS[STEPS.length - 1]!;
+const max = Math.max(step, Math.ceil(rawMax / step) * step);
+const W = 300;
+const PAD = 10;
+const x = (ms: number) => PAD + (ms / max) * (W - PAD * 2);
+const ticks = Array.from({ length: max / step + 1 }, (_, i) => i * step);
+
+const describe = (m: MarginComparison["older"]) =>
+  `${m.year}: ${ordinal(m.place)} of ${m.fieldSize}, ${formatMargin(m.marginMs)}`;
+---
+
+<figure class="margin-chart">
+  <div class="legend">
+    <span>
+      <svg width="14" height="14" aria-hidden="true">
+        <circle cx="7" cy="7" r="5" class="older"></circle>
+      </svg>
+      {olderYear}
+    </span>
+    <span>
+      <svg width="14" height="14" aria-hidden="true">
+        <circle cx="7" cy="7" r="5" class="newer"></circle>
+      </svg>
+      {newerYear}
+    </span>
+    <span class="muted">Further left is closer to the winner</span>
+  </div>
+  <ul>
+    {rows.map((r) => {
+      const better = r.newer.marginMs < r.older.marginMs;
+      const worse = r.newer.marginMs > r.older.marginMs;
+      return (
+        <li>
+          <div class="row-head">
+            <strong>{r.eventName}</strong>
+            <span class="muted">
+              {describe(r.older)} → {describe(r.newer)}
+              {better && " · closer"}
+              {worse && " · further back"}
+            </span>
+          </div>
+          <svg
+            viewBox={`0 0 ${W} 24`}
+            role="img"
+            aria-label={`${r.eventName}. ${describe(r.older)}. ${describe(r.newer)}.`}
+          >
+            <line x1={PAD} x2={W - PAD} y1="12.5" y2="12.5" class="track"></line>
+            <line
+              x1={x(r.older.marginMs)}
+              x2={x(r.newer.marginMs)}
+              y1="12"
+              y2="12"
+              class="link"
+            ></line>
+            <circle cx={x(r.older.marginMs)} cy="12" r="6" class="older">
+              <title>{describe(r.older)}</title>
+            </circle>
+            <circle cx={x(r.newer.marginMs)} cy="12" r="6" class="newer">
+              <title>{describe(r.newer)}</title>
+            </circle>
+          </svg>
+        </li>
+      );
+    })}
+  </ul>
+  <svg viewBox={`0 0 ${W} 16`} class="axis" aria-hidden="true">
+    {ticks.map((t, i) => (
+      <text
+        x={x(t)}
+        y="12"
+        text-anchor={i === 0 ? "start" : i === ticks.length - 1 ? "end" : "middle"}
+      >
+        {formatMargin(t)}
+      </text>
+    ))}
+  </svg>
+  <details class="table-view">
+    <summary>Show as table</summary>
+    <table>
+      <thead>
+        <tr>
+          <th>Event</th>
+          <th>{olderYear}</th>
+          <th>{newerYear}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((r) => (
+          <tr>
+            <td>{r.eventName}</td>
+            <td>{`${ordinal(r.older.place)} of ${r.older.fieldSize}, ${formatMargin(r.older.marginMs)}`}</td>
+            <td>{`${ordinal(r.newer.place)} of ${r.newer.fieldSize}, ${formatMargin(r.newer.marginMs)}`}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </details>
+</figure>
+
+<style>
+  .margin-chart {
+    margin: 0;
+  }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    align-items: center;
+    font-size: 0.9rem;
+  }
+  .legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  ul {
+    list-style: none;
+    margin: 8px 0 0;
+    padding: 0;
+  }
+  li {
+    padding: 8px 0 2px;
+    border-top: 1px solid var(--border);
+  }
+  .row-head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 10px;
+    font-size: 0.9rem;
+  }
+  svg {
+    width: 100%;
+    height: auto;
+    display: block;
+    overflow: visible;
+  }
+  .legend svg {
+    width: 14px;
+  }
+  .track {
+    stroke: var(--border);
+    stroke-width: 1;
+  }
+  .link {
+    stroke: var(--chart-muted);
+    stroke-width: 2;
+    stroke-linecap: round;
+  }
+  circle {
+    stroke: var(--surface);
+    stroke-width: 2;
+  }
+  .older {
+    fill: var(--chart-muted);
+  }
+  .newer {
+    fill: var(--chart-strong);
+  }
+  .axis text {
+    fill: var(--muted);
+    font-size: 11px;
+  }
+</style>

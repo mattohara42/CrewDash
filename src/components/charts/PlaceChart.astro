@@ -1,0 +1,117 @@
+---
+import { PLACE_BUCKETS, type PlaceBucket } from "../../lib/stats.js";
+
+// How the club's placed boats finished, as columns. One series, so one color and
+// no legend; every column carries its value, and the table view repeats them.
+interface Props {
+  places: Record<PlaceBucket, number>;
+}
+
+const { places } = Astro.props;
+const WIDTH = 320;
+const BASE = 140;
+const PLOT = 110;
+const BAND = WIDTH / PLACE_BUCKETS.length;
+const BAR = 24;
+const max = Math.max(1, ...PLACE_BUCKETS.map((b) => places[b]));
+
+const bars = PLACE_BUCKETS.map((label, i) => {
+  const count = places[label];
+  const h = Math.round((count / max) * PLOT);
+  const x = i * BAND + (BAND - BAR) / 2;
+  const y = BASE - h;
+  const r = Math.min(4, h);
+  // Rounded data end, square at the baseline.
+  const d =
+    h > 0
+      ? `M${x},${BASE}V${y + r}Q${x},${y} ${x + r},${y}H${x + BAR - r}Q${x + BAR},${y} ${x + BAR},${y + r}V${BASE}Z`
+      : "";
+  return { label, count, x, y, d, cx: x + BAR / 2 };
+});
+const total = PLACE_BUCKETS.reduce((n, b) => n + places[b], 0);
+---
+
+<figure class="place-chart">
+  <svg viewBox={`0 0 ${WIDTH} 170`} role="group" aria-label="Finishing places of placed boats">
+    <line x1="0" x2={WIDTH} y1={BASE + 0.5} y2={BASE + 0.5} class="baseline"></line>
+    {bars.map((b, i) => (
+      <g class="bar" tabindex="0" role="img" aria-label={`${b.label}: ${b.count} boats`}>
+        <title>{`${b.label}: ${b.count} ${b.count === 1 ? "boat" : "boats"}`}</title>
+        <rect class="hit" x={i * BAND} y="0" width={BAND} height="170"></rect>
+        {b.d && <path class="mark" d={b.d}></path>}
+        <text class="value" x={b.cx} y={b.y - 6} text-anchor="middle">
+          {b.count}
+        </text>
+        <text class="axis" x={b.cx} y={BASE + 20} text-anchor="middle">
+          {b.label}
+        </text>
+      </g>
+    ))}
+  </svg>
+  <details class="table-view">
+    <summary>Show as table</summary>
+    <table>
+      <thead>
+        <tr>
+          <th>Place</th>
+          <th>Boats</th>
+        </tr>
+      </thead>
+      <tbody>
+        {bars.map((b) => (
+          <tr>
+            <td>{b.label}</td>
+            <td>{b.count}</td>
+          </tr>
+        ))}
+        <tr>
+          <td>Total placed</td>
+          <td>{total}</td>
+        </tr>
+      </tbody>
+    </table>
+  </details>
+</figure>
+
+<style>
+  .place-chart {
+    margin: 0;
+  }
+  svg {
+    width: 100%;
+    height: auto;
+    display: block;
+    overflow: visible;
+  }
+  .baseline {
+    stroke: var(--border);
+    stroke-width: 1;
+  }
+  .hit {
+    fill: transparent;
+  }
+  .mark {
+    fill: var(--chart-strong);
+    transition: opacity 120ms ease;
+  }
+  .bar:hover .mark,
+  .bar:focus .mark {
+    opacity: 0.75;
+  }
+  .bar:focus {
+    outline: none;
+  }
+  .bar:focus-visible .hit {
+    stroke: var(--link);
+    stroke-width: 2;
+  }
+  .value {
+    fill: var(--text);
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .axis {
+    fill: var(--muted);
+    font-size: 12px;
+  }
+</style>

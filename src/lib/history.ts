@@ -1,4 +1,4 @@
-import { normalizeName, type ClubConfig } from "../club.js";
+import { normalizeName, type ClubIdentity } from "../club.js";
 import type { Regatta } from "../crewtimer/normalize.js";
 import { clubEvents, type ClubBoat } from "./club-view.js";
 import { eventKey, type Settings } from "./settings.js";
@@ -49,7 +49,7 @@ function newestFirst(a: StoredRegatta, b: StoredRegatta): number {
 /** Groups the club's boats by event across the given regattas, newest regatta first. */
 export function historyByEvent(
   records: StoredRegatta[],
-  club: ClubConfig,
+  club: ClubIdentity,
   settings: Settings,
 ): HistoryGroup[] {
   const groups = new Map<string, HistoryGroup>();
