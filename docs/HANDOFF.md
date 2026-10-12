@@ -77,24 +77,25 @@ Not yet seen: a sprint regatta. Sprint results may use fields the parser doesn't
 
 ## Draft email to Entazza
 
-Support contact from https://www.entazza.net/about-entazza.html: Glenn Engel, glenne@entazza.net.
+Support contact from https://www.entazza.net/about-entazza.html: Glenn Engel, glenne@entazza.net. Updated 2026-10-13 to describe the live app.
 
 > **Subject:** CrewDash: a club results view built on CrewTimer data
 >
 > Hi Glenn,
 >
-> I'm a parent with Pittsford Crew in Rochester, NY. Our club races at many regattas timed with CrewTimer, and we're building a small web app called CrewDash so families and coaches can see only our club's boats and results without scrolling through the full results.
+> I'm a parent volunteer with Pittsford Crew in Rochester, NY. Our club races at many regattas timed with CrewTimer, and we've built a small web app called CrewDash so our families and coaches can see only our club's boats and results. It's live for our club now, behind a club password because most of our rowers are minors. It's volunteer-run and not commercial.
 >
-> CrewDash reads the public results JSON that the CrewTimer results pages load (`crewtimer-results.firebaseio.com/results/<regattaId>.json`), one regatta at a time, after a club admin adds the regatta link. It stores a copy so we don't keep re-fetching. On race days it would check for new results every few minutes, for that day's regattas only. The app sits behind a club password, because most of our rowers are minors.
+> CrewDash reads the public results JSON that the CrewTimer results pages load (`crewtimer-results.firebaseio.com/results/<regattaId>.json`), one regatta at a time, after a club admin adds the regatta link. It keeps a copy so it doesn't re-fetch old regattas. It only checks for new results on race weekends: every 5 minutes, during the day, only for regattas from the day before race day to three days after. A typical race day is around 120 small requests per active regatta. When a club event's results are complete, it sends our families a notification.
 >
-> Before we go further, I wanted to check a few things with you:
+> Before we rely on this further, I wanted to check a few things with you:
 >
 > 1. Are you comfortable with us using the results data this way?
-> 2. Is there a supported API you'd prefer we use? The site links to an API.md in the crewtimer-doc repo, but that link currently returns 404.
-> 3. Is a few requests per minute per regatta on race day acceptable, or would you prefer a different rate?
-> 4. We've written the code so other clubs could run their own copy. Any concerns with that?
+> 2. Is there a supported API or feed you'd prefer we use? The site links to an API.md in the crewtimer-doc repo, but that link currently returns 404.
+> 3. Is a request every 5 minutes per regatta on race day acceptable, or would you prefer a different rate?
+> 4. Are start times and entries (bow numbers by event) published to the results feed before racing begins? It would let us show families when their crews race.
+> 5. We've written the code so other clubs could run their own copy. Any concerns with that?
 >
-> Happy to share the code or adjust anything to suit you. Thanks for CrewTimer, it's made following regattas much easier.
+> Happy to share the code or change anything to suit you. Thanks for CrewTimer. It's made following regattas much easier for all of us.
 >
 > [Your name]
 > Pittsford Crew
