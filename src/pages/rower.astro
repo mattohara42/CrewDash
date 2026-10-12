@@ -1,0 +1,82 @@
+---
+import FollowScript from "../components/FollowScript.astro";
+import FollowStar from "../components/FollowStar.astro";
+import StatTiles from "../components/StatTiles.astro";
+import Base from "../layouts/Base.astro";
+import { loadContext } from "../lib/context.js";
+import { formatDate, formatMargin, formatTime, ordinal, statusLabel } from "../lib/format.js";
+import { allLineups, buildRowers, rowerKey, rowerStats } from "../lib/rowers.js";
+
+const { store, records, club } = await loadContext();
+const key = rowerKey(Astro.url.searchParams.get("name") ?? "");
+const rower = buildRowers(records, await allLineups(records, store), club).find(
+  (r) => r.key === key,
+);
+if (!rower) return new Response("Rower not found", { status: 404 });
+const stats = rowerStats(rower);
+---
+
+<Base title={rower.name}>
+  <p class="eyebrow">
+    <a href="/rowers">Following</a>
+  </p>
+  <div class="head">
+    <h1>{rower.name}</h1>
+    <FollowStar rowerKey={rower.key} name={rower.name} />
+  </div>
+  <StatTiles
+    tiles={[
+      { label: "Races", value: stats.races },
+      { label: "Wins", value: stats.wins },
+      { label: "Top three", value: stats.podiums },
+    ]}
+  />
+  <p class="muted small">
+    From lineups coaches have entered. Races without a lineup don't show here.
+  </p>
+
+  {rower.races.map(({ record, event, fieldSize, boat, seat }) => (
+    <a class="card plain race" href={`/regatta/${record.regatta.id}`}>
+      <span class="muted small">
+        {formatDate(record.regatta.date)} · {record.regatta.title}
+      </span>
+      <strong>{event.name}</strong>
+      <span>
+        {boat.entry.place !== null ? (
+          <span class={`medal ${["", "gold", "silver", "bronze"][boat.entry.place] ?? ""}`}>
+            {ordinal(boat.entry.place)}
+          </span>
+        ) : (
+          statusLabel(boat.entry)
+        )}
+        {boat.entry.place !== null && <span class="muted"> of {fieldSize}</span>}
+        {boat.entry.adjustedTimeMs !== null && (
+          <span class="muted"> · {formatTime(boat.entry.adjustedTimeMs)}</span>
+        )}
+        {boat.marginMs !== null && <span class="muted"> · {formatMargin(boat.marginMs)}</span>}
+      </span>
+      <span class="muted small">
+        {seat} · Bow {boat.entry.bow}
+      </span>
+    </a>
+  ))}
+  <FollowScript />
+</Base>
+
+<style>
+  .head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .race {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    color: inherit;
+    text-decoration: none;
+  }
+  .small {
+    font-size: 0.85rem;
+  }
+</style>

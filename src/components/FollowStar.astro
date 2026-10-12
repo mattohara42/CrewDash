@@ -1,0 +1,30 @@
+---
+interface Props {
+  rowerKey: string;
+  name: string;
+}
+
+// A star that follows a rower on this phone. The script on the page wires it up.
+const { rowerKey, name } = Astro.props;
+---
+
+<button
+  type="button"
+  class="follow"
+  data-follow={rowerKey}
+  aria-pressed="false"
+  aria-label={`Follow ${name}`}
+>
+  ☆
+</button>
+
+<style>
+  .follow {
+    padding: 0 6px;
+    border: 0;
+    background: none;
+    color: var(--brand-3);
+    font-size: 1.4rem;
+    line-height: 1.2;
+  }
+</style>

@@ -1,0 +1,59 @@
+---
+// Keeps followed rowers on this phone only, and moves followed cards into the "Following" list
+// when the page has one. No accounts and nothing sent to the server.
+---
+
+<script>
+  const KEY = "crewdash-rowers";
+  function load(): Set<string> {
+    try {
+      return new Set(JSON.parse(localStorage.getItem(KEY) ?? "[]") as string[]);
+    } catch {
+      return new Set();
+    }
+  }
+  function save(keys: Set<string>) {
+    try {
+      localStorage.setItem(KEY, JSON.stringify([...keys]));
+    } catch {
+      // Private browsing can block storage. Following just won't stick.
+    }
+  }
+  const followed = load();
+
+  function render() {
+    document.querySelectorAll<HTMLButtonElement>("[data-follow]").forEach((b) => {
+      const on = followed.has(b.dataset.follow!);
+      b.textContent = on ? "★" : "☆";
+      b.setAttribute("aria-pressed", String(on));
+    });
+    const mine = document.querySelector<HTMLElement>("[data-following-list]");
+    const everyone = document.querySelector<HTMLElement>("[data-everyone-list]");
+    if (!mine || !everyone) return;
+    document.querySelectorAll<HTMLElement>("[data-rower-card]").forEach((card) => {
+      const target = followed.has(card.dataset.rowerCard!) ? mine : everyone;
+      if (card.parentElement !== target) target.append(card);
+    });
+    // Keep each list in name order after moving cards around.
+    for (const list of [mine, everyone]) {
+      [...list.children]
+        .sort((a, b) =>
+          (a as HTMLElement).dataset.sort!.localeCompare((b as HTMLElement).dataset.sort!),
+        )
+        .forEach((c) => list.append(c));
+    }
+    document.querySelector<HTMLElement>("[data-following-empty]")!.hidden =
+      mine.children.length > 0;
+  }
+
+  document.addEventListener("click", (e) => {
+    const star = (e.target as HTMLElement).closest<HTMLButtonElement>("[data-follow]");
+    if (!star) return;
+    const key = star.dataset.follow!;
+    if (followed.has(key)) followed.delete(key);
+    else followed.add(key);
+    save(followed);
+    render();
+  });
+  render();
+</script>

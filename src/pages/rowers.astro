@@ -1,0 +1,84 @@
+---
+import FollowScript from "../components/FollowScript.astro";
+import FollowStar from "../components/FollowStar.astro";
+import Base from "../layouts/Base.astro";
+import { loadContext } from "../lib/context.js";
+import { formatDate, ordinal, statusLabel } from "../lib/format.js";
+import { allLineups, buildRowers, rowerStats } from "../lib/rowers.js";
+
+const { store, records, club } = await loadContext();
+const rowers = buildRowers(records, await allLineups(records, store), club);
+---
+
+<Base title="Following">
+  <h1>Following</h1>
+  <p class="muted">
+    Follow yourself, your rower, or all of your rowers. Tap ☆ next to a name. Who you follow is
+    saved on this phone only.
+  </p>
+
+  <section>
+    <h2>Followed</h2>
+    <p class="muted" data-following-empty>
+      Nobody yet. Find a name below and tap ☆.
+    </p>
+    <div data-following-list></div>
+  </section>
+
+  <section>
+    <h2 class="everyone">Everyone</h2>
+    {rowers.length === 0 && (
+      <p class="card muted">
+        No lineups yet. Coaches add them on each regatta's page, and rowers appear here once they've
+        raced in one.
+      </p>
+    )}
+    <div data-everyone-list>
+      {rowers.map((r) => {
+        const latest = r.races[0]!;
+        const stats = rowerStats(r);
+        const result =
+          latest.boat.entry.place !== null
+            ? `${ordinal(latest.boat.entry.place)} of ${latest.fieldSize}`
+            : statusLabel(latest.boat.entry);
+        return (
+          <div class="card rower" data-rower-card={r.key} data-sort={r.name.toLowerCase()}>
+            <FollowStar rowerKey={r.key} name={r.name} />
+            <a class="plain who" href={`/rower?${new URLSearchParams({ name: r.key })}`}>
+              <strong>{r.name}</strong>
+              <span class="muted">
+                {stats.races} {stats.races === 1 ? "race" : "races"}
+                {stats.podiums > 0 && ` · ${stats.podiums} top three`}
+              </span>
+              <span class="muted small">
+                Latest: {latest.event.name}, {result} · {formatDate(latest.record.regatta.date)}
+              </span>
+            </a>
+          </div>
+        );
+      })}
+    </div>
+  </section>
+  <FollowScript />
+</Base>
+
+<style>
+  .everyone {
+    margin-top: 20px;
+  }
+  .rower {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    margin: 8px 0;
+  }
+  .who {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+  }
+  .small {
+    font-size: 0.85rem;
+  }
+</style>
