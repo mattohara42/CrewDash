@@ -1,14 +1,17 @@
 ---
 import Base from "../layouts/Base.astro";
 import { nearMatches } from "../lib/club-view.js";
-import { club } from "../lib/config.js";
+import { club as baseClub } from "../lib/config.js";
+import { loadContext } from "../lib/context.js";
 import { formatDate } from "../lib/format.js";
-import { blobsStore } from "../lib/store.js";
+import { seriesName, suggestSeries } from "../lib/history.js";
 
 const error = Astro.url.searchParams.get("error");
-const regattas = (await blobsStore().list())
-  .map(({ regatta, fetchedAt }) => ({ regatta, fetchedAt, near: nearMatches(regatta, club) }))
+const { records, settings, club } = await loadContext();
+const regattas = records
+  .map((record) => ({ ...record, near: nearMatches(record.regatta, club) }))
   .sort((a, b) => b.regatta.date.localeCompare(a.regatta.date));
+const merges = Object.entries(settings.eventAliases).sort(([a], [b]) => a.localeCompare(b));
 ---
 
 <Base title="Admin">
@@ -31,31 +34,109 @@ const regattas = (await blobsStore().list())
 
   <h2>Regattas</h2>
   {regattas.length === 0 && <p class="muted">None yet.</p>}
-  {regattas.map(({ regatta, fetchedAt, near }) => (
+  {regattas.map((record) => (
     <div class="card">
-      <a href={`/regatta/${regatta.id}`}>{regatta.title}</a>
+      <a href={`/regatta/${record.regatta.id}`}>{record.regatta.title}</a>
       <p class="muted">
-        {formatDate(regatta.date)} · {regatta.id} · fetched{" "}
-        {new Date(fetchedAt).toISOString().slice(0, 16).replace("T", " ")} UTC
+        {formatDate(record.regatta.date)} · {record.regatta.id} · fetched{" "}
+        {new Date(record.fetchedAt).toISOString().slice(0, 16).replace("T", " ")} UTC
       </p>
-      {near.length > 0 && (
-        <p class="notice-text">
-          Possible {club.name} names not counted: {near.join(", ")}. To count them, add them to the
-          aliases in club.json.
-        </p>
-      )}
+      {record.near.map((name) => (
+        <form method="post" action="/api/admin/aliases" class="row">
+          <span class="notice-text">Not counted: {name}</span>
+          <input type="hidden" name="name" value={name} />
+          <input type="hidden" name="back" value="/admin" />
+          <button type="submit" class="secondary">
+            Count as {club.name}
+          </button>
+        </form>
+      ))}
+      <form method="post" action="/api/admin/series" class="row">
+        <input type="hidden" name="id" value={record.regatta.id} />
+        <input type="hidden" name="back" value="/admin" />
+        <label class="grow">
+          Series
+          <input
+            type="text"
+            name="series"
+            value={record.series ?? ""}
+            placeholder={suggestSeries(record.regatta.title)}
+          />
+        </label>
+        <button type="submit" class="secondary">
+          Save
+        </button>
+      </form>
+      <p class="muted small">
+        Compared with: {seriesName(record)}. Leave blank to use the suggested name.
+      </p>
       <form method="post" action="/api/admin/regattas">
-        <input type="hidden" name="link" value={regatta.id} />
+        <input type="hidden" name="link" value={record.regatta.id} />
         <button type="submit" class="secondary">
           Refresh now
         </button>
       </form>
     </div>
   ))}
+
+  <h2>Names counted as {club.name}</h2>
+  <div class="card">
+    <p class="muted">From club.json: {baseClub.aliases.join(", ")}</p>
+    {settings.extraAliases.length === 0 && <p class="muted">No extra names added here.</p>}
+    {settings.extraAliases.map((name) => (
+      <form method="post" action="/api/admin/aliases" class="row">
+        <span>{name}</span>
+        <input type="hidden" name="name" value={name} />
+        <input type="hidden" name="action" value="remove" />
+        <input type="hidden" name="back" value="/admin" />
+        <button type="submit" class="secondary">
+          Remove
+        </button>
+      </form>
+    ))}
+  </div>
+
+  <h2>Grouped events</h2>
+  <div class="card">
+    {merges.length === 0 && (
+      <p class="muted">None. Group renamed events from a regatta's year-over-year page.</p>
+    )}
+    {merges.map(([from, into]) => (
+      <form method="post" action="/api/admin/event-aliases" class="row">
+        <span>
+          {from} → {into}
+        </span>
+        <input type="hidden" name="from" value={from} />
+        <input type="hidden" name="action" value="remove" />
+        <input type="hidden" name="back" value="/admin" />
+        <button type="submit" class="secondary">
+          Undo
+        </button>
+      </form>
+    ))}
+  </div>
 </Base>
 
 <style>
   .notice-text {
     color: var(--warn);
+  }
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 8px 12px;
+    margin: 8px 0;
+  }
+  .row > span {
+    flex: 1 1 200px;
+  }
+  .grow {
+    flex: 1 1 220px;
+    margin: 0;
+  }
+  .small {
+    font-size: 0.85rem;
+    margin-top: 0;
   }
 </style>

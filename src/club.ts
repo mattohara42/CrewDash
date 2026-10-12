@@ -9,7 +9,7 @@ export interface ClubConfig {
 
 export type ClubMatch = "match" | "near" | "none";
 
-function normalizeName(name: string): string {
+export function normalizeName(name: string): string {
   return name.trim().replace(/\s+/g, " ").toLowerCase();
 }
 

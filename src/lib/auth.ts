@@ -71,7 +71,9 @@ export function verifySessionToken(
 }
 
 /** Only same-site paths, so a crafted login link can't redirect elsewhere. */
-export function safeNext(next: string | null | undefined): string {
-  if (!next || !next.startsWith("/") || next.startsWith("//") || next.includes("\\")) return "/";
+export function safeNext(next: string | null | undefined, fallback = "/"): string {
+  if (!next || !next.startsWith("/") || next.startsWith("//") || next.includes("\\")) {
+    return fallback;
+  }
   return next;
 }

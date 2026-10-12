@@ -30,6 +30,19 @@ describe("fetchAndStore", () => {
   });
 });
 
+describe("fetchAndStore on refresh", () => {
+  it("keeps the series an admin set", async () => {
+    const store = memoryStore();
+    const first = await fetchAndStore("r1", store, respond(), now);
+    await store.put({ ...first, series: "Head of the Lake" });
+    await fetchAndStore("r1", store, respond(), new Date("2026-10-12T16:00:00Z"));
+    expect(await store.get("r1")).toMatchObject({
+      series: "Head of the Lake",
+      fetchedAt: "2026-10-12T16:00:00.000Z",
+    });
+  });
+});
+
 describe("refreshRecent", () => {
   it("re-fetches only recent regattas and keeps going after a failure", async () => {
     const store = memoryStore();

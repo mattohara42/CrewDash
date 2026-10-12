@@ -13,7 +13,9 @@ export async function fetchAndStore(
   now: Date = new Date(),
 ): Promise<StoredRegatta> {
   const regatta = normalizeRegatta(id, await fetchRegattaResults(id, fetchImpl));
-  const record = { regatta, fetchedAt: now.toISOString() };
+  // Keep what an admin set, such as the series name, across refreshes.
+  const existing = await store.get(id);
+  const record = { ...existing, regatta, fetchedAt: now.toISOString() };
   await store.put(record);
   return record;
 }
