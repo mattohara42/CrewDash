@@ -33,7 +33,6 @@ const clubCss = `
 
 const links = [
   { href: "/", label: "Season" },
-  { href: "/notifications", label: "Alerts" },
   { href: "/guide", label: "Rowing 101" },
   ...(canCoach(role) ? [{ href: "/coach", label: "Coach" }] : []),
   ...(role === "admin" ? [{ href: "/admin", label: "Admin" }] : []),
@@ -74,12 +73,33 @@ const announcements = role ? active(await blobsStore().getAnnouncements()) : [];
                 {l.label}
               </a>
             ))}
-            <form method="post" action="/api/logout">
-              <button type="submit" class="link">
-                Log out
-              </button>
-            </form>
           </nav>
+        )}
+        {role && (
+          <details class="settings">
+            <summary aria-label="Settings">
+              <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+                <path
+                  fill="currentColor"
+                  d="M19.4 13a7.5 7.5 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.3 7.3 0 0 0-1.7-1L15 3h-4l-.3 2.9a7.3 7.3 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.5 7.5 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1c.5.4 1.1.7 1.7 1L11 21h4l.3-2.9c.6-.3 1.2-.6 1.7-1l2.5 1 2-3.5zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"
+                  transform="translate(-1 0)"
+                />
+              </svg>
+            </summary>
+            <div class="menu">
+              <a
+                href="/notifications"
+                aria-current={path === "/notifications" ? "page" : undefined}
+              >
+                Alerts
+              </a>
+              <form method="post" action="/api/logout">
+                <button type="submit" class="link">
+                  Log out
+                </button>
+              </form>
+            </div>
+          </details>
         )}
       </div>
       <div class="stripes" aria-hidden="true"></div>
@@ -208,8 +228,72 @@ const announcements = role ? active(await blobsStore().getAnnouncements()) : [];
     color: var(--brand);
     font-weight: 700;
   }
-  header.site nav form {
+  /* Alerts and Log out sit behind a gear at the top right. */
+  header.site nav {
+    margin-left: auto;
+  }
+  .settings {
+    position: relative;
+  }
+  .settings summary {
+    list-style: none;
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    color: #ffffff;
+    cursor: pointer;
+  }
+  .settings summary::-webkit-details-marker {
+    display: none;
+  }
+  .settings summary:hover,
+  .settings[open] summary {
+    background: rgb(255 255 255 / 0.12);
+  }
+  .settings .menu {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 6px);
+    z-index: 20;
+    min-width: 160px;
+    padding: 6px;
+    border-radius: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: 0 8px 24px rgb(14 26 69 / 0.18);
+    display: flex;
+    flex-direction: column;
+  }
+  .settings .menu a,
+  .settings .menu .link {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 10px 12px;
+    border-radius: 8px;
+    color: var(--text);
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .settings .menu a:hover,
+  .settings .menu .link:hover {
+    background: var(--surface-2);
+  }
+  .settings .menu form {
     margin: 0;
+  }
+  /* On phones the gear stays beside the club name and the links take the next row. */
+  @media (max-width: 640px) {
+    header.site nav {
+      order: 3;
+      flex-basis: 100%;
+      margin-left: 0;
+    }
+    .settings {
+      margin-left: auto;
+    }
   }
   main {
     max-width: 960px;
