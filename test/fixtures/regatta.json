@@ -1,0 +1,86 @@
+{
+  "lastUpdatedEvent": "2",
+  "regattaInfo": {
+    "Title": "Made-up Head of the Lake",
+    "Date": "2026-10-11",
+    "RaceType": "Head",
+    "ResultsPendOfficial": true
+  },
+  "results": [
+    {
+      "Event": "12 Womens U19 8+",
+      "EventNum": "12",
+      "RaceType": "Head",
+      "Start": "9:00:00 AM",
+      "Official": true,
+      "entries": [
+        {
+          "Bow": "101",
+          "Crew": "Lakeview Rowing Club",
+          "CrewAbbrev": "LRC",
+          "Stroke": "Example, A.",
+          "Place": 1,
+          "RawTime": "19:28.427",
+          "AdjTime": "19:28.427",
+          "PenaltyCode": "Age 15(0)"
+        },
+        {
+          "Bow": "102",
+          "Crew": "Hillside Boat Club",
+          "CrewAbbrev": "HBC",
+          "Stroke": "Sample, B.",
+          "Place": 2,
+          "RawTime": "19:40.100",
+          "AdjTime": "19:45.100",
+          "PenaltyCode": "buoy(5s), Age 16(0)"
+        },
+        {
+          "Bow": "103",
+          "Crew": "Lakeview Rowing Club - EXH",
+          "CrewAbbrev": "LRC",
+          "Stroke": "Placeholder, C.",
+          "Place": "",
+          "RawTime": "21:02.5",
+          "AdjTime": "Exh 21:02.500",
+          "PenaltyCode": "Age 14(0), Exhib"
+        },
+        {
+          "Bow": "104",
+          "Crew": "Hillside Boat Club",
+          "CrewAbbrev": "HBC",
+          "Stroke": "Dummy, D.",
+          "Place": "",
+          "RawTime": "",
+          "AdjTime": "DNS",
+          "PenaltyCode": "Age 15(0)"
+        }
+      ]
+    },
+    {
+      "Event": "13 Mens Masters 60+ 1x",
+      "EventNum": "13",
+      "Start": "9:30:00 AM",
+      "Official": false,
+      "entries": {
+        "0": {
+          "Bow": "120",
+          "Crew": "Lakeview Rowing Club",
+          "Stroke": "Fictional, E.",
+          "Place": 1,
+          "RawTime": "1:02:30.049",
+          "AdjTime": "59:47.649",
+          "PenaltyCode": "Age 65(-162.4)"
+        },
+        "2": {
+          "Bow": "122",
+          "Crew": "Hillside Boat Club",
+          "Stroke": "Invented, F.",
+          "Place": "",
+          "RawTime": "",
+          "AdjTime": "",
+          "PenaltyCode": ""
+        }
+      }
+    }
+  ]
+}
