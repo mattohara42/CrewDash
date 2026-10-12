@@ -75,6 +75,24 @@ const events = latestYear
     </p>
     <p id="status" role="status" class="muted"></p>
   </form>
+
+  <details id="diagnostics" class="card" hidden>
+    <summary>Not getting alerts? Check this device</summary>
+    <p class="muted">
+      These details say whether this device is set up to show CrewDash notifications.
+    </p>
+    <dl id="checks"></dl>
+    <p class="buttons">
+      <button type="button" id="local" class="secondary">
+        Show a notification now
+      </button>
+    </p>
+    <p class="muted">
+      That button shows a notification straight from this device, without the push service. If it
+      doesn't appear, check Settings, then Notifications, then CrewDash, and make sure Focus or Do
+      Not Disturb is off.
+    </p>
+  </details>
 </Base>
 
 <script is:inline define:vars={{ publicKey }}>
@@ -129,8 +147,51 @@ const events = latestYear
     return reg ? reg.pushManager.getSubscription() : null;
   }
 
+  async function showChecks() {
+    const reg = await navigator.serviceWorker.getRegistration();
+    const sub = reg ? await reg.pushManager.getSubscription() : null;
+    const rows = [
+      ["Notification permission", Notification.permission],
+      ["Opened from Home Screen", installed ? "yes" : "no"],
+      ["Background worker", reg && reg.active ? "running" : reg ? "starting" : "not installed"],
+      ["Subscribed to push", sub ? `yes (${new URL(sub.endpoint).hostname})` : "no"],
+    ];
+    const list = $("checks");
+    list.replaceChildren();
+    for (const [label, value] of rows) {
+      const dt = document.createElement("dt");
+      dt.textContent = label;
+      const dd = document.createElement("dd");
+      dd.textContent = value;
+      list.append(dt, dd);
+    }
+  }
+
+  $("local").addEventListener("click", async () => {
+    try {
+      if ((await Notification.requestPermission()) !== "granted") {
+        status("Notifications are blocked for CrewDash on this device.");
+      } else {
+        const reg = await navigator.serviceWorker.register("/sw.js");
+        await navigator.serviceWorker.ready;
+        await reg.showNotification("CrewDash", {
+          body: "This device can show CrewDash notifications.",
+          icon: "/icons/icon-192.png",
+        });
+        status(
+          "Notification shown. If you didn't see it, check this device's notification settings.",
+        );
+      }
+    } catch (err) {
+      status(err.message || "Couldn't show a notification.");
+    }
+    showChecks();
+  });
+
   async function start() {
     form.hidden = false;
+    $("diagnostics").hidden = false;
+    $("diagnostics").addEventListener("toggle", showChecks);
     all.addEventListener("change", syncBoxes);
     const sub = await currentSubscription();
     if (sub) {
@@ -174,6 +235,7 @@ const events = latestYear
       await post("/api/push/subscribe", { subscription: sub.toJSON(), follow });
       showOn(true);
       status("Alerts are on for this device.");
+      showChecks();
     } catch (err) {
       status(err.message || "Couldn't turn on alerts.");
     }
@@ -219,5 +281,21 @@ const events = latestYear
   }
   ol {
     padding-left: 20px;
+  }
+  #checks {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 4px 12px;
+  }
+  #checks dt {
+    color: var(--muted);
+  }
+  #checks dd {
+    margin: 0;
+    font-weight: 700;
+  }
+  details summary {
+    cursor: pointer;
+    font-weight: 700;
   }
 </style>
