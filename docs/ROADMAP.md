@@ -1,6 +1,6 @@
 # CrewDash roadmap: ideas and next updates
 
-A design pass on what to build after Phase 1.5. [PLAN.md](PLAN.md) stays the record of what's decided. This file is a proposal for discussion, written 2026-10-12.
+A design pass on what to build after Phase 1.5. [PLAN.md](PLAN.md) stays the record of what's decided. This file is the agreed order of the next updates, written and agreed with the repo owner on 2026-10-12. The decisions are near the end.
 
 ## Who uses it, and when
 
@@ -77,18 +77,18 @@ What fits instead is one-way **announcements**. An admin or coach types a short 
 
 ## Proposed sequence of updates
 
-Each step is one or two PRs, ordered by value for effort. None of it is blocked on outside data except step 6.
+Each step is one or two PRs, ordered by value for effort. None of it is blocked on outside data except step 7.
 
-| #   | Update                                                                                                          | Mainly for            | Depends on                          | Size            |
-| --- | --------------------------------------------------------------------------------------------------------------- | --------------------- | ----------------------------------- | --------------- |
-| 1   | Rowing 101 page and term explanations on results                                                                | New parents           | Nothing                             | Small           |
-| 2   | Venue pages with map links, course facts and club tips, linked from each series                                 | Parents               | Venue content written by the club   | Small to medium |
-| 3   | Announcements (push and banner) and a link to the club chat                                                     | Coaches, parents      | Nothing                             | Small           |
-| 4   | Race-day Today view, with crews you follow saved on your phone                                                  | Everyone              | Steps 2 and 3 help                  | Medium          |
-| 5   | Analysis: gap to next place and to third, crews beaten, rivals head-to-head, pace per 500 m, weekend recap card | Rowers, coaches, club | Course lengths from step 2 for pace | Medium          |
-| 6   | Conditions: forecast along the course, flow, and historical weather in year over year                           | Everyone              | Step 2, Open-Meteo terms            | Medium          |
-| 7   | Schedule: estimated start and pass times, Add to calendar                                                       | Parents               | Experiment A                        | Medium          |
-| 8   | Season Wrapped and banquet mode                                                                                 | Club                  | End of season                       | Small           |
+| #   | Update                                                                                                           | Mainly for            | Depends on                            | Size            |
+| --- | ---------------------------------------------------------------------------------------------------------------- | --------------------- | ------------------------------------- | --------------- |
+| 1   | Rowing 101 page and term explanations on results                                                                 | New parents           | Nothing                               | Small           |
+| 2   | Venue pages with map links, course facts and club tips, linked from each series, and an editor on the admin page | Parents               | The club admin entering venue content | Medium          |
+| 3   | Coach login, announcements (push and banner) and a link to the club chat                                         | Coaches, parents      | A coach password in Netlify           | Small to medium |
+| 4   | Race-day Today view, with crews you follow saved on your phone                                                   | Everyone              | Steps 2 and 3 help                    | Medium          |
+| 5   | Analysis: gap to next place and to third, crews beaten, rivals head-to-head, pace per 500 m, weekend recap card  | Rowers, coaches, club | Course lengths from step 2 for pace   | Medium          |
+| 6   | Conditions: forecast along the course, flow, and historical weather in year over year                            | Everyone              | Step 2, Open-Meteo terms              | Medium          |
+| 7   | Schedule: estimated start and pass times, Add to calendar                                                        | Parents               | Experiment A                          | Medium          |
+| 8   | Season Wrapped and banquet mode                                                                                  | Club                  | End of season                         | Small           |
 
 Phase 2 (lineups) then unlocks rower pages, follow-a-rower alerts, the hot-seat checker and a Wrapped for each rower.
 
@@ -100,13 +100,15 @@ These are small and low-risk, and they decide whether some of the steps above ar
 - **B. Results speed.** Add the results speed log before the next race weekend. It's a few lines in the refresh and answers an open item in HANDOFF.md.
 - **C. Historical weather.** Look up Open-Meteo's archive for the 2025 and 2026 Head of the Genesee mornings and check the wind looks plausible against what people remember.
 
-## Decisions for the repo owner
+## Decisions
 
-1. **Priority.** Is the order above right? My suggestion is steps 1 to 3 first, since they're small and useful before the spring season.
-2. **Where venue guides and Rowing 101 club tips live.** The options are Markdown files in the repo (simplest, but someone technical has to edit them) or an editor on the admin page (more work, but the club admin can maintain them). This also stretches the "club-specific goes in `club.json`" rule. A `club/` folder holding `club.json` plus venue files might be the cleaner convention.
-3. **Coach role.** Do coaches use the admin password, or get their own login that can post announcements and notes but not change settings?
-4. **Messaging.** Are you happy with announcements instead of chat?
-5. **Recap images.** Is the club comfortable posting club-level result cards publicly?
+Made with the repo owner on 2026-10-12:
+
+1. **Order.** The sequence above stands, starting with steps 1 to 3.
+2. **Venue pages are edited by the admin** on the admin page and stored in Netlify Blobs with the other admin settings, so they stay out of git and `club.json` keeps its current role. The club tips on the Rowing 101 page use the same editor. The general Rowing 101 text is club-neutral and ships with the code. Blobs has no history, so the editor should include an export to a file the admin can keep.
+3. **Coaches get their own login.** A coach password, set in Netlify like the others, lets coaches post announcements and coach's notes but not change settings. The admin can do everything a coach can.
+4. **Announcements instead of chat.** Two-way messaging stays parked unless the club moves to personal logins.
+5. **Recap images** at club level (events and places, no rower names) can be posted publicly.
 
 ## Parked, and why
 
