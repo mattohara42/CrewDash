@@ -1,5 +1,6 @@
 ---
 import type { Announcement } from "../lib/announcements.js";
+import { club } from "../lib/config.js";
 
 interface Props {
   announcements: Announcement[];
@@ -11,7 +12,7 @@ const time = (iso: string) =>
     weekday: "short",
     hour: "numeric",
     minute: "2-digit",
-    timeZone: "America/New_York",
+    timeZone: club.timezone,
   });
 ---
 
