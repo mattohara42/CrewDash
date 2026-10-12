@@ -8,6 +8,8 @@ CrewDash shows a rowing club only its own boats and results, pulled from CrewTim
 
 Edit `club.json`: set the club's name and every crew name it appears under in CrewTimer results.
 
+Set `colors` in `club.json` too. `primary` is the header background behind white text, so it must be dark. `secondary` and `accent` are the two stripes under the header. `chart` holds bar and dot colors for light and dark themes, with a paler `muted` shade for last year in year-over-year charts. `npm run check` tests that the header text and chart marks keep enough contrast. Check chart colors for colorblind separation before changing them.
+
 ## Development
 
 Requires Node 22 or later.
