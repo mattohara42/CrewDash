@@ -6,7 +6,7 @@ Pittsford Crew is the first club. The code is club-neutral from the first commit
 
 ## Data sources
 
-**CrewTimer (results).** Each regatta's results are readable as public JSON at `https://crewtimer-results.firebaseio.com/results/<regattaId>.json`, where the regatta ID comes from the CrewTimer link (for example `r16329` in `crewtimer.com/regatta/r16329`). This is the same data the CrewTimer results page loads. It needs no login. Each entry has the event, bow number, club name and abbreviation, stroke's name, place, raw and adjusted times, and penalties. There is also a flag for whether results are official yet.
+**CrewTimer (results).** Each regatta's results are readable as public JSON at `https://crewtimer-results.firebaseio.com/results/<regattaId>.json`, where the regatta ID comes from the CrewTimer link (for example `r16329` in `crewtimer.com/regatta/r16329`). This is the same data the CrewTimer results page loads. It needs no login. Each entry has the event, bow number, club name and abbreviation, stroke's name, place, raw and adjusted times, and penalties. There is also a "pending official" flag, but regattas don't reliably clear it: the 2025 Head of the Genesee still shows it a year later.
 
 The full list of regattas is not readable, so CrewDash cannot discover which regattas a club raced. A club admin adds each one by pasting its CrewTimer link.
 
@@ -24,7 +24,7 @@ These come from the 2026 Head of the Genesee results (`r16329`) and shape the pa
 - Average crew age is buried in the penalty text, as in `buoy(5s), Age 16(0)`.
 - Exhibition entries have a blank place and a time like `Exh 09:34.509`. A boat races as exhibition when it can't medal, for example when a varsity rower fills in for a missing novice. A club's exhibition boats may carry a suffix such as "Pittsford Crew - EXH".
 - Times are strings such as `19:28.427`.
-- Results can be marked pending official. CrewDash re-fetches until they are final.
+- Results can be marked pending official, and that flag may never clear. CrewDash re-fetches a regatta on race day and for a few days after, then stops. An admin can trigger a refresh by hand if results are corrected later.
 
 ## Data model
 
@@ -37,8 +37,10 @@ Raw times are not compared across regattas. Head race courses differ in length a
 **Year over year at the same regatta** is a fair comparison, because the course is the same. It answers questions like "how did our novice 4+ do at the Head of the Genesee this year compared with last year?"
 
 - Each year is a separate CrewTimer regatta, and multi-day regattas have one per day. An admin tags each regatta with a series, such as "Head of the Genesee, Sunday". CrewDash suggests the tag by removing the year from the title.
-- Events are matched across years by name, because event numbers change. Events that don't match go to the admin review list.
-- The view shows each year's boats side by side with adjusted time (so masters handicaps are included), place, field size and margin behind the winner.
+- Events are matched across years by name, ignoring case and extra spaces, because event numbers change. CrewTimer names aren't always typed consistently ("Mens U17 4+" with two spaces in 2025). Renamed or split events, such as 2025's "Novice 8+" becoming separate men's and women's novice events in 2026, can't be matched automatically and go to the admin review list.
+- A series title is matched ignoring case, because titles vary ("Head of the Genesee - SUNDAY" in 2025, "- Sunday" in 2026).
+- The view shows each year's boats side by side with adjusted time (so masters handicaps are included), place, field size and margin behind the winner. A club often enters several boats in one event, so each year shows all of them in place order, not a single "the boat".
+- Field size changes a lot from year to year (the Men's U19 4+ grew from 7 crews to 12), so place is always shown with field size.
 - It notes that conditions vary from year to year, and the margin behind the winner helps because conditions affect every crew.
 - Exhibition boats are shown with an "exhibition" tag. Their lineup wasn't the normal one, so they shouldn't be read as that squad's result for the year.
 
@@ -59,7 +61,7 @@ Raw times are not compared across regattas. Head race courses differ in length a
 
 **Phase 1.5: Push notifications.** CrewDash becomes installable on a phone's home screen and sends web push notifications when a club boat gets a result.
 
-- A scheduled Netlify function polls CrewTimer every few minutes, only for regattas dated today whose results aren't yet official. It sends notifications for new or changed results. Scheduled functions have a 30-second limit, and one small fetch per active regatta fits within it.
+- A scheduled Netlify function polls CrewTimer every few minutes, only for regattas dated today. It sends notifications for new or changed results. Scheduled functions have a 30-second limit, and one small fetch per active regatta fits within it.
 - Phone subscriptions are stored in Netlify Blobs.
 - People can follow all club results or a single event. Following a rower comes with Phase 2.
 - Notifications name the event, bow, place and time. They don't name rowers until people opt in to following a rower, because notifications show on lock screens.
@@ -83,7 +85,7 @@ Most rowers are minors. Their results are already public on CrewTimer, but colle
 
 ## Hosting and access
 
-The app is hosted on Netlify. Netlify Functions handle fetching, Netlify Blobs stores normalized data, and a scheduled function refreshes results that are still pending official.
+The app is hosted on Netlify. Netlify Functions handle fetching, Netlify Blobs stores normalized data, and a scheduled function refreshes recent regattas.
 
 Netlify's built-in shared-password protection requires a paid Pro plan. The two options are:
 

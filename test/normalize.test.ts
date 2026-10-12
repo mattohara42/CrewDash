@@ -26,6 +26,11 @@ describe("normalizeRegatta", () => {
     expect(womens).toMatchObject({ num: "12", name: "Womens U19 8+", official: true });
   });
 
+  it("collapses repeated spaces in event names", () => {
+    const raw = { ...fixture, results: [{ Event: "7 Mens  U17   4+", EventNum: "7" }] };
+    expect(normalizeRegatta("r3", raw as RawRegattaResults).events[0]?.name).toBe("Mens U17 4+");
+  });
+
   it("falls back to the regatta race type", () => {
     expect(masters?.raceType).toBe("Head");
   });

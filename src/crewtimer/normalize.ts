@@ -101,7 +101,8 @@ export function normalizeEntry(raw: RawEntry): Entry {
 function normalizeEvent(raw: RawEvent, regattaRaceType: string): Event {
   const num = String(raw.EventNum);
   // "23 Mens HS Novice 4+" -> "Mens HS Novice 4+"
-  const name = raw.Event.startsWith(`${num} `) ? raw.Event.slice(num.length).trim() : raw.Event;
+  const event = raw.Event.replace(/\s+/g, " ").trim();
+  const name = event.startsWith(`${num} `) ? event.slice(num.length).trim() : event;
   return {
     num,
     name,
