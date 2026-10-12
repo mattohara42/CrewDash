@@ -1,6 +1,7 @@
 import { getStore } from "@netlify/blobs";
 import type { Regatta } from "../crewtimer/normalize.js";
 import { EMPTY_SETTINGS, parseSettings, type Settings } from "./settings.js";
+import type { ResultTimes } from "./speed.js";
 import { parseAnnouncements, type Announcement } from "./announcements.js";
 import { EMPTY_VENUES, parseVenueData, type VenueData } from "./venues.js";
 
@@ -10,6 +11,8 @@ export interface StoredRegatta {
   fetchedAt: string;
   // Series name set by an admin. When missing, it's suggested from the title.
   series?: string;
+  // Event number -> when its results appeared. See speed.ts.
+  resultTimes?: Record<string, ResultTimes>;
 }
 
 export interface RegattaStore {

@@ -5,11 +5,16 @@ import { club as baseClub } from "../lib/config.js";
 import { loadContext } from "../lib/context.js";
 import { formatDate } from "../lib/format.js";
 import { seriesName, suggestSeries } from "../lib/history.js";
+import { speedSummary } from "../lib/speed.js";
 
 const error = Astro.url.searchParams.get("error");
 const { records, settings, club } = await loadContext();
 const regattas = records
-  .map((record) => ({ ...record, near: nearMatches(record.regatta, club) }))
+  .map((record) => ({
+    ...record,
+    near: nearMatches(record.regatta, club),
+    speed: speedSummary(record, club.timezone),
+  }))
   .sort((a, b) => b.regatta.date.localeCompare(a.regatta.date));
 const merges = Object.entries(settings.eventAliases).sort(([a], [b]) => a.localeCompare(b));
 ---
@@ -44,6 +49,13 @@ const merges = Object.entries(settings.eventAliases).sort(([a], [b]) => a.locale
         {formatDate(record.regatta.date)} · {record.regatta.id} · fetched{" "}
         {new Date(record.fetchedAt).toISOString().slice(0, 16).replace("T", " ")} UTC
       </p>
+      {record.speed.events > 0 && (
+        <p class="muted small">
+          Results speed, over {record.speed.events} events: first result a median of{" "}
+          {record.speed.firstMin ?? "?"} min after the start, all results{" "}
+          {record.speed.allMin ?? "?"} min.
+        </p>
+      )}
       {record.near.map((name) => (
         <form method="post" action="/api/admin/aliases" class="row">
           <span class="notice-text">Not counted: {name}</span>
