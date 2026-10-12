@@ -1,5 +1,7 @@
 # CrewDash notes for Claude
 
+Start with `docs/HANDOFF.md` for current status, decisions and open items, then `docs/PLAN.md`.
+
 - Never commit real regatta data or real rower names. Tests use made-up fixtures only.
 - Keep code club-neutral. Anything club-specific goes in `club.json`.
 - Run `npm run check` before pushing.
