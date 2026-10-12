@@ -12,6 +12,8 @@ Phase 1 is built: an Astro app with the club password gate, a season page groupe
 
 Phase 1.5 is built: web push alerts. Phones subscribe on the Alerts page. The scheduled refresh runs every 5 minutes on race weekends only (Friday to Monday, 12:00 to 21:55 UTC, about 120 runs a race day), to save Netlify credits. It sends one alert per club event once every boat has a result, and an update if it changes later. Subscriptions and signing keys live in the `push` Blobs store. Push endpoints must be on a known push service's host, which prevents the server being pointed at arbitrary URLs.
 
+Roadmap step 1 is built: a Rowing 101 page (`/guide`) for new families, linked from the menu. Terms on results pages (exhibition, margin, penalties, handicap, statuses) link to it. Club-specific tips will come with the admin editor in step 2.
+
 Phase 2 (lineups and rower pages) still needs a `boats.xls` sample. How quickly CrewTimer results appear on race day is still unmeasured.
 
 A season is a calendar year for now. If the club thinks in fall and spring seasons, the event page can split them.

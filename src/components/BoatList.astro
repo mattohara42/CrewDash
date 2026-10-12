@@ -24,10 +24,19 @@ const MEDALS: Record<number, string> = { 1: "gold", 2: "silver", 3: "bronze" };
             <span class="muted">of {fieldSize}</span>
           </span>
         ) : (
-          <strong>{statusLabel(entry)}</strong>
+          <a
+            class="term"
+            href={`/guide#${entry.status === "exhibition" ? "exhibition" : "statuses"}`}
+          >
+            <strong>{statusLabel(entry)}</strong>
+          </a>
         )}
         {entry.adjustedTimeMs !== null && <span>{formatTime(entry.adjustedTimeMs)}</span>}
-        {marginMs !== null && <span class="muted">{formatMargin(marginMs)}</span>}
+        {marginMs !== null && (
+          <a class="term muted" href="/guide#margin">
+            {formatMargin(marginMs)}
+          </a>
+        )}
       </div>
       <div class="muted">
         Bow {entry.bow}
@@ -36,12 +45,18 @@ const MEDALS: Record<number, string> = { 1: "gold", 2: "silver", 3: "bronze" };
       </div>
       {wouldHavePlaced !== null && (
         <div class="muted">
-          Would have placed {ordinal(wouldHavePlaced)} (unofficial; exhibition boats can't medal)
+          <a class="term" href="/guide#would-have-placed">
+            Would have placed
+          </a>{" "}
+          {ordinal(wouldHavePlaced)} (unofficial; exhibition boats can't medal)
         </div>
       )}
       {entry.penalties.length > 0 && (
         <div class="muted">
-          Penalties:{" "}
+          <a class="term" href="/guide#penalties">
+            Penalties
+          </a>
+          :{" "}
           {entry.penalties
             .map((p) => (p.seconds !== null ? `${p.code} +${p.seconds}s` : p.code))
             .join(", ")}
@@ -51,7 +66,11 @@ const MEDALS: Record<number, string> = { 1: "gold", 2: "silver", 3: "bronze" };
         entry.handicapSeconds !== 0 &&
         entry.rawTimeMs !== null && (
           <div class="muted">
-            Raw time {formatTime(entry.rawTimeMs)}, handicap {entry.handicapSeconds}s
+            Raw time {formatTime(entry.rawTimeMs)},{" "}
+            <a class="term" href="/guide#handicap">
+              handicap
+            </a>{" "}
+            {entry.handicapSeconds}s
           </div>
         )}
     </li>
@@ -67,6 +86,12 @@ const MEDALS: Record<number, string> = { 1: "gold", 2: "silver", 3: "bronze" };
   li {
     padding: 8px 0;
     border-top: 1px solid var(--border);
+  }
+  /* Terms link to the Rowing 101 page. A dotted underline keeps them quieter than links. */
+  .term {
+    color: inherit;
+    text-decoration: underline dotted;
+    text-underline-offset: 3px;
   }
   .result {
     display: flex;
