@@ -31,3 +31,23 @@ describe("parseClubConfig", () => {
     },
   );
 });
+
+describe("blade colors", async () => {
+  const { parseClubConfig } = await import("../src/club.js");
+  const base = { name: "X", aliases: ["X"] };
+  it("default to the stripe colors and accept their own", () => {
+    const stripes = parseClubConfig({
+      ...base,
+      colors: { secondary: "#112233", accent: "#445566" },
+    });
+    expect(stripes.colors.blade).toEqual({ base: "#112233", tip: "#445566" });
+    const own = parseClubConfig({
+      ...base,
+      colors: { blade: { base: "#000000", tip: "#ffffff" } },
+    });
+    expect(own.colors.blade).toEqual({ base: "#000000", tip: "#ffffff" });
+    expect(() => parseClubConfig({ ...base, colors: { blade: { base: "red" } } })).toThrow(
+      /blade.base/,
+    );
+  });
+});

@@ -74,6 +74,7 @@ Not yet seen: a sprint regatta. Sprint results may use fields the parser doesn't
 - **RegattaCentral API access.** Declined on 2026-10-12. API access is limited to approved timing vendors for now. They're considering broader access and invited specific requirements, with no timeline. Our requirements reply (below) was sent on 2026-10-12. Lineups are coach-entered instead (see Status). Don't scrape RegattaCentral's website as a workaround.
 - **Sprint regatta link.** A CrewTimer link to a sprint regatta (for example the Pittsford Regatta) would let us test the parser on sprint results.
 - **Athlete-data policy.** The club should check whether it has a policy on publishing athlete information.
+- **OarSpotter.** Not yet asked about showing other clubs' blades. The draft email is below.
 - **Entazza (CrewTimer's developer).** Emailed on 2026-10-12 (the draft below). Waiting for a reply.
 - **Repo About panel.** Not yet set. Suggested values are below.
 
@@ -157,6 +158,25 @@ From RegattaCentral's API V4 documentation (`https://api.regattacentral.com/v4/`
 > - Venue location and course distance from the regatta details.
 >
 > Read-only access limited to our own club's data would cover everything we need. Happy to answer any questions, and good luck with the busy season.
+>
+> Matt O'Hara
+> Pittsford Crew
+
+## Draft email to OarSpotter
+
+For showing other clubs' blades next to their crews. Not yet sent. Find the contact address on oarspotter.com. Until they agree, CrewDash only draws Pittsford's own blade, from `colors.blade` in `club.json` (default: the stripe colors).
+
+> **Subject:** Permission to show OarSpotter blade images in a club results app
+>
+> Hello,
+>
+> I'm a parent volunteer with Pittsford Crew in Rochester, NY. We've built a small, non-commercial web app called CrewDash so our families and coaches can follow our club's results at regattas. It sits behind a club password because most of our rowers are minors.
+>
+> We'd love to show each club's blade next to its crews on our results pages. It makes a results list much easier to scan, and it's a nice touch for families who are new to the sport. OarSpotter is clearly the best source for that.
+>
+> Would you be comfortable with us linking to OarSpotter blade images for the clubs that appear in our results? We'd credit and link to OarSpotter wherever the blades appear. We could hotlink your images or keep a small cached copy, whichever you prefer. The number of views would be modest: one club's families and coaches, mostly on race weekends.
+>
+> If you'd rather we didn't, we completely understand. Thanks for building OarSpotter.
 >
 > Matt O'Hara
 > Pittsford Crew

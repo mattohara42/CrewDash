@@ -1,0 +1,24 @@
+---
+import { club } from "../lib/config.js";
+import { BLADE, BLADE_VIEWBOX, SHAFT, TIP } from "../lib/blade.js";
+
+interface Props {
+  width?: number;
+}
+
+// The club's oar blade, in its colors from club.json. Decorative.
+const { width = 48 } = Astro.props;
+const { base, tip } = club.colors.blade;
+---
+
+<svg
+  class="blade"
+  viewBox={BLADE_VIEWBOX}
+  width={width}
+  height={(width * 30) / 120}
+  aria-hidden="true"
+>
+  <path d={SHAFT} fill="#ffffff" opacity="0.85"></path>
+  <path d={BLADE} fill={base} stroke="#ffffff" stroke-width="1.5"></path>
+  <path d={TIP} fill={tip}></path>
+</svg>

@@ -1,5 +1,6 @@
 ---
 import Announcements from "../components/Announcements.astro";
+import Blade from "../components/Blade.astro";
 import { active } from "../lib/announcements.js";
 import { canCoach } from "../lib/auth.js";
 import { club } from "../lib/config.js";
@@ -67,6 +68,7 @@ const announcements = role ? active(await blobsStore().getAnnouncements()) : [];
             {club.name.charAt(0)}
           </span>
           <span>{club.name}</span>
+          <Blade width={44} />
         </a>
         {role && (
           <nav>
