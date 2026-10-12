@@ -4,6 +4,7 @@ import { blobsStore } from "../../../lib/store.js";
 import {
   MAX_TEXT,
   deleteVenue,
+  parseBearing,
   safeUrl,
   parsePlaces,
   saveVenue,
@@ -35,11 +36,22 @@ export const POST: APIRoute = async ({ request, redirect }) => {
         );
       }
       const km = Number(field("courseLengthKm"));
+      const bearing = parseBearing(field("courseBearing"));
+      if (bearing === undefined) {
+        return redirect(
+          withError(
+            back,
+            "Course direction should be a compass point like SW, or degrees from 0 to 360.",
+          ),
+          303,
+        );
+      }
       await store.putVenues(
         saveVenue(data, {
           id: field("id") || undefined,
           name,
           courseLengthM: field("courseLengthKm") && km > 0 ? Math.round(km * 1000) : null,
+          courseBearing: bearing,
           places: parsed.places,
           notes: field("notes").slice(0, MAX_TEXT),
         }),

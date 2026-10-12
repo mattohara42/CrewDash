@@ -1,17 +1,19 @@
 ---
 import type { TodayRegatta } from "../lib/today.js";
 import type { Venue } from "../lib/venues.js";
+import ConditionsLine from "./ConditionsLine.astro";
 import VenueCard from "./VenueCard.astro";
+import type { Conditions } from "../lib/conditions.js";
 
 interface Props {
-  regattas: (TodayRegatta & { venue: Venue | null })[];
+  regattas: (TodayRegatta & { venue: Venue | null; conditions: Conditions | null })[];
 }
 
 const { regattas } = Astro.props;
 ---
 
 <section class="today" data-today>
-  {regattas.map(({ record, when, events, venue }) => (
+  {regattas.map(({ record, when, events, venue, conditions }) => (
     <div class="card race">
       <p class="eyebrow">{when}</p>
       <h2>
@@ -19,6 +21,9 @@ const { regattas } = Astro.props;
           {record.regatta.title}
         </a>
       </h2>
+      {conditions && (
+        <ConditionsLine conditions={conditions} courseBearing={venue?.courseBearing ?? null} />
+      )}
       <p class="next muted" data-next hidden />
       {events.length === 0 ? (
         <p class="muted">No club boats listed yet.</p>

@@ -52,6 +52,7 @@ describe("seasonWrapped", () => {
     let venues = saveVenue(EMPTY_VENUES, {
       name: "Lake",
       courseLengthM: 4500,
+      courseBearing: null,
       places: [],
       notes: "",
     });

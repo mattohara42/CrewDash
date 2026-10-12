@@ -11,7 +11,13 @@ import {
   venueForSeries,
 } from "../src/lib/venues.js";
 
-const lake = { name: "Lakeview Basin", courseLengthM: 4800, places: [], notes: "" };
+const lake = {
+  name: "Lakeview Basin",
+  courseLengthM: 4800,
+  courseBearing: null,
+  places: [],
+  notes: "",
+};
 
 describe("parseCoordinates", () => {
   it.each([
@@ -91,7 +97,9 @@ describe("venues", () => {
       clubTips: 7,
     });
     expect(data).toEqual({
-      venues: [{ id: "a", name: "A", courseLengthM: null, places: [], notes: "" }],
+      venues: [
+        { id: "a", name: "A", courseLengthM: null, courseBearing: null, places: [], notes: "" },
+      ],
       seriesVenue: { s: "a" },
       clubTips: "",
       chatUrl: "",

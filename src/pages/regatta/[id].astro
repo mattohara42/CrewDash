@@ -1,6 +1,7 @@
 ---
 import BoatList from "../../components/BoatList.astro";
 import StatTiles from "../../components/StatTiles.astro";
+import ConditionsLine from "../../components/ConditionsLine.astro";
 import VenueCard from "../../components/VenueCard.astro";
 import Base from "../../layouts/Base.astro";
 import { clubEvents, clubSummary } from "../../lib/club-view.js";
@@ -10,6 +11,8 @@ import { regattaYear, regattasInSeries, seriesKey, seriesName } from "../../lib/
 import { isRecent } from "../../lib/refresh.js";
 import { eventKey } from "../../lib/settings.js";
 import { venueForSeries } from "../../lib/venues.js";
+import { regattaConditions } from "../../lib/conditions.js";
+import { localDate } from "../../lib/today.js";
 
 const { store, records, settings, club } = await loadContext();
 const record = records.find((r) => r.regatta.id === Astro.params.id);
@@ -21,6 +24,11 @@ const summary = clubSummary(events);
 const year = regattaYear(regatta);
 const series = seriesName(record);
 const venue = venueForSeries(await store.getVenues(), series);
+const conditions = await regattaConditions(record, venue, store.conditions, {
+  timeZone: club.timezone,
+  units: club.units,
+  today: localDate(new Date(), club.timezone),
+});
 const otherYears = regattasInSeries(records, seriesKey(series)).length > 1;
 const updated = new Date(fetchedAt).toLocaleString("en-US", {
   dateStyle: "medium",
@@ -42,6 +50,9 @@ const updated = new Date(fetchedAt).toLocaleString("en-US", {
         Compare with other years of {series}
       </a>
     </p>
+  )}
+  {conditions && (
+    <ConditionsLine conditions={conditions} courseBearing={venue?.courseBearing ?? null} />
   )}
   {venue && <VenueCard venue={venue} />}
   {isRecent(regatta.date) && <p class="card notice">Results may still change.</p>}
