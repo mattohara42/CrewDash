@@ -26,6 +26,8 @@ const summary = clubSummary(events);
 const year = regattaYear(regatta);
 const series = seriesName(record);
 const notes = await store.getNotes(regatta.id);
+// Only today's and future regattas offer a calendar entry.
+const upcoming = regatta.date >= localDate(new Date(), club.timezone);
 const canNote = canCoach(Astro.locals.role);
 const back = `/regatta/${regatta.id}`;
 const venue = venueForSeries(await store.getVenues(), series);
@@ -47,8 +49,13 @@ const updated = new Date(fetchedAt).toLocaleString("en-US", {
   <p class="muted">
     {formatDate(regatta.date)} · Results fetched {updated} ET ·{" "}
     <a href={`https://www.crewtimer.com/regatta/${regatta.id}`}>Full results on CrewTimer</a> ·{" "}
-    <a href={`/recap?id=${regatta.id}`}>Weekend recap</a> ·{" "}
-    <a href={`/api/calendar?id=${regatta.id}`}>Add to calendar</a>
+    <a href={`/recap?id=${regatta.id}`}>Weekend recap</a>
+    {upcoming && (
+      <>
+        {" · "}
+        <a href={`/api/calendar?id=${regatta.id}`}>Add to calendar</a>
+      </>
+    )}
   </p>
   {otherYears && (
     <p>
