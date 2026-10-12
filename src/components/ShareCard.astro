@@ -1,5 +1,6 @@
 ---
 import { club } from "../lib/config.js";
+import { BLADE, SHAFT, TIP } from "../lib/blade.js";
 
 interface Props {
   title: string;
@@ -20,6 +21,7 @@ const data = JSON.stringify({
   lines,
   filename,
   colors: club.colors,
+  blade: { shaft: SHAFT, blade: BLADE, tip: TIP },
 });
 ---
 
@@ -38,7 +40,13 @@ const data = JSON.stringify({
     stats: { label: string; value: string | number }[];
     lines: string[];
     filename: string;
-    colors: { primary: string; secondary: string; accent: string };
+    colors: {
+      primary: string;
+      secondary: string;
+      accent: string;
+      blade: { base: string; tip: string };
+    };
+    blade: { shaft: string; blade: string; tip: string };
   };
 
   function wrap(ctx: CanvasRenderingContext2D, text: string, width: number): string[] {
@@ -70,6 +78,21 @@ const data = JSON.stringify({
     ctx.fillRect(0, 0, W, 18);
     ctx.fillStyle = card.colors.accent;
     ctx.fillRect(0, 18, W, 18);
+
+    // The club's blade in the top right corner, three times its 120 x 30 drawing size.
+    ctx.save();
+    ctx.translate(W - 80 - 360, 70);
+    ctx.scale(3, 3);
+    ctx.fillStyle = "rgba(255,255,255,0.85)";
+    ctx.fill(new Path2D(card.blade.shaft));
+    ctx.fillStyle = card.colors.blade.base;
+    ctx.fill(new Path2D(card.blade.blade));
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 1.5;
+    ctx.stroke(new Path2D(card.blade.blade));
+    ctx.fillStyle = card.colors.blade.tip;
+    ctx.fill(new Path2D(card.blade.tip));
+    ctx.restore();
 
     let y = 130;
     ctx.fillStyle = card.colors.accent;

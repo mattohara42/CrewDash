@@ -16,6 +16,8 @@ export interface ClubColors {
   accent: string;
   // Chart colors per theme. Run them through a palette validator before changing.
   chart: { light: ChartColors; dark: ChartColors };
+  // The club's oar blade: its main color and the color of the tip band.
+  blade: { base: string; tip: string };
 }
 
 // What results matching needs: the club's name and the names it races under.
@@ -54,6 +56,7 @@ export const DEFAULT_COLORS: ClubColors = {
     light: { strong: "#3b5bb0", muted: "#a3b4de" },
     dark: { strong: "#b8860b", muted: "#6e5414" },
   },
+  blade: { base: "#2f6fb5", tip: "#e0a100" },
 };
 
 const HEX = /^#[0-9a-f]{6}$/i;
@@ -73,11 +76,19 @@ function parseColors(value: unknown): ClubColors {
     strong: hex(chart[mode]?.strong, DEFAULT_COLORS.chart[mode].strong, `chart.${mode}.strong`),
     muted: hex(chart[mode]?.muted, DEFAULT_COLORS.chart[mode].muted, `chart.${mode}.muted`),
   });
+  const secondary = hex(v.secondary, DEFAULT_COLORS.secondary, "secondary");
+  const accent = hex(v.accent, DEFAULT_COLORS.accent, "accent");
+  // Without its own colors, the blade uses the stripe colors.
+  const blade = (v.blade ?? {}) as Record<string, unknown>;
   return {
     primary: hex(v.primary, DEFAULT_COLORS.primary, "primary"),
-    secondary: hex(v.secondary, DEFAULT_COLORS.secondary, "secondary"),
-    accent: hex(v.accent, DEFAULT_COLORS.accent, "accent"),
+    secondary,
+    accent,
     chart: { light: theme("light"), dark: theme("dark") },
+    blade: {
+      base: hex(blade.base, secondary, "blade.base"),
+      tip: hex(blade.tip, accent, "blade.tip"),
+    },
   };
 }
 
