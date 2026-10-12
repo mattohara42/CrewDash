@@ -5,4 +5,9 @@ export default tseslint.config(
   { ignores: ["node_modules", "dist", ".netlify", ".astro"] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
+  {
+    // The service worker runs in the browser, not Node.
+    files: ["public/sw.js"],
+    languageOptions: { globals: { self: "readonly", URL: "readonly" } },
+  },
 );

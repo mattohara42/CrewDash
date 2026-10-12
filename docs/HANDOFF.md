@@ -10,7 +10,9 @@ Phase 0 is done: the CrewTimer parser (`src/crewtimer/`) and club matching (`clu
 
 Phase 1 is built: an Astro app with the club password gate, a season page grouped by year, regatta pages, year-over-year series pages, a per-season event page, an admin page and a scheduled refresh. Admins can count extra crew names as the club, group renamed events and override a regatta's series name. Those settings are stored in Netlify Blobs, not in git. `npm run check` runs lint, formatting, `astro check`, the tests and the production build. CI runs the same check on every PR.
 
-Phase 1.5 (push notifications) is next. Phase 2 (lineups and rower pages) still needs a `boats.xls` sample.
+Phase 1.5 is built: web push alerts. Phones subscribe on the Alerts page. The scheduled refresh, now every 5 minutes, sends one alert per club event once every boat has a result, and an update if it changes later. Subscriptions and signing keys live in the `push` Blobs store. Push endpoints must be on a known push service's host, which prevents the server being pointed at arbitrary URLs.
+
+Phase 2 (lineups and rower pages) still needs a `boats.xls` sample. How quickly CrewTimer results appear on race day is still unmeasured.
 
 A season is a calendar year for now. If the club thinks in fall and spring seasons, the event page can split them.
 

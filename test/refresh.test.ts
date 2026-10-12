@@ -33,7 +33,7 @@ describe("fetchAndStore", () => {
 describe("fetchAndStore on refresh", () => {
   it("keeps the series an admin set", async () => {
     const store = memoryStore();
-    const first = await fetchAndStore("r1", store, respond(), now);
+    const { record: first } = await fetchAndStore("r1", store, respond(), now);
     await store.put({ ...first, series: "Head of the Lake" });
     await fetchAndStore("r1", store, respond(), new Date("2026-10-12T16:00:00Z"));
     expect(await store.get("r1")).toMatchObject({
@@ -46,7 +46,7 @@ describe("fetchAndStore on refresh", () => {
 describe("refreshRecent", () => {
   it("re-fetches only recent regattas and keeps going after a failure", async () => {
     const store = memoryStore();
-    const base = (await fetchAndStore("r1", store, respond(), now)).regatta;
+    const base = (await fetchAndStore("r1", store, respond(), now)).record.regatta;
     await store.put({ regatta: { ...base, id: "r2", date: "2026-10-12" }, fetchedAt: "" });
     await store.put({ regatta: { ...base, id: "r3", date: "2026-10-11" }, fetchedAt: "" });
     await store.put({ regatta: { ...base, id: "r4", date: "2025-10-12" }, fetchedAt: "" });
@@ -59,7 +59,9 @@ describe("refreshRecent", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
 
     // r1's fixture date is 2026-10-11, so it's recent too.
-    expect(await refreshRecent(store, fetchImpl, now)).toEqual(["r1", "r3"]);
+    const refreshed = await refreshRecent(store, fetchImpl, now);
+    expect(refreshed.map((r) => r.record.regatta.id)).toEqual(["r1", "r3"]);
+    expect(refreshed.every((r) => r.previous !== null)).toBe(true);
     expect(fetchImpl).toHaveBeenCalledTimes(3);
     expect((await store.get("r2"))?.fetchedAt).toBe("");
   });
