@@ -18,6 +18,8 @@ Step 3 is built: a coach login (`COACH_PASSWORD`) opens `/coach`, where coaches 
 
 Step 4 is built: on the day before and the day of a regatta, the home page leads with a race-day card. It lists the club's events in start order with each boat's result so far, counts down to the next start, and shows the venue card. A star follows an event on that phone only (stored in the browser), with a filter for followed crews. The page reloads every 5 minutes while open, matching the refresh. "Today" uses `timezone` from `club.json` (default `America/New_York`), which the announcement and regatta-page times now use too.
 
+Step 5 is half built. Each placed boat shows its winning margin or the gap to the crew one place up, the gap to third, and how many crews it beat, all from adjusted times in the same race. Pace per 500 m (from raw time) shows on regatta and series pages when the venue has a course length. Still to come: rival head-to-head, the weekend recap card, CSV export and coach's notes.
+
 Phase 2 (lineups and rower pages) still needs a `boats.xls` sample. How quickly CrewTimer results appear on race day is still unmeasured.
 
 A season is a calendar year for now. If the club thinks in fall and spring seasons, the event page can split them.

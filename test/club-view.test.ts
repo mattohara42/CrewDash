@@ -53,3 +53,48 @@ describe("nearMatches", () => {
     expect(nearMatches(regatta, withExh)).toEqual([]);
   });
 });
+
+describe("gaps between crews", () => {
+  const entry = (crew: string, bow: string, place: number, time: string) => ({
+    Bow: bow,
+    Crew: crew,
+    Place: place,
+    RawTime: time,
+    AdjTime: time,
+  });
+  const raw: RawRegattaResults = {
+    regattaInfo: { Title: "Made-up Sprints", Date: "2026-05-02" },
+    results: [
+      {
+        Event: "1 Womens U17 4+",
+        EventNum: "1",
+        entries: [
+          entry("Lakeview Rowing Club", "1", 1, "07:00.000"),
+          entry("Hillside Boat Club", "2", 2, "07:02.500"),
+          entry("Hillside Boat Club", "3", 3, "07:05.000"),
+          entry("Hillside Boat Club", "4", 4, "07:06.000"),
+          entry("Lakeview Rowing Club", "5", 5, "07:06.900"),
+        ],
+      },
+    ],
+  };
+  const [event] = clubEvents(normalizeRegatta("r2", raw), club);
+
+  it("gives the winner its winning margin", () => {
+    expect(event?.boats[0]).toMatchObject({
+      wonByMs: 2500,
+      gapUpMs: null,
+      offThirdMs: null,
+      beaten: 4,
+    });
+  });
+
+  it("gives other boats the gap one place up and to third", () => {
+    expect(event?.boats[1]).toMatchObject({
+      wonByMs: null,
+      gapUpMs: 900,
+      offThirdMs: 1900,
+      beaten: 0,
+    });
+  });
+});

@@ -1,80 +1,114 @@
 ---
 import type { ClubBoat } from "../lib/club-view.js";
-import { formatMargin, formatTime, ordinal, statusLabel } from "../lib/format.js";
+import {
+  formatGap,
+  formatMargin,
+  formatTime,
+  ordinal,
+  pacePer500,
+  statusLabel,
+} from "../lib/format.js";
 
 interface Props {
   boats: ClubBoat[];
   fieldSize: number;
   clubName: string;
+  // From the venue, when known. Pace only makes sense on one course.
+  courseLengthM?: number | null;
 }
 
 // Exhibition boats never have a place, so their status label already marks them.
-const { boats, fieldSize, clubName } = Astro.props;
+const { boats, fieldSize, clubName, courseLengthM } = Astro.props;
+
+// "1.2 s behind 2nd · 3.4 s off third · beat 8 crews"
+function analysis(boat: ClubBoat): string {
+  const parts: string[] = [];
+  if (boat.wonByMs !== null) parts.push(`won by ${formatGap(boat.wonByMs)}`);
+  if (boat.gapUpMs !== null && boat.entry.place !== null) {
+    parts.push(`${formatGap(boat.gapUpMs)} behind ${ordinal(boat.entry.place - 1)}`);
+  }
+  if (boat.offThirdMs !== null) parts.push(`${formatGap(boat.offThirdMs)} off third`);
+  if (boat.beaten) parts.push(`beat ${boat.beaten} ${boat.beaten === 1 ? "crew" : "crews"}`);
+  return parts.join(" · ");
+}
 // The place is always written out, so the medal color is never the only cue.
 const MEDALS: Record<number, string> = { 1: "gold", 2: "silver", 3: "bronze" };
 ---
 
 <ul class="boats">
-  {boats.map(({ entry, marginMs, wouldHavePlaced }) => (
-    <li>
-      <div class="result">
-        {entry.place !== null ? (
-          <span>
-            <span class={`medal ${MEDALS[entry.place] ?? ""}`}>{ordinal(entry.place)}</span>{" "}
-            <span class="muted">of {fieldSize}</span>
-          </span>
-        ) : (
-          <a
-            class="term"
-            href={`/guide#${entry.status === "exhibition" ? "exhibition" : "statuses"}`}
-          >
-            <strong>{statusLabel(entry)}</strong>
-          </a>
-        )}
-        {entry.adjustedTimeMs !== null && <span>{formatTime(entry.adjustedTimeMs)}</span>}
-        {marginMs !== null && (
-          <a class="term muted" href="/guide#margin">
-            {formatMargin(marginMs)}
-          </a>
-        )}
-      </div>
-      <div class="muted">
-        Bow {entry.bow}
-        {entry.stroke && ` · Stroke ${entry.stroke}`}
-        {entry.crew !== clubName && ` · ${entry.crew}`}
-      </div>
-      {wouldHavePlaced !== null && (
-        <div class="muted">
-          <a class="term" href="/guide#would-have-placed">
-            Would have placed
-          </a>{" "}
-          {ordinal(wouldHavePlaced)} (unofficial; exhibition boats can't medal)
+  {boats.map((boat) => {
+    const { entry, marginMs, wouldHavePlaced } = boat;
+    const summary = analysis(boat);
+    return (
+      <li>
+        <div class="result">
+          {entry.place !== null ? (
+            <span>
+              <span class={`medal ${MEDALS[entry.place] ?? ""}`}>{ordinal(entry.place)}</span>{" "}
+              <span class="muted">of {fieldSize}</span>
+            </span>
+          ) : (
+            <a
+              class="term"
+              href={`/guide#${entry.status === "exhibition" ? "exhibition" : "statuses"}`}
+            >
+              <strong>{statusLabel(entry)}</strong>
+            </a>
+          )}
+          {entry.adjustedTimeMs !== null && <span>{formatTime(entry.adjustedTimeMs)}</span>}
+          {marginMs !== null && (
+            <a class="term muted" href="/guide#margin">
+              {formatMargin(marginMs)}
+            </a>
+          )}
         </div>
-      )}
-      {entry.penalties.length > 0 && (
+        {summary && <div class="analysis">{summary}</div>}
         <div class="muted">
-          <a class="term" href="/guide#penalties">
-            Penalties
-          </a>
-          :{" "}
-          {entry.penalties
-            .map((p) => (p.seconds !== null ? `${p.code} +${p.seconds}s` : p.code))
-            .join(", ")}
+          Bow {entry.bow}
+          {entry.stroke && ` · Stroke ${entry.stroke}`}
+          {entry.crew !== clubName && ` · ${entry.crew}`}
+          {courseLengthM && entry.rawTimeMs !== null && (
+            <>
+              {" · "}
+              <a class="term" href="/guide#pace">
+                {pacePer500(entry.rawTimeMs, courseLengthM)} /500 m
+              </a>
+            </>
+          )}
         </div>
-      )}
-      {entry.handicapSeconds !== null &&
-        entry.handicapSeconds !== 0 &&
-        entry.rawTimeMs !== null && (
+        {wouldHavePlaced !== null && (
           <div class="muted">
-            Raw time {formatTime(entry.rawTimeMs)},{" "}
-            <a class="term" href="/guide#handicap">
-              handicap
+            <a class="term" href="/guide#would-have-placed">
+              Would have placed
             </a>{" "}
-            {entry.handicapSeconds}s
+            {ordinal(wouldHavePlaced)} (unofficial; exhibition boats can't medal)
           </div>
         )}
-    </li>
-  ))}
+        {entry.penalties.length > 0 && (
+          <div class="muted">
+            <a class="term" href="/guide#penalties">
+              Penalties
+            </a>
+            :{" "}
+            {entry.penalties
+              .map((p) => (p.seconds !== null ? `${p.code} +${p.seconds}s` : p.code))
+              .join(", ")}
+          </div>
+        )}
+        {entry.handicapSeconds !== null &&
+          entry.handicapSeconds !== 0 &&
+          entry.rawTimeMs !== null && (
+            <div class="muted">
+              Raw time {formatTime(entry.rawTimeMs)},{" "}
+              <a class="term" href="/guide#handicap">
+                handicap
+              </a>{" "}
+              {entry.handicapSeconds}s
+            </div>
+          )}
+      </li>
+    );
+  })}
 </ul>
 
 <style>
@@ -92,6 +126,9 @@ const MEDALS: Record<number, string> = { 1: "gold", 2: "silver", 3: "bronze" };
     color: inherit;
     text-decoration: underline dotted;
     text-underline-offset: 3px;
+  }
+  .analysis {
+    font-size: 0.92rem;
   }
   .result {
     display: flex;

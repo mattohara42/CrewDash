@@ -8,6 +8,14 @@ export interface ClubBoat {
   // For exhibition boats: where their time would have ranked among eligible
   // crews. Unofficial, never a real place.
   wouldHavePlaced: number | null;
+  // For placed boats, from adjusted times in the same race:
+  // behind the crew one place up, or ahead of second for a winner.
+  gapUpMs: number | null;
+  wonByMs: number | null;
+  // Behind third place, for boats placed 4th or lower.
+  offThirdMs: number | null;
+  // Crews that finished behind this one.
+  beaten: number | null;
 }
 
 export interface ClubEvent {
@@ -38,11 +46,15 @@ export function clubEvents(regatta: Regatta, club: ClubIdentity): ClubEvent[] {
 
     const finishedTimes = event.entries
       .filter((e) => e.status === "finished" && e.adjustedTimeMs !== null)
-      .map((e) => e.adjustedTimeMs!);
+      .map((e) => e.adjustedTimeMs!)
+      .sort((a, b) => a - b);
     const winnerMs = finishedTimes.length ? Math.min(...finishedTimes) : null;
 
     const boats = ours.map((entry): ClubBoat => {
       const timed = entry.adjustedTimeMs !== null && winnerMs !== null;
+      const own = entry.adjustedTimeMs;
+      const placed = entry.place !== null && entry.status === "finished" && own !== null;
+      const ahead = placed ? finishedTimes.filter((t) => t < own!) : [];
       return {
         entry,
         marginMs: timed ? entry.adjustedTimeMs! - winnerMs! : null,
@@ -50,6 +62,13 @@ export function clubEvents(regatta: Regatta, club: ClubIdentity): ClubEvent[] {
           entry.status === "exhibition" && entry.adjustedTimeMs !== null
             ? 1 + finishedTimes.filter((t) => t < entry.adjustedTimeMs!).length
             : null,
+        gapUpMs: ahead.length > 0 ? own! - ahead.at(-1)! : null,
+        wonByMs:
+          placed && ahead.length === 0 && finishedTimes.length > 1
+            ? (finishedTimes.find((t) => t > own!) ?? own!) - own!
+            : null,
+        offThirdMs: placed && ahead.length >= 3 ? own! - finishedTimes[2]! : null,
+        beaten: placed ? finishedTimes.filter((t) => t > own!).length : null,
       };
     });
 

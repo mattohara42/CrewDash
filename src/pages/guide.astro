@@ -84,6 +84,17 @@ const { clubTips, chatUrl } = await blobsStore().getVenues();
         "+0:12.3" means 12.3 seconds behind the winner. Weather and water affect every crew in a
         race, so the margin is a fairer measure than the time alone.
       </dd>
+      <dt id="gaps">Gaps and crews beaten</dt>
+      <dd>
+        "2.1 s behind 3rd" is how far the crew one place up finished ahead. "1.4 s off third" is the
+        gap to a medal. Both come from adjusted times in the same race.
+      </dd>
+      <dt id="pace">Pace per 500 m</dt>
+      <dd>
+        The time on the water spread over each 500 metres of the course, the unit rowers train in.
+        It only shows when the venue's course length is known, and it only compares fairly on the
+        same course.
+      </dd>
       <dt id="penalties">Penalties</dt>
       <dd>
         Seconds added for breaking a rule, such as hitting a buoy or getting in another crew's way.
