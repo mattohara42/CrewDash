@@ -167,6 +167,42 @@ const blank: Venue = {
   </div>
 </Base>
 
+<script>
+  // A save that fails comes back to this page with an error, and the form would lose what
+  // was typed. Each form's fields are kept for this tab and put back after an error.
+  const KEY = "crewdash-venue-draft";
+  const forms = [...document.querySelectorAll<HTMLFormElement>('form[action="/api/admin/venues"]')];
+  forms.forEach((form, i) => {
+    form.addEventListener("submit", () => {
+      const fields = Object.fromEntries(
+        [...new FormData(form)].filter(([, v]) => typeof v === "string"),
+      );
+      try {
+        sessionStorage.setItem(KEY, JSON.stringify({ i, fields }));
+      } catch {
+        // Storage blocked. Nothing to restore, which is how it worked before.
+      }
+    });
+  });
+  try {
+    const saved = sessionStorage.getItem(KEY);
+    sessionStorage.removeItem(KEY);
+    if (saved && new URLSearchParams(location.search).has("error")) {
+      const { i, fields } = JSON.parse(saved) as { i: number; fields: Record<string, string> };
+      const form = forms[i];
+      for (const [name, value] of Object.entries(fields)) {
+        const el = form?.elements.namedItem(name);
+        if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
+          if (el.type !== "hidden") el.value = value;
+        }
+      }
+      form?.scrollIntoView({ block: "center" });
+    }
+  } catch {
+    // Nothing saved, or storage blocked.
+  }
+</script>
+
 <style>
   label {
     margin-top: 10px;
