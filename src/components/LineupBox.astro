@@ -1,0 +1,95 @@
+---
+import { seatLabels, type Lineup } from "../lib/lineups.js";
+
+interface Props {
+  regattaId: string;
+  eventNum: string;
+  bow: string;
+  lineup: Lineup | undefined;
+  canEdit: boolean;
+  back: string;
+}
+
+// One boat's lineup, with an edit form for coaches and admins.
+const { regattaId, eventNum, bow, lineup, canEdit, back } = Astro.props;
+const labels = lineup ? seatLabels(lineup.seats.length) : [];
+---
+
+{lineup && (
+  <p class="lineup">
+    {lineup.seats.map((name, i) => (
+      <span>
+        <span class="seat">{labels[i]}</span> {name}
+      </span>
+    ))}
+    {lineup.cox && (
+      <span>
+        <span class="seat">Cox</span> {lineup.cox}
+      </span>
+    )}
+  </p>
+)}
+{canEdit && (
+  <details class="edit">
+    <summary>{lineup ? "Edit lineup" : "Add lineup"}</summary>
+    <form method="post" action="/api/coach/lineups">
+      <input type="hidden" name="id" value={regattaId} />
+      <input type="hidden" name="event" value={eventNum} />
+      <input type="hidden" name="bow" value={bow} />
+      <input type="hidden" name="back" value={back} />
+      <label>
+        Rowers, one per line, bow seat first
+        <textarea name="seats" rows="4" set:text={lineup?.seats.join("\n") ?? ""} />
+      </label>
+      <label>
+        Coxswain
+        <input type="text" name="cox" value={lineup?.cox ?? ""} />
+      </label>
+      <button type="submit">Save lineup</button>
+      <span class="muted small">
+        Everyone in the club can see lineups. Clear both boxes to remove.
+      </span>
+    </form>
+  </details>
+)}
+
+<style>
+  .lineup {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 12px;
+    margin: 6px 0 0;
+    font-size: 0.92rem;
+  }
+  .seat {
+    color: var(--muted);
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+  .edit summary {
+    cursor: pointer;
+    color: var(--link);
+    font-size: 0.85rem;
+    margin-top: 4px;
+  }
+  .edit label {
+    display: block;
+    margin-top: 6px;
+  }
+  textarea {
+    width: 100%;
+    padding: 8px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font: inherit;
+  }
+  button {
+    margin-top: 8px;
+  }
+  .small {
+    font-size: 0.85rem;
+    margin-left: 8px;
+  }
+</style>

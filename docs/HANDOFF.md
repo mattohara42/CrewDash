@@ -20,6 +20,8 @@ Step 4 is built: on the day before and the day of a regatta, the home page leads
 
 Step 5 is half built. Each placed boat shows its winning margin or the gap to the crew one place up, the gap to third, and how many crews it beat, all from adjusted times in the same race. Pace per 500 m (from raw time) shows on regatta and series pages when the venue has a course length. Each regatta has a weekend recap (`/recap?id=`) with medals, best finishes and the biggest gains on last year, and each season a Wrapped page (`/wrapped?year=`) with a full-screen banquet mode. Both can save a club-level image to post, drawn in the browser, with events and places but no names. Kilometres raced count only venues with a course length. Rival head-to-head was dropped. Coaches and admins can add notes to a regatta or to any event on its page. Notes are stored under `notes/<id>` in the `regattas` Blobs store, and the whole club can read them. The coach page also has a CSV download of each season's club results. It includes stroke names, so it's coach-only.
 
+Lineups (Phase 2) are coach-entered. On a regatta page, coaches and admins can add each club boat's lineup (rowers bow seat first, plus coxswain), and all members see it under the boat. Lineups are stored under `lineups/<regattaId>` in the `regattas` Blobs store, keyed by event number and bow number. Rower pages built from these lineups are the next step.
+
 Step 6 (conditions) is built for wind, temperature and rain from Open-Meteo, with no key. Its free tier is for non-commercial use and needs the attribution link shown under each line. The Today card shows the forecast, regatta pages show the day's weather, and series pages list each year's conditions. Wind is described relative to the course when the venue has a course direction. Lookups use the venue's Finish place (or its first place) and the racing hours from event start times. They're cached in the `regattas` Blobs store under `conditions/<id>`: archive results forever, forecasts and failures for an hour. Open-Meteo rate-limits by IP, and Netlify's IPs are shared, so a lookup can fail. The page then just leaves the line out. River flow (USGS) is not built yet.
 
 Step 7 is partly built. Regatta pages and the Today card have "Add to calendar", an `.ics` download with one entry per club event at its scheduled start, or one all-day entry when there are no start times. Estimated start and pass times for each boat are not built: they need to know whether CrewTimer publishes entries and start intervals before race day (experiment A). Starring an event on the Today card also adds it to this phone's alerts when the phone follows chosen events. The venue editor keeps what was typed when a save comes back with an error.
@@ -69,7 +71,7 @@ Not yet seen: a sprint regatta. Sprint results may use fields the parser doesn't
 
 - **Club admin.** Unknown. They would add regattas after each race weekend and, in Phase 2, upload lineups. The repo owner is finding out who.
 - **RegattaCentral staff login.** Unknown whether Pittsford has one. A `boats.xls` lineup sample from a past regatta is needed before Phase 2.
-- **RegattaCentral API access.** Not yet requested. A standard key would provide lineups and start times. Findings and a draft email are below.
+- **RegattaCentral API access.** Declined on 2026-10-13. API access is limited to approved timing vendors for now. They're considering broader access and invited specific requirements, with no timeline. Lineups are coach-entered instead (see Status). Don't scrape RegattaCentral's website as a workaround.
 - **Sprint regatta link.** A CrewTimer link to a sprint regatta (for example the Pittsford Regatta) would let us test the parser on sprint results.
 - **Athlete-data policy.** The club should check whether it has a policy on publishing athlete information.
 - **Entazza (CrewTimer's developer).** Not yet contacted. The draft email is below.
@@ -103,6 +105,8 @@ Support contact from https://www.entazza.net/about-entazza.html: Glenn Engel, gl
 If they point us to a supported API, only `src/crewtimer/fetch.ts` should need to change. If they ask for a lower polling rate, race-day notifications get slower, and nothing else changes.
 
 ## RegattaCentral API
+
+**Outcome (2026-10-13):** Diego Sanabria (API Engineer) replied that API access is limited to approved timing vendors and their regatta timing workflows, so CrewDash can't have a key for now. They're considering broader capabilities for rowing organizations and third-party apps, with athlete privacy central to that, and welcomed specific requirements. They gave no timeline. The notes below stay as reference in case access opens up.
 
 From RegattaCentral's API V4 documentation (`https://api.regattacentral.com/v4/`, the cookbook PDF and the `rc-api.xsd` schema), read on 2026-10-13. The pages sit behind Cloudflare, so read them in a browser.
 
@@ -142,27 +146,19 @@ From RegattaCentral's API V4 documentation (`https://api.regattacentral.com/v4/`
 3. How to find a regatta's RegattaCentral ID. The Search RegattaCentral pages (Regattas, Organizations) should cover this.
 4. Usage limits and terms.
 
-## Draft email to RegattaCentral
+## Reply to RegattaCentral (requirements, as they invited)
 
-> **To:** api@regattacentral.com
+> Hi Diego,
 >
-> **Subject:** Standard API key request for a club results app (Pittsford Crew, org 2068)
+> Thanks for the quick and clear reply, that's understood. Since you asked, here's what we'd use if broader access opens up:
 >
-> Hello,
+> - Our own organization's entries, lane draw and race schedule for a regatta (`/organizations/{ClubId}/events`, `/lanes`, `/races`), so families can see when our crews race.
+> - Lineups for our own entries only (`/entries/{EntryId}`), shown behind our club password, with no birthdates stored.
+> - Venue location and course distance from the regatta details.
 >
-> I'm a parent volunteer with Pittsford Crew in Rochester, NY (RegattaCentral organization 2068). We've built a small, non-commercial web app called CrewDash so our families and coaches can follow only our club's boats at regattas. It sits behind a club password because most of our rowers are minors.
+> Read-only access limited to our own club's data would cover everything we need. Happy to answer any questions, and good luck with the busy season.
 >
-> We'd like to request a standard API key. We'd use the read-only organization endpoints (our club's events, lanes, races and results) and entry details for our own crews' lineups, a few requests per regatta, mostly in the days before and on race day. We don't need OAuth or staff access, and we wouldn't store birthdates.
->
-> A few questions:
->
-> 1. For regattas timed by CrewTimer, are races, scheduled start times and lane draws usually published to RegattaCentral before race day?
-> 2. Is there a reliable way to match a RegattaCentral event to the event number a timing system like CrewTimer uses?
-> 3. Are there rate limits or usage terms we should follow, including for showing our own athletes' names inside a password-protected club app?
->
-> Thanks for your help.
->
-> [Your name]
+> Matt O'Hara
 > Pittsford Crew
 
 ## Suggested repo About panel
