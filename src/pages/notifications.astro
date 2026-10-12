@@ -1,0 +1,223 @@
+---
+import webpush from "web-push";
+import Base from "../layouts/Base.astro";
+import { loadContext } from "../lib/context.js";
+import { historyByEvent, regattaYear, regattasInYear } from "../lib/history.js";
+import { blobsPushStore, vapidKeys } from "../lib/push.js";
+
+const { records, settings, club } = await loadContext();
+const { publicKey } = await vapidKeys(blobsPushStore(), () => webpush.generateVAPIDKeys());
+// Offer the events the club raced in its most recent year.
+const latestYear = records
+  .map((r) => regattaYear(r.regatta))
+  .sort()
+  .at(-1);
+const events = latestYear
+  ? historyByEvent(regattasInYear(records, latestYear), club, settings).map((g) => ({
+      key: g.key,
+      name: g.name,
+    }))
+  : [];
+---
+
+<Base title="Alerts">
+  <h1>Alerts</h1>
+  <p class="muted">
+    Get a notification on this device when {club.name} results come in. Each event sends one alert
+    once every boat has finished, and another if a result is corrected. Alerts show event, bow,
+    place and time, never rowers' names.
+  </p>
+
+  <div id="ios-help" class="card notice" hidden>
+    <h2>On iPhone, add CrewDash to your Home Screen first</h2>
+    <ol>
+      <li>Tap the Share button at the bottom of Safari.</li>
+      <li>
+        Choose <strong>Add to Home Screen</strong>, then <strong>Add</strong>.
+      </li>
+      <li>Open CrewDash from the new Home Screen icon, log in, and come back to Alerts.</li>
+    </ol>
+    <p class="muted">iPhones only allow website notifications for apps added this way.</p>
+  </div>
+
+  <p id="unsupported" class="card notice" hidden>
+    This browser can't receive notifications. Try Chrome, Edge or Firefox, or Safari on a Mac.
+  </p>
+
+  <form id="alerts" class="card" hidden>
+    <p>
+      <label class="check">
+        <input type="checkbox" id="all" checked />
+        All {club.name} results
+      </label>
+    </p>
+    {events.length > 0 && (
+      <fieldset id="events">
+        <legend class="muted">Or only these events ({latestYear})</legend>
+        {events.map((e) => (
+          <label class="check">
+            <input type="checkbox" name="event" value={e.key} />
+            {e.name}
+          </label>
+        ))}
+      </fieldset>
+    )}
+    <p class="buttons">
+      <button type="submit" id="save">
+        Turn on alerts
+      </button>
+      <button type="button" id="test" class="secondary" hidden>
+        Send a test
+      </button>
+      <button type="button" id="off" class="secondary" hidden>
+        Turn off
+      </button>
+    </p>
+    <p id="status" role="status" class="muted"></p>
+  </form>
+</Base>
+
+<script is:inline define:vars={{ publicKey }}>
+  const $ = (id) => document.getElementById(id);
+  const status = (text) => ($("status").textContent = text);
+  const form = $("alerts");
+  const all = $("all");
+  const boxes = () => [...document.querySelectorAll('input[name="event"]')];
+
+  const isIOS =
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const installed =
+    window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  const supported =
+    "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+
+  if (isIOS && !installed) $("ios-help").hidden = false;
+  else if (!supported) $("unsupported").hidden = false;
+  else start();
+
+  function syncBoxes() {
+    for (const b of boxes()) b.disabled = all.checked;
+  }
+
+  function keyBytes(base64) {
+    const padded = (base64 + "=".repeat((4 - (base64.length % 4)) % 4))
+      .replace(/-/g, "+")
+      .replace(/_/g, "/");
+    return Uint8Array.from(atob(padded), (c) => c.charCodeAt(0));
+  }
+
+  async function post(path, body) {
+    const res = await fetch(path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || "Something went wrong. Try again.");
+    return data;
+  }
+
+  function showOn(on) {
+    $("save").textContent = on ? "Save choices" : "Turn on alerts";
+    $("test").hidden = !on;
+    $("off").hidden = !on;
+  }
+
+  async function currentSubscription() {
+    const reg = await navigator.serviceWorker.getRegistration();
+    return reg ? reg.pushManager.getSubscription() : null;
+  }
+
+  async function start() {
+    form.hidden = false;
+    all.addEventListener("change", syncBoxes);
+    const sub = await currentSubscription();
+    if (sub) {
+      const { follow } = await post("/api/push/status", { endpoint: sub.endpoint }).catch(
+        () => ({}),
+      );
+      if (follow) {
+        all.checked = follow.all;
+        for (const b of boxes()) b.checked = follow.events.includes(b.value);
+        showOn(true);
+        status("Alerts are on for this device.");
+      }
+    }
+    syncBoxes();
+  }
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const follow = {
+      all: all.checked,
+      events: boxes()
+        .filter((b) => b.checked)
+        .map((b) => b.value),
+    };
+    if (!follow.all && follow.events.length === 0)
+      return status("Choose all results or at least one event.");
+    try {
+      if ((await Notification.requestPermission()) !== "granted") {
+        return status(
+          "Notifications are blocked for CrewDash. Allow them in this browser's settings.",
+        );
+      }
+      const reg = await navigator.serviceWorker.register("/sw.js");
+      await navigator.serviceWorker.ready;
+      const sub =
+        (await reg.pushManager.getSubscription()) ||
+        (await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: keyBytes(publicKey),
+        }));
+      await post("/api/push/subscribe", { subscription: sub.toJSON(), follow });
+      showOn(true);
+      status("Alerts are on for this device.");
+    } catch (err) {
+      status(err.message || "Couldn't turn on alerts.");
+    }
+  });
+
+  $("test").addEventListener("click", async () => {
+    try {
+      const sub = await currentSubscription();
+      await post("/api/push/test", { endpoint: sub && sub.endpoint });
+      status("Test sent. It should arrive in a few seconds.");
+    } catch (err) {
+      status(err.message);
+    }
+  });
+
+  $("off").addEventListener("click", async () => {
+    const sub = await currentSubscription();
+    if (sub) {
+      await post("/api/push/unsubscribe", { endpoint: sub.endpoint }).catch(() => {});
+      await sub.unsubscribe();
+    }
+    showOn(false);
+    status("Alerts are off for this device.");
+  });
+</script>
+
+<style>
+  .check {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin: 6px 0;
+  }
+  fieldset {
+    border: 0;
+    padding: 0;
+    margin: 8px 0;
+  }
+  .buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  ol {
+    padding-left: 20px;
+  }
+</style>

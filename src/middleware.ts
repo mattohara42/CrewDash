@@ -1,7 +1,7 @@
 import { defineMiddleware } from "astro:middleware";
 import { SESSION_COOKIE, authConfigFromEnv, verifySessionToken } from "./lib/auth.js";
 
-const PUBLIC_PATHS = new Set(["/login", "/api/login"]);
+const PUBLIC_PATHS = new Set(["/login", "/api/login", "/manifest.webmanifest"]);
 
 // Every page requires the club password. Admin pages require the admin password.
 export const onRequest = defineMiddleware(async (context, next) => {

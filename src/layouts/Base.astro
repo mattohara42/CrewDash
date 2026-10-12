@@ -16,6 +16,11 @@ const role = Astro.locals.role;
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="robots" content="noindex, nofollow" />
     <title>{title} · CrewDash</title>
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" type="image/png" href="/icons/icon-192.png" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <meta name="theme-color" content="#1f5fa8" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
   </head>
   <body>
     <header>
@@ -25,6 +30,7 @@ const role = Astro.locals.role;
       {role && (
         <nav>
           <a href="/">Season</a>
+          <a href="/notifications">Alerts</a>
           {role === "admin" && <a href="/admin">Admin</a>}
           <form method="post" action="/api/logout">
             <button type="submit" class="link">

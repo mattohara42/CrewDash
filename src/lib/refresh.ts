@@ -6,18 +6,24 @@ import type { RegattaStore, StoredRegatta } from "./store.js";
 // re-fetched from the day before race day until this many days after it.
 const REFRESH_DAYS_AFTER = 3;
 
+export interface Fetched {
+  record: StoredRegatta;
+  // The stored copy before this fetch, or null the first time.
+  previous: StoredRegatta | null;
+}
+
 export async function fetchAndStore(
   id: string,
   store: RegattaStore,
   fetchImpl: typeof fetch = fetch,
   now: Date = new Date(),
-): Promise<StoredRegatta> {
+): Promise<Fetched> {
   const regatta = normalizeRegatta(id, await fetchRegattaResults(id, fetchImpl));
   // Keep what an admin set, such as the series name, across refreshes.
-  const existing = await store.get(id);
-  const record = { ...existing, regatta, fetchedAt: now.toISOString() };
+  const previous = await store.get(id);
+  const record = { ...previous, regatta, fetchedAt: now.toISOString() };
   await store.put(record);
-  return record;
+  return { record, previous };
 }
 
 function dayOffset(date: string, now: Date): number {
@@ -32,18 +38,17 @@ export function isRecent(date: string, now: Date = new Date()): boolean {
   return Number.isFinite(offset) && offset >= -1 && offset <= REFRESH_DAYS_AFTER;
 }
 
-/** Re-fetches every stored regatta that is still recent. Returns the ids refreshed. */
+/** Re-fetches every stored regatta that is still recent. */
 export async function refreshRecent(
   store: RegattaStore,
   fetchImpl: typeof fetch = fetch,
   now: Date = new Date(),
-): Promise<string[]> {
+): Promise<Fetched[]> {
   const recent = (await store.list()).filter((r) => isRecent(r.regatta.date, now));
-  const refreshed: string[] = [];
+  const refreshed: Fetched[] = [];
   for (const { regatta } of recent) {
     try {
-      await fetchAndStore(regatta.id, store, fetchImpl, now);
-      refreshed.push(regatta.id);
+      refreshed.push(await fetchAndStore(regatta.id, store, fetchImpl, now));
     } catch (err) {
       // One failing regatta shouldn't stop the others. The stored copy stays.
       console.error(`Refreshing ${regatta.id} failed:`, err);
