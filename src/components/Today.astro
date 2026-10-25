@@ -3,6 +3,7 @@ import { regattaLinks } from "../lib/history.js";
 import type { TodayRegatta } from "../lib/today.js";
 import type { Venue } from "../lib/venues.js";
 import ConditionsLine from "./ConditionsLine.astro";
+import Refreshed from "./Refreshed.astro";
 import VenueCard from "./VenueCard.astro";
 import type { Conditions } from "../lib/conditions.js";
 import { canCoach } from "../lib/auth.js";
@@ -16,6 +17,7 @@ const { regattas } = Astro.props;
 const coach = canCoach(Astro.locals.role);
 ---
 
+<Refreshed />
 <section class="today" data-today>
   {regattas.map(({ record, when, events, venue, conditions }) => (
     <div class="card race">

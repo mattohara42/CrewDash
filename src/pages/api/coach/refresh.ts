@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import { backTo, withError } from "../../../lib/admin-redirect.js";
+import { backTo, withError, withFlag } from "../../../lib/admin-redirect.js";
 import { refreshAndNotify } from "../../../lib/notify-run.js";
 import { blobsStore } from "../../../lib/store.js";
 
@@ -16,5 +16,5 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     const message = err instanceof Error ? err.message : "Fetching the results failed.";
     return redirect(withError(`/regatta/${id}`, message), 303);
   }
-  return redirect(backTo(form.get("back"), `/regatta/${id}`), 303);
+  return redirect(withFlag(backTo(form.get("back"), `/regatta/${id}`), "refreshed"), 303);
 };

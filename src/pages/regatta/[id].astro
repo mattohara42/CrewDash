@@ -2,6 +2,7 @@
 import BoatList from "../../components/BoatList.astro";
 import NoteBox from "../../components/NoteBox.astro";
 import StatTiles from "../../components/StatTiles.astro";
+import Refreshed from "../../components/Refreshed.astro";
 import ConditionsLine from "../../components/ConditionsLine.astro";
 import VenueCard from "../../components/VenueCard.astro";
 import Base from "../../layouts/Base.astro";
@@ -92,6 +93,7 @@ const updated = new Date(fetchedAt).toLocaleString("en-US", {
       </button>
     </form>
   )}
+  <Refreshed />
   {refreshError && <p class="card notice">Refreshing failed: {refreshError}</p>}
   {otherYears && (
     <p>

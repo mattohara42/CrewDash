@@ -20,5 +20,5 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     const message = err instanceof Error ? err.message : "Fetching the regatta failed.";
     return redirect(`/admin?${new URLSearchParams({ error: message })}`, 303);
   }
-  return redirect(`/regatta/${id}`, 303);
+  return redirect(`/regatta/${id}?refreshed=1`, 303);
 };
