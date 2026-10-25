@@ -7,6 +7,7 @@ import { parseNotes, type RegattaNotes } from "./notes.js";
 import type { ResultTimes } from "./speed.js";
 import { parseAnnouncements, type Announcement } from "./announcements.js";
 import { EMPTY_VENUES, parseVenueData, type VenueData } from "./venues.js";
+import { parseAlertLog, type LoggedAlert } from "./alert-log.js";
 
 export interface StoredRegatta {
   regatta: Regatta;
@@ -32,6 +33,9 @@ export interface RegattaStore {
   putNotes(regattaId: string, notes: RegattaNotes): Promise<void>;
   getLineups(regattaId: string): Promise<RegattaLineups>;
   putLineups(regattaId: string, lineups: RegattaLineups): Promise<void>;
+  // What alerts and announcements went out recently. See alert-log.ts.
+  getAlertLog(): Promise<LoggedAlert[]>;
+  putAlertLog(log: LoggedAlert[]): Promise<void>;
   // Weather per regatta, so Open-Meteo is asked once rather than on every page view.
   conditions: {
     get(id: string): Promise<CachedConditions | null>;
@@ -43,6 +47,7 @@ const PREFIX = "regatta/";
 const SETTINGS_KEY = "settings";
 const VENUES_KEY = "venues";
 const ANNOUNCEMENTS_KEY = "announcements";
+const ALERTS_KEY = "alerts";
 
 /** Netlify Blobs store. Shared by every deploy of the site, previews included. */
 export function blobsStore(): RegattaStore {
@@ -92,6 +97,14 @@ export function blobsStore(): RegattaStore {
     async putLineups(id, lineups) {
       await store.setJSON(`lineups/${id}`, lineups);
     },
+    async getAlertLog() {
+      return parseAlertLog(await store.get(ALERTS_KEY, { type: "json" }));
+    },
+    // Written by the scheduled refresh, an admin's Refresh now and coach announcements.
+    // They rarely overlap, so last write wins is fine.
+    async putAlertLog(log) {
+      await store.setJSON(ALERTS_KEY, log);
+    },
     conditions: {
       async get(id) {
         return (await store.get(`conditions/${id}`, { type: "json" })) as CachedConditions | null;
@@ -112,6 +125,7 @@ export function memoryStore(): RegattaStore {
   const conditions = new Map<string, CachedConditions>();
   const notes = new Map<string, RegattaNotes>();
   const lineups = new Map<string, RegattaLineups>();
+  let alertLog: LoggedAlert[] = [];
   return {
     async get(id) {
       return records.get(id) ?? null;
@@ -151,6 +165,12 @@ export function memoryStore(): RegattaStore {
     },
     async putLineups(id, next) {
       lineups.set(id, next);
+    },
+    async getAlertLog() {
+      return alertLog;
+    },
+    async putAlertLog(next) {
+      alertLog = next;
     },
     conditions: {
       async get(id) {

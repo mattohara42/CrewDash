@@ -40,8 +40,14 @@ const links = [
   ...(canCoach(role) ? [{ href: "/coach", label: "Coach" }] : []),
   ...(role === "admin" ? [{ href: "/admin", label: "Admin" }] : []),
 ];
-// Logged-in pages show current announcements at the top.
-const announcements = role ? active(await blobsStore().getAnnouncements()) : [];
+// Logged-in pages show current announcements at the top, and the bell gets a dot when an
+// alert is newer than this phone last looked.
+const store = blobsStore();
+const [allAnnouncements, alertLog] = role
+  ? await Promise.all([store.getAnnouncements(), store.getAlertLog().catch(() => [])])
+  : [[], []];
+const announcements = active(allAnnouncements);
+const latestAlert = alertLog[0]?.at ?? "";
 ---
 
 <!doctype html>
@@ -80,6 +86,23 @@ const announcements = role ? active(await blobsStore().getAnnouncements()) : [];
           </nav>
         )}
         {role && (
+          <a
+            class="bell"
+            href="/alerts"
+            aria-label="Recent alerts"
+            aria-current={path === "/alerts" ? "page" : undefined}
+            data-latest={latestAlert}
+          >
+            <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+              <path
+                fill="currentColor"
+                d="M12 22a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 22zm7-6V11a7 7 0 0 0-5.5-6.84V3.5a1.5 1.5 0 0 0-3 0v.66A7 7 0 0 0 5 11v5l-2 2v1h18v-1z"
+              />
+            </svg>
+            <span class="dot" hidden></span>
+          </a>
+        )}
+        {role && (
           <details class="settings">
             <summary aria-label="Settings">
               <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
@@ -112,6 +135,21 @@ const announcements = role ? active(await blobsStore().getAnnouncements()) : [];
       <Announcements announcements={announcements} />
       <slot />
     </main>
+    <script>
+      // The bell's dot: an alert newer than the last visit to /alerts on this phone.
+      const bell = document.querySelector<HTMLElement>(".bell");
+      const latest = bell?.dataset.latest;
+      if (bell && latest) {
+        let seen = "";
+        try {
+          seen = localStorage.getItem("crewdash-alerts-seen") ?? "";
+        } catch {
+          // No storage: show the dot.
+        }
+        const dot = bell.querySelector<HTMLElement>(".dot");
+        if (dot && latest > seen && location.pathname !== "/alerts") dot.hidden = false;
+      }
+    </script>
   </body>
 </html>
 
@@ -239,6 +277,31 @@ const announcements = role ? active(await blobsStore().getAnnouncements()) : [];
   .settings {
     position: relative;
   }
+  /* The bell sits just left of the gear. */
+  .bell {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    margin-right: -12px;
+    border-radius: 999px;
+    color: #ffffff;
+  }
+  .bell:hover,
+  .bell[aria-current="page"] {
+    background: rgb(255 255 255 / 0.12);
+  }
+  .bell .dot {
+    position: absolute;
+    top: 8px;
+    right: 9px;
+    width: 9px;
+    height: 9px;
+    border-radius: 999px;
+    background: var(--brand-3);
+    box-shadow: 0 0 0 2px var(--brand);
+  }
   .settings summary {
     list-style: none;
     display: grid;
@@ -295,7 +358,7 @@ const announcements = role ? active(await blobsStore().getAnnouncements()) : [];
       flex-basis: 100%;
       margin-left: 0;
     }
-    .settings {
+    .bell {
       margin-left: auto;
     }
   }
