@@ -1,7 +1,7 @@
 import { defineMiddleware } from "astro:middleware";
 import { SESSION_COOKIE, authConfigFromEnv, canCoach, verifySessionToken } from "./lib/auth.js";
 
-const PUBLIC_PATHS = new Set(["/login", "/api/login", "/manifest.webmanifest"]);
+const PUBLIC_PATHS = new Set(["/login", "/api/login", "/join", "/manifest.webmanifest"]);
 
 // Every page requires the club password. Coach pages need the coach or admin password,
 // and admin pages the admin password.

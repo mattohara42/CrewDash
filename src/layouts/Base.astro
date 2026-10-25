@@ -120,6 +120,9 @@ const latestAlert = alertLog[0]?.at ?? "";
               >
                 Alerts
               </a>
+              <a href="/share" aria-current={path === "/share" ? "page" : undefined}>
+                Invite a parent
+              </a>
               <form method="post" action="/api/logout">
                 <button type="submit" class="link">
                   Log out
