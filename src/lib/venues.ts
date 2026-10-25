@@ -202,6 +202,9 @@ export function deleteVenue(data: VenueData, id: string): VenueData {
   };
 }
 
+// The value of the regatta card's "New venue..." option on the admin page.
+export const NEW_VENUE = "new";
+
 /** Links a series to a venue. A blank or unknown id unlinks it. */
 export function setSeriesVenue(data: VenueData, series: string, id: string): VenueData {
   const seriesVenue = { ...data.seriesVenue };

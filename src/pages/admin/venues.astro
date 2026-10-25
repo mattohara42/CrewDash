@@ -5,11 +5,16 @@ import { blobsStore } from "../../lib/store.js";
 import { MAX_TEXT, compassPoint, formatPlaces, type Venue } from "../../lib/venues.js";
 
 const error = Astro.url.searchParams.get("error");
+// Set when the admin picked "New venue..." on a regatta: the new venue gets linked to it.
+const linkSeries = Astro.url.searchParams.get("series") ?? "";
 const store = blobsStore();
 const [records, data] = await Promise.all([store.list(), store.getVenues()]);
 const series = [...new Map(records.map((r) => [seriesKey(seriesName(r)), seriesName(r)])).entries()]
   .map(([key, name]) => ({ key, name }))
   .sort((a, b) => a.name.localeCompare(b.name));
+// Series names by venue id, for "Used by".
+const usedBy = (id: string) =>
+  series.filter((s) => data.seriesVenue[s.key] === id).map((s) => s.name);
 const blank: Venue = {
   id: "",
   name: "",
@@ -26,16 +31,33 @@ const blank: Venue = {
   </p>
   <h1>Venues and club tips</h1>
   <p class="muted">
-    Venue pages show families where to go and what to expect. Link each regatta series to its venue
-    below, and the venue appears on that series' regatta pages.
+    Venue pages show families where to go and what to expect. Pick each regatta's venue on its card
+    on the <a href="/admin">Admin page</a>, and the venue appears on every year of that regatta.
   </p>
   {error && <p class="card notice">{error}</p>}
 
   <h2>Venues</h2>
   {[...data.venues, blank].map((venue) => (
-    <form method="post" action="/api/admin/venues" class="card">
+    <form
+      method="post"
+      action="/api/admin/venues"
+      class="card"
+      id={venue.id ? `venue-${venue.id}` : "new-venue"}
+    >
       <h3>{venue.id ? <a href={`/venue?id=${venue.id}`}>{venue.name}</a> : "Add a venue"}</h3>
       <input type="hidden" name="id" value={venue.id} />
+      {venue.id ? (
+        <p class="muted small">
+          Used by: {usedBy(venue.id).join(", ") || "no regattas yet. Pick it on the Admin page."}
+        </p>
+      ) : (
+        linkSeries && (
+          <>
+            <input type="hidden" name="linkSeries" value={linkSeries} />
+            <p class="notice-text small">Saving links this venue to {linkSeries}.</p>
+          </>
+        )
+      )}
       <label>
         Name
         <input type="text" name="name" value={venue.name} required />
@@ -102,33 +124,6 @@ const blank: Venue = {
       </div>
     </form>
   ))}
-
-  <h2>Series venues</h2>
-  <div class="card">
-    {series.length === 0 && <p class="muted">Add a regatta first.</p>}
-    {data.venues.length === 0 && series.length > 0 && <p class="muted">Add a venue first.</p>}
-    {data.venues.length > 0 &&
-      series.map((s) => (
-        <form method="post" action="/api/admin/venues" class="row">
-          <input type="hidden" name="action" value="series" />
-          <input type="hidden" name="series" value={s.name} />
-          <label class="grow">
-            {s.name}
-            <select name="venue">
-              <option value="">No venue</option>
-              {data.venues.map((v) => (
-                <option value={v.id} selected={data.seriesVenue[s.key] === v.id}>
-                  {v.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button type="submit" class="secondary">
-            Save
-          </button>
-        </form>
-      ))}
-  </div>
 
   <h2>Club tips</h2>
   <form method="post" action="/api/admin/venues" class="card">
@@ -204,6 +199,9 @@ const blank: Venue = {
 </script>
 
 <style>
+  .notice-text {
+    color: var(--warn);
+  }
   label {
     margin-top: 10px;
   }
