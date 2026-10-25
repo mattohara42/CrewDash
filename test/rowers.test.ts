@@ -3,6 +3,7 @@ import { normalizeRegatta } from "../src/crewtimer/normalize.js";
 import type { RawRegattaResults } from "../src/crewtimer/raw.js";
 import { lineupKey, setLineup } from "../src/lib/lineups.js";
 import { buildRowers, rowerStats } from "../src/lib/rowers.js";
+import { addRower, EMPTY_ROSTER } from "../src/lib/roster.js";
 import fixture from "./fixtures/regatta.json" with { type: "json" };
 
 const club = { name: "Lakeview Rowing Club", aliases: ["Lakeview Rowing Club"] };
@@ -19,19 +20,27 @@ describe("buildRowers", () => {
   let first = setLineup(
     {},
     lineupKey("12", "101"),
-    { seats: "Avery Example\nBlake Example", cox: "Casey Example", from: "coach" },
+    {
+      seats: [{ name: "Avery Example" }, { name: "Blake Example" }],
+      cox: { name: "Casey Example" },
+      from: "coach",
+    },
     now,
   );
   first = setLineup(
     first,
     lineupKey("13", "120"),
-    { seats: "avery  example", cox: "", from: "coach" },
+    { seats: [{ name: "avery  example" }], cox: null, from: "coach" },
     now,
   );
   const second = setLineup(
     {},
     lineupKey("12", "101"),
-    { seats: "Avery Example\nDrew Example", cox: "", from: "coach" },
+    {
+      seats: [{ name: "Avery Example" }, { name: "Drew Example", sub: true }],
+      cox: null,
+      from: "coach",
+    },
     now,
   );
   const rowers = buildRowers(
@@ -65,5 +74,24 @@ describe("buildRowers", () => {
 
   it("is empty without lineups", () => {
     expect(buildRowers([older], new Map(), club)).toEqual([]);
+  });
+
+  it("marks subs", () => {
+    const drew = rowers.find((r) => r.name === "Drew Example")!;
+    expect(drew.races[0]!.sub).toBe(true);
+  });
+
+  it("uses the roster name for linked seats, so a rename shows everywhere", () => {
+    const added = addRower(EMPTY_ROSTER, { name: "Jon Example" }, "2026");
+    const id = added.id;
+    const roster = { rowers: added.roster.rowers.map((r) => ({ ...r, name: "John Example" })) };
+    const lineups = setLineup(
+      {},
+      lineupKey("12", "101"),
+      { seats: [{ name: "Jon Example", rowerId: id! }], cox: null, from: "coach" },
+      now,
+    );
+    const [john] = buildRowers([newer], new Map([["r2", lineups]]), club, roster);
+    expect(john).toMatchObject({ key: "jon example", name: "John Example" });
   });
 });

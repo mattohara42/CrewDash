@@ -16,6 +16,7 @@ import { venueForSeries } from "../../lib/venues.js";
 import { conditionsFor, conditionsKey } from "../../lib/conditions.js";
 import { localDate } from "../../lib/today.js";
 import { canCoach } from "../../lib/auth.js";
+import { seasonRowers } from "../../lib/roster.js";
 
 const { store, records, settings, club } = await loadContext();
 const record = records.find((r) => r.regatta.id === Astro.params.id);
@@ -35,6 +36,8 @@ const multiDay = dates.length > 1;
 // Only regattas still racing today or later offer a calendar entry.
 const upcoming = dates.at(-1)! >= localDate(new Date(), club.timezone);
 const canNote = canCoach(Astro.locals.role);
+// Coaches fill lineups from the season's roster. Members don't need it.
+const seasonRoster = canNote ? seasonRowers(await store.getRoster(), year) : [];
 const back = `/regatta/${regatta.id}`;
 const venue = venueForSeries(await store.getVenues(), series);
 const weather = await conditionsFor(
@@ -118,7 +121,9 @@ const updated = new Date(fetchedAt).toLocaleString("en-US", {
         lineups={{
           regattaId: regatta.id,
           eventNum: event.num,
+          eventName: event.name,
           byKey: lineups,
+          roster: seasonRoster,
           canEdit: canNote,
           back,
         }}

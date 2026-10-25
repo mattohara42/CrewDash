@@ -9,9 +9,12 @@ import { allLineups, buildRowers, rowerKey, rowerStats } from "../lib/rowers.js"
 
 const { store, records, club } = await loadContext();
 const key = rowerKey(Astro.url.searchParams.get("name") ?? "");
-const rower = buildRowers(records, await allLineups(records, store), club).find(
-  (r) => r.key === key,
-);
+const rower = buildRowers(
+  records,
+  await allLineups(records, store),
+  club,
+  await store.getRoster(),
+).find((r) => r.key === key);
 if (!rower) return new Response("Rower not found", { status: 404 });
 const stats = rowerStats(rower);
 ---
@@ -35,7 +38,7 @@ const stats = rowerStats(rower);
     From lineups coaches have entered. Races without a lineup don't show here.
   </p>
 
-  {rower.races.map(({ record, event, fieldSize, boat, seat }) => (
+  {rower.races.map(({ record, event, fieldSize, boat, seat, sub }) => (
     <a class="card plain race" href={`/regatta/${record.regatta.id}`}>
       <span class="muted small">
         {formatDate(record.regatta.date)} · {record.regatta.title}
@@ -57,6 +60,7 @@ const stats = rowerStats(rower);
       </span>
       <span class="muted small">
         {seat} · Bow {boat.entry.bow}
+        {sub && " · Subbed in"}
       </span>
     </a>
   ))}

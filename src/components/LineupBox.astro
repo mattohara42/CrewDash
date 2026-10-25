@@ -1,33 +1,71 @@
 ---
-import { seatLabels, type Lineup } from "../lib/lineups.js";
+import { NEW_ROWER, boatSize, seatLabels, type Lineup, type Seat } from "../lib/lineups.js";
+import { squadFits, type RosterRower } from "../lib/roster.js";
 import { rowerKey } from "../lib/rowers.js";
-
-const rowerHref = (name: string) => `/rower?${new URLSearchParams({ name: rowerKey(name) })}`;
 
 interface Props {
   regattaId: string;
   eventNum: string;
+  eventName: string;
   bow: string;
   lineup: Lineup | undefined;
+  roster: RosterRower[];
   canEdit: boolean;
   back: string;
 }
 
-// One boat's lineup, with an edit form for coaches and admins.
-const { regattaId, eventNum, bow, lineup, canEdit, back } = Astro.props;
+// One boat's lineup, with a form for coaches and admins that picks rowers from the roster.
+const { regattaId, eventNum, eventName, bow, lineup, roster, canEdit, back } = Astro.props;
 const labels = lineup ? seatLabels(lineup.seats.length) : [];
+const rowerHref = (s: Seat) =>
+  `/rower?${new URLSearchParams({ name: s.rowerId ?? rowerKey(s.name) })}`;
+
+// The form has a row per seat in this boat class, or more if an older lineup has more.
+const size = boatSize(eventName);
+const seatCount = Math.max(size.rowers, lineup?.seats.length ?? 0);
+const formLabels = seatLabels(seatCount);
+const showCox = size.cox || !!lineup?.cox;
+// The rowers whose squad fits the event come first. Anyone else can sub in.
+const fits = roster.filter((r) => r.role === "rower" && squadFits(r.squad, eventName));
+const coxes = roster.filter((r) => r.role === "cox");
+const others = (first: RosterRower[]) => roster.filter((r) => !first.includes(r));
+const rows = [
+  ...formLabels.map((label, i) => ({
+    name: `seat${i}`,
+    label,
+    seat: lineup?.seats[i],
+    first: fits,
+    firstLabel: "Squad fits",
+  })),
+  ...(showCox
+    ? [
+        {
+          name: "cox",
+          label: "Cox",
+          seat: lineup?.cox ?? undefined,
+          first: coxes,
+          firstLabel: "Coxes",
+        },
+      ]
+    : []),
+];
 ---
 
 {lineup && (
   <p class="lineup">
-    {lineup.seats.map((name, i) => (
-      <span>
-        <span class="seat">{labels[i]}</span> <a href={rowerHref(name)}>{name}</a>
-      </span>
-    ))}
+    {lineup.seats.map(
+      (s, i) =>
+        s.name && (
+          <span>
+            <span class="seat">{labels[i]}</span> <a href={rowerHref(s)}>{s.name}</a>
+            {s.sub && <span class="sub">sub</span>}
+          </span>
+        ),
+    )}
     {lineup.cox && (
       <span>
-        <span class="seat">Cox</span> <a href={rowerHref(lineup.cox)}>{lineup.cox}</a>
+        <span class="seat">Cox</span> <a href={rowerHref(lineup.cox)}>{lineup.cox.name}</a>
+        {lineup.cox.sub && <span class="sub">sub</span>}
       </span>
     )}
   </p>
@@ -35,26 +73,92 @@ const labels = lineup ? seatLabels(lineup.seats.length) : [];
 {canEdit && (
   <details class="edit">
     <summary>{lineup ? "Edit lineup" : "Add lineup"}</summary>
-    <form method="post" action="/api/coach/lineups">
+    <form method="post" action="/api/coach/lineups" data-lineup>
       <input type="hidden" name="id" value={regattaId} />
       <input type="hidden" name="event" value={eventNum} />
       <input type="hidden" name="bow" value={bow} />
       <input type="hidden" name="back" value={back} />
-      <label>
-        Rowers, one per line, bow seat first
-        <textarea name="seats" rows="4" set:text={lineup?.seats.join("\n") ?? ""} />
-      </label>
-      <label>
-        Coxswain
-        <input type="text" name="cox" value={lineup?.cox ?? ""} />
-      </label>
+      <input type="hidden" name="count" value={String(seatCount)} />
+      {rows.map((row) => {
+        const current = row.seat?.rowerId ?? "";
+        // An older typed-in name that isn't linked yet shows in the new-name box.
+        const typed = row.seat && !row.seat.rowerId ? row.seat.name : "";
+        return (
+          <div class="seatrow">
+            <label class="pick">
+              <span class="seat">{row.label}</span>
+              <select name={row.name}>
+                <option value="">Empty</option>
+                {current && !roster.some((r) => r.id === current) && (
+                  <option value={current} selected>
+                    {row.seat!.name} (not on this season's roster)
+                  </option>
+                )}
+                {row.first.length > 0 && (
+                  <optgroup label={row.firstLabel}>
+                    {row.first.map((r) => (
+                      <option value={r.id} selected={r.id === current}>
+                        {r.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+                <optgroup label={row.first.length > 0 ? "Everyone else" : "Roster"}>
+                  {others(row.first).map((r) => (
+                    <option value={r.id} selected={r.id === current}>
+                      {r.name}
+                      {r.squad ? ` (${r.squad})` : ""}
+                    </option>
+                  ))}
+                </optgroup>
+                <option value={NEW_ROWER} selected={!!typed}>
+                  New rower…
+                </option>
+              </select>
+            </label>
+            <div class="extra">
+              <input
+                type="text"
+                name={`${row.name}-new`}
+                value={typed}
+                placeholder="New rower's full name"
+                aria-label={`${row.label}: new rower's name`}
+                data-new
+              />
+              <label class="subbox">
+                <input type="checkbox" name={`${row.name}-sub`} checked={row.seat?.sub === true} />
+                Sub
+              </label>
+            </div>
+          </div>
+        );
+      })}
       <button type="submit">Save lineup</button>
       <span class="muted small">
-        Everyone in the club can see lineups. Clear both boxes to remove.
+        New names join the season's <a href="/coach/roster">roster</a>. Tick Sub for someone filling
+        in. Everyone in the club can see lineups. Set every seat to Empty to remove.
       </span>
     </form>
   </details>
 )}
+
+<script>
+  // The new-name box only shows when "New rower..." is picked. Without scripts it always shows.
+  for (const form of document.querySelectorAll<HTMLFormElement>("form[data-lineup]")) {
+    for (const select of form.querySelectorAll<HTMLSelectElement>("select")) {
+      const box = select.closest(".seatrow")?.querySelector<HTMLInputElement>("[data-new]");
+      if (!box) continue;
+      const sync = () => {
+        box.hidden = select.value !== "__new";
+      };
+      select.addEventListener("change", () => {
+        sync();
+        if (!box.hidden) box.focus();
+      });
+      sync();
+    }
+  }
+</script>
 
 <style>
   .lineup {
@@ -69,30 +173,50 @@ const labels = lineup ? seatLabels(lineup.seats.length) : [];
     font-size: 0.8rem;
     font-weight: 700;
   }
+  .sub {
+    margin-left: 4px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--warn);
+  }
   .edit summary {
     cursor: pointer;
     color: var(--link);
     font-size: 0.85rem;
     margin-top: 4px;
   }
-  .edit label {
-    display: block;
-    margin-top: 6px;
-  }
-  textarea {
-    width: 100%;
-    padding: 8px;
-    border-radius: 10px;
-    border: 1px solid var(--border);
-    background: var(--bg);
-    color: var(--text);
-    font: inherit;
-  }
-  button {
+  .seatrow {
     margin-top: 8px;
   }
-  .small {
+  .pick {
+    display: grid;
+    grid-template-columns: 4.5em 1fr;
+    align-items: center;
+    gap: 8px;
+  }
+  .extra {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 4px 0 0 calc(4.5em + 8px);
+  }
+  .extra input[type="text"] {
+    flex: 1;
+  }
+  .subbox {
+    display: flex;
+    align-items: center;
+    gap: 4px;
     font-size: 0.85rem;
-    margin-left: 8px;
+    margin-left: auto;
+  }
+  button {
+    margin-top: 10px;
+  }
+  .small {
+    display: block;
+    font-size: 0.85rem;
+    margin-top: 6px;
   }
 </style>
