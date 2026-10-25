@@ -1,6 +1,6 @@
 import webpush from "web-push";
 import { club as baseClub } from "./config.js";
-import { resultNotices } from "./notify.js";
+import { resultNotices, startNotices } from "./notify.js";
 import { blobsPushStore, sendNotices, vapidKeys, type PushSender, type PushStore } from "./push.js";
 import type { Fetched } from "./refresh.js";
 import { effectiveClub } from "./settings.js";
@@ -26,9 +26,11 @@ export async function notifyFetched(
 ): Promise<{ sent: number; removed: number }> {
   const settings = await regattas.getSettings();
   const club = effectiveClub(baseClub, settings);
-  const notices = fetched.flatMap(({ previous, record }) =>
-    resultNotices(previous?.regatta ?? null, record.regatta, club, settings),
-  );
+  const now = new Date();
+  const notices = fetched.flatMap(({ previous, record }) => [
+    ...startNotices(previous?.regatta ?? null, record.regatta, club, settings, club.timezone, now),
+    ...resultNotices(previous?.regatta ?? null, record.regatta, club, settings),
+  ]);
   if (notices.length === 0) return { sent: 0, removed: 0 };
   return sendNotices(notices, pushStore, await webPushSender(pushStore));
 }

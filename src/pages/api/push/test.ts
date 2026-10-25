@@ -13,9 +13,10 @@ export const POST: APIRoute = async ({ request }) => {
     const send = await webPushSender(store);
     await send(sub.subscription, {
       title: "CrewDash",
-      body: "Alerts are working. You'll hear about results here.",
+      body: "Alerts are working. You'll hear when our crews start and finish.",
       url: "/",
-      tag: "test",
+      // A fresh tag each time. A repeated tag replaces the last test without alerting.
+      tag: `test:${Date.now()}`,
     });
   } catch (err) {
     console.error("Test push failed:", err);
