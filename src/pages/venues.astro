@@ -1,21 +1,32 @@
 ---
+import VenueDetails from "../components/VenueDetails.astro";
 import Base from "../layouts/Base.astro";
-import { regattasInSeries, seriesName } from "../lib/history.js";
+import { regattaDates } from "../crewtimer/normalize.js";
+import { club } from "../lib/config.js";
 import { blobsStore } from "../lib/store.js";
+import { localDate } from "../lib/today.js";
+import { regattasAtVenue } from "../lib/venues.js";
 
-// Every venue the admin has set up, with the regattas raced there.
+// Every venue in full, so families don't have to tap through. The venue of today's or the
+// next regatta comes first, then the rest by name.
 const store = blobsStore();
 const [records, data] = await Promise.all([store.list(), store.getVenues()]);
-const venues = [...data.venues]
-  .sort((a, b) => a.name.localeCompare(b.name))
-  .map((venue) => ({
-    venue,
-    regattas: Object.entries(data.seriesVenue)
-      .filter(([, id]) => id === venue.id)
-      .map(([key]) => regattasInSeries(records, key)[0])
-      .filter((r) => r !== undefined)
-      .map((r) => seriesName(r)),
-  }));
+const today = localDate(new Date(), club.timezone);
+const venues = data.venues
+  .map((venue) => {
+    const regattas = regattasAtVenue(records, data, venue.id);
+    // The first race day of a regatta here that hasn't finished yet.
+    const next = regattas
+      .filter((r) => regattaDates(r.regatta).at(-1)! >= today)
+      .map((r) => r.regatta.date)
+      .sort()[0];
+    return { venue, regattas, next };
+  })
+  .sort(
+    (a, b) =>
+      (a.next ?? "9999").localeCompare(b.next ?? "9999") ||
+      a.venue.name.localeCompare(b.venue.name),
+  );
 const isAdmin = Astro.locals.role === "admin";
 ---
 
@@ -27,14 +38,23 @@ const isAdmin = Astro.locals.role === "admin";
       No venues yet. {isAdmin ? <a href="/admin/venues">Add one.</a> : "A club admin adds them."}
     </p>
   )}
-  {venues.map(({ venue, regattas }) => (
-    <a class="card plain venue" href={`/venue?id=${venue.id}`}>
-      <strong>{venue.name}</strong>
-      {venue.courseLengthM && (
-        <span class="muted">{(venue.courseLengthM / 1000).toLocaleString("en-US")} km course</span>
-      )}
-      {regattas.length > 0 && <span class="muted small">{regattas.join(" · ")}</span>}
-    </a>
+  {venues.length > 1 && (
+    <nav class="jump" aria-label="Venues">
+      {venues.map(({ venue }) => (
+        <a href={`#${venue.id}`}>{venue.name}</a>
+      ))}
+    </nav>
+  )}
+  {venues.map(({ venue, regattas, next }) => (
+    <section class="venue" id={venue.id}>
+      {next && <p class="eyebrow">{next <= today ? "Racing today" : "Next regatta"}</p>}
+      <h2>
+        <a class="plain" href={`/venue?id=${venue.id}`}>
+          {venue.name}
+        </a>
+      </h2>
+      <VenueDetails venue={venue} regattas={regattas} heading="h3" />
+    </section>
   ))}
   {isAdmin && venues.length > 0 && (
     <p>
@@ -44,14 +64,17 @@ const isAdmin = Astro.locals.role === "admin";
 </Base>
 
 <style>
-  .venue {
+  .jump {
     display: flex;
-    flex-direction: column;
-    gap: 2px;
-    color: inherit;
-    text-decoration: none;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+    margin: 8px 0 16px;
   }
-  .small {
-    font-size: 0.85rem;
+  .venue {
+    margin-bottom: 32px;
+  }
+  .venue + .venue {
+    border-top: 1px solid var(--border);
+    padding-top: 16px;
   }
 </style>

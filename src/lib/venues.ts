@@ -1,4 +1,5 @@
-import { seriesKey } from "./history.js";
+import { regattasInSeries, seriesKey, seriesName } from "./history.js";
+import type { StoredRegatta } from "./store.js";
 
 // Venue guides and club tips, written by the admin and stored in Netlify Blobs.
 // None of it is rower data, but it's club-specific, so it stays out of git.
@@ -224,4 +225,17 @@ export function mapLinks(place: Place): { apple: string; google: string } {
     apple: `https://maps.apple.com/?${new URLSearchParams({ ll, q: place.label })}`,
     google: `https://www.google.com/maps/search/?${new URLSearchParams({ api: "1", query: ll })}`,
   };
+}
+
+/** The series raced at a venue, each as its newest regatta, in name order. */
+export function regattasAtVenue(
+  records: StoredRegatta[],
+  data: VenueData,
+  id: string,
+): StoredRegatta[] {
+  return Object.entries(data.seriesVenue)
+    .filter(([, venueId]) => venueId === id)
+    .map(([key]) => regattasInSeries(records, key)[0])
+    .filter((r): r is StoredRegatta => r !== undefined)
+    .sort((a, b) => seriesName(a).localeCompare(seriesName(b)));
 }

@@ -1,4 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { normalizeRegatta } from "../src/crewtimer/normalize.js";
+import type { RawRegattaResults } from "../src/crewtimer/raw.js";
+import fixture from "./fixtures/regatta.json" with { type: "json" };
 import {
   EMPTY_VENUES,
   deleteVenue,
@@ -6,6 +9,7 @@ import {
   parseCoordinates,
   parsePlaces,
   parseVenueData,
+  regattasAtVenue,
   saveVenue,
   setSeriesVenue,
   venueForSeries,
@@ -114,5 +118,32 @@ describe("chat link", () => {
     expect(safeUrl("javascript:alert(1)")).toBe("");
     expect(safeUrl("http://example.com")).toBe("");
     expect(parseVenueData({ chatUrl: "javascript:alert(1)" }).chatUrl).toBe("");
+  });
+});
+
+describe("regattasAtVenue", () => {
+  const record = (id: string, date: string, series: string) => ({
+    regatta: { ...normalizeRegatta(id, fixture as RawRegattaResults), date },
+    fetchedAt: "",
+    series,
+  });
+
+  it("lists each linked series once, as its newest regatta", () => {
+    const records = [
+      record("r1", "2025-10-11", "Lakeview Head"),
+      record("r2", "2026-10-11", "Lakeview Head"),
+      record("r3", "2026-05-01", "Hillside Sprints"),
+    ];
+    let data = saveVenue(EMPTY_VENUES, {
+      name: "Lake",
+      courseLengthM: null,
+      courseBearing: null,
+      places: [],
+      notes: "",
+    });
+    data = setSeriesVenue(data, "Lakeview Head", "lake");
+    data = setSeriesVenue(data, "Hillside Sprints", "lake");
+    expect(regattasAtVenue(records, data, "lake").map((r) => r.regatta.id)).toEqual(["r3", "r2"]);
+    expect(regattasAtVenue(records, data, "other")).toEqual([]);
   });
 });
