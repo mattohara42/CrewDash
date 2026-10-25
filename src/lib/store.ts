@@ -23,6 +23,8 @@ export interface StoredRegatta {
   series?: string;
   // Links an admin added: the regatta's entry page (RegattaCentral, Streamline) and website.
   links?: RegattaLinks;
+  // The PARSER_VERSION that made this copy. Missing on copies made before versions existed.
+  parserVersion?: number;
   // Event number -> when its results appeared. See speed.ts.
   resultTimes?: Record<string, ResultTimes>;
 }

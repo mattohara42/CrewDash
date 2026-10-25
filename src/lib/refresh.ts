@@ -1,11 +1,14 @@
 import { fetchRegattaResults } from "../crewtimer/fetch.js";
-import { normalizeRegatta } from "../crewtimer/normalize.js";
+import { PARSER_VERSION, normalizeRegatta } from "../crewtimer/normalize.js";
 import { recordResultTimes } from "./speed.js";
 import type { RegattaStore, StoredRegatta } from "./store.js";
 
 // CrewTimer's "pending official" flag can stay set forever, so regattas are
 // re-fetched from the day before race day until this many days after it.
 const REFRESH_DAYS_AFTER = 3;
+// Older regattas parsed by an earlier version are re-fetched a few at a time, so one run
+// stays well inside the scheduled function's time limit.
+const STALE_PER_RUN = 5;
 
 export interface Fetched {
   record: StoredRegatta;
@@ -26,6 +29,7 @@ export async function fetchAndStore(
     ...previous,
     regatta,
     fetchedAt: now.toISOString(),
+    parserVersion: PARSER_VERSION,
     resultTimes: recordResultTimes(previous, regatta, now),
   };
   await store.put(record);
@@ -44,15 +48,22 @@ export function isRecent(date: string, now: Date = new Date()): boolean {
   return Number.isFinite(offset) && offset >= -1 && offset <= REFRESH_DAYS_AFTER;
 }
 
-/** Re-fetches every stored regatta that is still recent. */
+/** True when the stored copy came from an older parser and needs fetching again. */
+export function isStale(record: StoredRegatta): boolean {
+  return (record.parserVersion ?? 0) < PARSER_VERSION;
+}
+
+/** Re-fetches every stored regatta that is still recent, and a few stale older ones. */
 export async function refreshRecent(
   store: RegattaStore,
   fetchImpl: typeof fetch = fetch,
   now: Date = new Date(),
 ): Promise<Fetched[]> {
-  const recent = (await store.list()).filter((r) => isRecent(r.regatta.date, now));
+  const all = await store.list();
+  const recent = all.filter((r) => isRecent(r.regatta.date, now));
+  const stale = all.filter((r) => !isRecent(r.regatta.date, now) && isStale(r));
   const refreshed: Fetched[] = [];
-  for (const { regatta } of recent) {
+  for (const { regatta } of [...recent, ...stale.slice(0, STALE_PER_RUN)]) {
     try {
       refreshed.push(await fetchAndStore(regatta.id, store, fetchImpl, now));
     } catch (err) {

@@ -3,16 +3,21 @@ import { regattaLinks } from "../lib/history.js";
 import type { TodayRegatta } from "../lib/today.js";
 import type { Venue } from "../lib/venues.js";
 import ConditionsLine from "./ConditionsLine.astro";
+import Refreshed from "./Refreshed.astro";
 import VenueCard from "./VenueCard.astro";
 import type { Conditions } from "../lib/conditions.js";
+import { canCoach } from "../lib/auth.js";
 
 interface Props {
   regattas: (TodayRegatta & { venue: Venue | null; conditions: Conditions | null })[];
 }
 
 const { regattas } = Astro.props;
+// Coaches and admins can fetch results now rather than waiting for the 5-minute refresh.
+const coach = canCoach(Astro.locals.role);
 ---
 
+<Refreshed />
 <section class="today" data-today>
   {regattas.map(({ record, when, events, venue, conditions }) => (
     <div class="card race">
@@ -56,6 +61,15 @@ const { regattas } = Astro.props;
             ))}
           </ul>
         </>
+      )}
+      {coach && (
+        <form method="post" action="/api/coach/refresh" class="refresh">
+          <input type="hidden" name="id" value={record.regatta.id} />
+          <input type="hidden" name="back" value="/" />
+          <button type="submit" class="secondary">
+            Refresh results
+          </button>
+        </form>
       )}
       <p class="cal">
         <a href={`/api/calendar?id=${record.regatta.id}`}>Add our events to your calendar</a>
@@ -175,6 +189,9 @@ const { regattas } = Astro.props;
 </script>
 
 <style>
+  .refresh {
+    margin: 8px 0 0;
+  }
   .race {
     border-left: 5px solid var(--brand-3);
   }

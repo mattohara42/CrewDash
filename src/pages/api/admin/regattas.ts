@@ -1,7 +1,6 @@
 import type { APIRoute } from "astro";
 import { regattaIdFrom } from "../../../crewtimer/fetch.js";
-import { notifyFetched } from "../../../lib/notify-run.js";
-import { fetchAndStore } from "../../../lib/refresh.js";
+import { refreshAndNotify } from "../../../lib/notify-run.js";
 import { blobsStore } from "../../../lib/store.js";
 
 // Adds a regatta, or refreshes it if it's already stored. Admin only (see middleware).
@@ -14,20 +13,12 @@ export const POST: APIRoute = async ({ request, redirect }) => {
       303,
     );
   }
-  const store = blobsStore();
-  let fetched;
   try {
-    fetched = await fetchAndStore(id, store);
+    // A refresh that turns up new results notifies followers, same as the scheduled one.
+    await refreshAndNotify(id, blobsStore());
   } catch (err) {
     const message = err instanceof Error ? err.message : "Fetching the regatta failed.";
     return redirect(`/admin?${new URLSearchParams({ error: message })}`, 303);
   }
-  // A refresh that turns up new results notifies followers, same as the scheduled one.
-  // The regatta is already saved, so a notification failure is logged, not shown as an error.
-  try {
-    await notifyFetched([fetched], store);
-  } catch (err) {
-    console.error("Notifying followers failed:", err);
-  }
-  return redirect(`/regatta/${id}`, 303);
+  return redirect(`/regatta/${id}?refreshed=1`, 303);
 };

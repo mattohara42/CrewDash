@@ -1,0 +1,19 @@
+---
+// Confirms a coach's "Refresh results" tap. The flag comes off the address straight away,
+// so a reload (the Today card reloads every 5 minutes) doesn't show it again.
+const shown = Astro.url.searchParams.has("refreshed");
+---
+
+{shown && (
+  <p class="card notice" role="status" data-refreshed>
+    Results refreshed just now.
+  </p>
+)}
+
+<script>
+  if (document.querySelector("[data-refreshed]")) {
+    const url = new URL(location.href);
+    url.searchParams.delete("refreshed");
+    history.replaceState(null, "", url);
+  }
+</script>

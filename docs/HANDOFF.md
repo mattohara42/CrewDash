@@ -30,6 +30,8 @@ Phase 2 (lineups and rower pages) still needs a `boats.xls` sample. How quickly 
 
 Sharing is built. Any logged-in parent can open **Invite a parent** from the settings menu (`/share`, also linked at the end of Rowing 101). It makes an invite link (`/join?k=...`) to send through the phone's share sheet or copy, and shows it as a QR code to scan in person. The link logs a new phone in as a member, with no password, and lands on Rowing 101. It's signed with `SESSION_SECRET`, works for anyone who has it, and expires after 14 days (`INVITE_DAYS`). Nothing is stored, so the only way to cancel invites early is changing `SESSION_SECRET`, which logs everyone out. A phone that's already logged in keeps its session when it opens an invite. If the club moves to its own accounts later, this is the piece to revisit.
 
+Stored regattas keep the parser's output, not CrewTimer's raw JSON, so a parser change only reaches a stored regatta when it's fetched again. Each stored copy records the `PARSER_VERSION` (in `src/crewtimer/normalize.ts`) that made it. **Bump it whenever `normalizeRegatta`'s output changes.** The scheduled refresh then re-fetches older copies of past regattas five per run, on top of the recent ones. This came from the 2026 Head of the Fish: the multi-day fix was deployed late on the Saturday, but the stored copy was still the old parse on Sunday morning, so it didn't show as Today until a refresh. Coaches and admins now have a **Refresh results** button on each regatta page and Today card for cases like that. It fetches the regatta and sends alerts the same way the scheduled refresh does.
+
 A season is a calendar year for now. If the club thinks in fall and spring seasons, the event page can split them.
 
 ## Deployment
