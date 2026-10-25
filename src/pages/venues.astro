@@ -39,23 +39,32 @@ const isAdmin = Astro.locals.role === "admin";
     </p>
   )}
   {venues.length > 1 && (
-    <nav class="jump" aria-label="Venues">
-      {venues.map(({ venue }) => (
-        <a href={`#${venue.id}`}>{venue.name}</a>
+    <nav class="tabs" aria-label="Venues" data-tabs>
+      {venues.map(({ venue }, i) => (
+        <a href={`#${venue.id}`} aria-current={i === 0 ? "true" : undefined}>
+          {venue.name}
+        </a>
       ))}
     </nav>
   )}
-  {venues.map(({ venue, regattas, next }) => (
-    <section class="venue" id={venue.id}>
-      {next && <p class="eyebrow">{next <= today ? "Racing today" : "Next regatta"}</p>}
-      <h2>
-        <a class="plain" href={`/venue?id=${venue.id}`}>
-          {venue.name}
-        </a>
-      </h2>
-      <VenueDetails venue={venue} regattas={regattas} heading="h3" />
-    </section>
-  ))}
+  <div class="track" data-track>
+    {venues.map(({ venue, regattas, next }, i) => (
+      <section class="venue" id={venue.id} aria-label={venue.name}>
+        {next && <p class="eyebrow">{next <= today ? "Racing today" : "Next regatta"}</p>}
+        <h2>
+          <a class="plain" href={`/venue?id=${venue.id}`}>
+            {venue.name}
+          </a>
+        </h2>
+        {venues.length > 1 && (
+          <p class="muted small">
+            {i + 1} of {venues.length} · swipe for more
+          </p>
+        )}
+        <VenueDetails venue={venue} regattas={regattas} heading="h3" />
+      </section>
+    ))}
+  </div>
   {isAdmin && venues.length > 0 && (
     <p>
       <a href="/admin/venues">Edit venues</a>
@@ -63,18 +72,81 @@ const isAdmin = Astro.locals.role === "admin";
   )}
 </Base>
 
+<script>
+  // The venues sit side by side and snap one at a time. The tabs follow the scroll, and a
+  // tapped tab scrolls its venue into view. Without scripts the tabs are plain anchors.
+  const track = document.querySelector<HTMLElement>("[data-track]");
+  const tabs = [...document.querySelectorAll<HTMLAnchorElement>("[data-tabs] a")];
+  if (track && tabs.length > 0) {
+    const slides = [...track.children] as HTMLElement[];
+    const show = (i: number) => {
+      tabs.forEach((t, j) => t.toggleAttribute("aria-current", i === j));
+      tabs[i]?.scrollIntoView({ block: "nearest", inline: "nearest" });
+    };
+    tabs.forEach((tab, i) =>
+      tab.addEventListener("click", (e) => {
+        e.preventDefault();
+        track.scrollTo({ left: slides[i]!.offsetLeft - track.offsetLeft, behavior: "smooth" });
+        history.replaceState(null, "", tab.hash);
+      }),
+    );
+    let pending = 0;
+    track.addEventListener("scroll", () => {
+      cancelAnimationFrame(pending);
+      pending = requestAnimationFrame(() => {
+        // The slide whose left edge is nearest the track's.
+        const at = (s: HTMLElement) => Math.abs(s.offsetLeft - track.offsetLeft - track.scrollLeft);
+        show(slides.indexOf(slides.reduce((a, b) => (at(b) < at(a) ? b : a))));
+      });
+    });
+    // Opened from a link to one venue: start on it.
+    const start = slides.findIndex((s) => `#${s.id}` === location.hash);
+    if (start > 0) track.scrollLeft = slides[start]!.offsetLeft - track.offsetLeft;
+  }
+</script>
+
 <style>
-  .jump {
+  .tabs {
     display: flex;
-    flex-wrap: wrap;
-    gap: 4px 16px;
-    margin: 8px 0 16px;
+    gap: 6px;
+    overflow-x: auto;
+    margin: 8px 0 12px;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+  .tabs a {
+    flex: 0 0 auto;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    text-decoration: none;
+    font-size: 0.9rem;
+    color: inherit;
+  }
+  .tabs a[aria-current] {
+    background: var(--brand);
+    border-color: var(--brand);
+    color: #ffffff;
+    font-weight: 700;
+  }
+  .track {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    gap: 16px;
+  }
+  .track::-webkit-scrollbar,
+  .tabs::-webkit-scrollbar {
+    display: none;
   }
   .venue {
-    margin-bottom: 32px;
+    flex: 0 0 100%;
+    min-width: 0;
+    scroll-snap-align: start;
   }
-  .venue + .venue {
-    border-top: 1px solid var(--border);
-    padding-top: 16px;
+  .small {
+    font-size: 0.85rem;
+    margin-top: 0;
   }
 </style>

@@ -86,6 +86,24 @@ const merges = Object.entries(settings.eventAliases).sort(([a], [b]) => a.locale
           Compared with: {seriesName(record)}. Leave blank to use the suggested name.
         </p>
         <label>
+          Entries page (optional)
+          <input
+            type="url"
+            name="registration"
+            value={record.links?.registration ?? ""}
+            placeholder="RegattaCentral or Streamline link"
+          />
+        </label>
+        <label>
+          Regatta website (optional)
+          <input
+            type="url"
+            name="website"
+            value={record.links?.website ?? ""}
+            placeholder="https://"
+          />
+        </label>
+        <label>
           Venue
           <select name="venue">
             <option value="">No venue</option>

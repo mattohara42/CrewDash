@@ -2,9 +2,9 @@ import type { APIRoute } from "astro";
 import { backTo } from "../../../lib/admin-redirect.js";
 import { seriesName } from "../../../lib/history.js";
 import { blobsStore } from "../../../lib/store.js";
-import { NEW_VENUE, setSeriesVenue } from "../../../lib/venues.js";
+import { NEW_VENUE, safeUrl, setSeriesVenue } from "../../../lib/venues.js";
 
-// Sets the series a regatta belongs to and the venue for that series. Blank series goes
+// Sets a regatta's series, its links, and the venue for that series. Blank series goes
 // back to the suggested name. The venue applies to every year of the series. Admin only.
 export const POST: APIRoute = async ({ request, redirect }) => {
   const form = await request.formData();
@@ -12,7 +12,13 @@ export const POST: APIRoute = async ({ request, redirect }) => {
   const record = await store.get(String(form.get("id") ?? ""));
   if (!record) return redirect(backTo(form.get("back")), 303);
 
-  const updated = { ...record, series: String(form.get("series") ?? "").trim() || undefined };
+  const link = (name: string) => safeUrl(String(form.get(name) ?? "")) || undefined;
+  const links = { registration: link("registration"), website: link("website") };
+  const updated = {
+    ...record,
+    series: String(form.get("series") ?? "").trim() || undefined,
+    links: links.registration || links.website ? links : undefined,
+  };
   await store.put(updated);
   const series = seriesName(updated);
   const venue = form.get("venue");
