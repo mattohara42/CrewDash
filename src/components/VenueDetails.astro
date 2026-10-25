@@ -1,0 +1,82 @@
+---
+import { regattaDates } from "../crewtimer/normalize.js";
+import { formatDates } from "../lib/format.js";
+import { seriesName } from "../lib/history.js";
+import type { StoredRegatta } from "../lib/store.js";
+import { mapLinks, type Venue } from "../lib/venues.js";
+
+// Everything about a venue under its name: course, places, tips, then the regattas raced
+// there. Used by the venue page and the Venues page, which shows every venue in full.
+
+interface Props {
+  venue: Venue;
+  regattas: StoredRegatta[];
+  // h2 on a venue's own page, h3 on the Venues page where the venue name is the h2.
+  heading: "h2" | "h3";
+}
+
+const { venue, regattas, heading: H } = Astro.props;
+---
+
+{venue.courseLengthM && (
+  <p class="muted">Course length {(venue.courseLengthM / 1000).toLocaleString("en-US")} km</p>
+)}
+
+{venue.places.length > 0 && (
+  <section class="card">
+    <H>Places</H>
+    <ul class="list">
+      {venue.places.map((place) => {
+        const links = mapLinks(place);
+        return (
+          <li>
+            <strong>{place.label}</strong>
+            <span>
+              <a href={links.apple}>Apple Maps</a> · <a href={links.google}>Google Maps</a>
+            </span>
+          </li>
+        );
+      })}
+    </ul>
+  </section>
+)}
+
+{venue.notes && (
+  <section class="card">
+    <H>Tips for families</H>
+    <p class="notes">{venue.notes}</p>
+  </section>
+)}
+
+{regattas.length > 0 && (
+  <section class="card">
+    <H>Regattas here</H>
+    <ul class="list">
+      {regattas.map((r) => (
+        <li>
+          <a href={`/series?${new URLSearchParams({ name: seriesName(r) })}`}>{seriesName(r)}</a>
+          <span class="muted">Latest: {formatDates(regattaDates(r.regatta))}</span>
+        </li>
+      ))}
+    </ul>
+  </section>
+)}
+
+<style>
+  .list {
+    list-style: none;
+    margin: 8px 0 0;
+    padding: 0;
+  }
+  .list li {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 4px 12px;
+    padding: 8px 0;
+    border-top: 1px solid var(--border);
+  }
+  .notes {
+    white-space: pre-line;
+  }
+</style>

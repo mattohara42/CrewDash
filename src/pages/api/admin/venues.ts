@@ -13,7 +13,7 @@ import {
 
 const BACK = "/admin/venues";
 
-// Venue guides, series links and club tips. Admin only (see middleware).
+// Venue guides and club tips. Series links are set from the admin page's regatta cards. Admin only (see middleware).
 export const POST: APIRoute = async ({ request, redirect }) => {
   const form = await request.formData();
   const field = (name: string) => String(form.get(name) ?? "").trim();
@@ -46,23 +46,27 @@ export const POST: APIRoute = async ({ request, redirect }) => {
           303,
         );
       }
-      await store.putVenues(
-        saveVenue(data, {
-          id: field("id") || undefined,
-          name,
-          courseLengthM: field("courseLengthKm") && km > 0 ? Math.round(km * 1000) : null,
-          courseBearing: bearing,
-          places: parsed.places,
-          notes: field("notes").slice(0, MAX_TEXT),
-        }),
-      );
+      let saved = saveVenue(data, {
+        id: field("id") || undefined,
+        name,
+        courseLengthM: field("courseLengthKm") && km > 0 ? Math.round(km * 1000) : null,
+        courseBearing: bearing,
+        places: parsed.places,
+        notes: field("notes").slice(0, MAX_TEXT),
+      });
+      // A venue added from a regatta's "New venue..." option is linked to its series,
+      // then the admin goes back to the regatta list.
+      const linkSeries = field("linkSeries");
+      if (linkSeries && !field("id")) {
+        saved = setSeriesVenue(saved, linkSeries, saved.venues.at(-1)!.id);
+        await store.putVenues(saved);
+        return redirect("/admin", 303);
+      }
+      await store.putVenues(saved);
       break;
     }
     case "delete":
       await store.putVenues(deleteVenue(data, field("id")));
-      break;
-    case "series":
-      await store.putVenues(setSeriesVenue(data, field("series"), field("venue")));
       break;
     case "tips":
       if (field("chatUrl") && !safeUrl(field("chatUrl"))) {

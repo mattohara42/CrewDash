@@ -3,17 +3,21 @@ import Base from "../layouts/Base.astro";
 import { nearMatches } from "../lib/club-view.js";
 import { club as baseClub } from "../lib/config.js";
 import { loadContext } from "../lib/context.js";
-import { formatDate } from "../lib/format.js";
-import { seriesName, suggestSeries } from "../lib/history.js";
+import { regattaDates } from "../crewtimer/normalize.js";
+import { formatDates } from "../lib/format.js";
+import { seriesKey, seriesName, suggestSeries } from "../lib/history.js";
 import { speedSummary } from "../lib/speed.js";
+import { NEW_VENUE } from "../lib/venues.js";
 
 const error = Astro.url.searchParams.get("error");
-const { records, settings, club } = await loadContext();
+const { store, records, settings, club } = await loadContext();
+const venueData = await store.getVenues();
 const regattas = records
   .map((record) => ({
     ...record,
     near: nearMatches(record.regatta, club),
     speed: speedSummary(record, club.timezone),
+    venueId: venueData.seriesVenue[seriesKey(seriesName(record))] ?? "",
   }))
   .sort((a, b) => b.regatta.date.localeCompare(a.regatta.date));
 const merges = Object.entries(settings.eventAliases).sort(([a], [b]) => a.localeCompare(b));
@@ -46,7 +50,7 @@ const merges = Object.entries(settings.eventAliases).sort(([a], [b]) => a.locale
     <div class="card">
       <a href={`/regatta/${record.regatta.id}`}>{record.regatta.title}</a>
       <p class="muted">
-        {formatDate(record.regatta.date)} · {record.regatta.id} · fetched{" "}
+        {formatDates(regattaDates(record.regatta))} · {record.regatta.id} · fetched{" "}
         {new Date(record.fetchedAt).toISOString().slice(0, 16).replace("T", " ")} UTC
       </p>
       {record.speed.events > 0 && (
@@ -66,10 +70,10 @@ const merges = Object.entries(settings.eventAliases).sort(([a], [b]) => a.locale
           </button>
         </form>
       ))}
-      <form method="post" action="/api/admin/series" class="row">
+      <form method="post" action="/api/admin/series" class="settings">
         <input type="hidden" name="id" value={record.regatta.id} />
         <input type="hidden" name="back" value="/admin" />
-        <label class="grow">
+        <label>
           Series
           <input
             type="text"
@@ -78,18 +82,38 @@ const merges = Object.entries(settings.eventAliases).sort(([a], [b]) => a.locale
             placeholder={suggestSeries(record.regatta.title)}
           />
         </label>
-        <button type="submit" class="secondary">
-          Save
-        </button>
-      </form>
-      <p class="muted small">
-        Compared with: {seriesName(record)}. Leave blank to use the suggested name.
-      </p>
-      <form method="post" action="/api/admin/regattas">
-        <input type="hidden" name="link" value={record.regatta.id} />
-        <button type="submit" class="secondary">
-          Refresh now
-        </button>
+        <p class="muted small">
+          Compared with: {seriesName(record)}. Leave blank to use the suggested name.
+        </p>
+        <label>
+          Venue
+          <select name="venue">
+            <option value="">No venue</option>
+            {venueData.venues.map((v) => (
+              <option value={v.id} selected={record.venueId === v.id}>
+                {v.name}
+              </option>
+            ))}
+            <option value={NEW_VENUE}>New venue…</option>
+          </select>
+        </label>
+        <p class="muted small">
+          Applies to every year of {seriesName(record)}.{" "}
+          {record.venueId && <a href={`/venue?id=${record.venueId}`}>See the venue page</a>}
+        </p>
+        <div class="row">
+          <button type="submit">Save</button>
+          <button
+            type="submit"
+            formaction="/api/admin/regattas"
+            name="link"
+            value={record.regatta.id}
+            class="secondary"
+            formnovalidate
+          >
+            Refresh now
+          </button>
+        </div>
       </form>
     </div>
   ))}
@@ -146,9 +170,9 @@ const merges = Object.entries(settings.eventAliases).sort(([a], [b]) => a.locale
   .row > span {
     flex: 1 1 200px;
   }
-  .grow {
-    flex: 1 1 220px;
-    margin: 0;
+  .settings label {
+    display: block;
+    margin-top: 8px;
   }
   .small {
     font-size: 0.85rem;
