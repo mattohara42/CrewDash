@@ -106,6 +106,22 @@ export function parseCoordinates(text: string): { lat: number; lon: number } | n
   return null;
 }
 
+/** One "Label: coordinates or map link" line. The label may contain colons of its own. */
+function parsePlace(line: string): Place | null {
+  // The label ends at the first colon after which the rest reads as a place.
+  for (let colon = line.indexOf(":"); colon > 0; colon = line.indexOf(":", colon + 1)) {
+    // "https:" isn't a label separator.
+    if (line.slice(colon).startsWith("://")) continue;
+    const label = line.slice(0, colon).trim();
+    const rest = line.slice(colon + 1).trim();
+    // The rest must be the whole place: coordinates, or a link starting right there.
+    if (!/^https?:\/\//i.test(rest) && !/^-?\d/.test(rest)) continue;
+    const coords = parseCoordinates(rest);
+    if (label && coords) return { label, ...coords };
+  }
+  return null;
+}
+
 /**
  * The admin's places box: one "Label: coordinates or map link" per line.
  * Returns the places, or the first line that couldn't be read.
@@ -115,12 +131,9 @@ export function parsePlaces(text: string): { places: Place[] } | { error: string
   for (const raw of text.split("\n")) {
     const line = raw.trim();
     if (!line) continue;
-    const colon = line.indexOf(":");
-    // "https:" isn't a label separator.
-    const label = colon > 0 && !line.slice(colon).startsWith("://") ? line.slice(0, colon) : "";
-    const coords = parseCoordinates(label ? line.slice(colon + 1) : line);
-    if (!label.trim() || !coords) return { error: line };
-    places.push({ label: label.trim(), ...coords });
+    const place = parsePlace(line);
+    if (!place) return { error: line };
+    places.push(place);
   }
   return { places };
 }

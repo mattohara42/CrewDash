@@ -9,7 +9,13 @@ import { clubEvents, clubSummary } from "../../lib/club-view.js";
 import { loadContext } from "../../lib/context.js";
 import { eventDate, regattaDates } from "../../crewtimer/normalize.js";
 import { formatDates, formatStart, formatWeekday } from "../../lib/format.js";
-import { regattaYear, regattasInSeries, seriesKey, seriesName } from "../../lib/history.js";
+import {
+  regattaLinks,
+  regattaYear,
+  regattasInSeries,
+  seriesKey,
+  seriesName,
+} from "../../lib/history.js";
 import { isRecent } from "../../lib/refresh.js";
 import { eventKey } from "../../lib/settings.js";
 import { venueForSeries } from "../../lib/venues.js";
@@ -64,7 +70,11 @@ const updated = new Date(fetchedAt).toLocaleString("en-US", {
   <h1>{regatta.title}</h1>
   <p class="muted">
     {formatDates(dates)} · Results fetched {updated} ET ·{" "}
-    <a href={`https://www.crewtimer.com/regatta/${regatta.id}`}>Full results on CrewTimer</a> ·{" "}
+    {regattaLinks(record).map((l) => (
+      <>
+        <a href={l.href}>{l.label}</a> ·{" "}
+      </>
+    ))}
     <a href={`/recap?id=${regatta.id}`}>Weekend recap</a>
     {upcoming && (
       <>

@@ -1,4 +1,5 @@
 ---
+import { regattaLinks } from "../lib/history.js";
 import type { TodayRegatta } from "../lib/today.js";
 import type { Venue } from "../lib/venues.js";
 import ConditionsLine from "./ConditionsLine.astro";
@@ -58,6 +59,12 @@ const { regattas } = Astro.props;
       )}
       <p class="cal">
         <a href={`/api/calendar?id=${record.regatta.id}`}>Add our events to your calendar</a>
+        {regattaLinks(record).map((l) => (
+          <>
+            {" · "}
+            <a href={l.href}>{l.label}</a>
+          </>
+        ))}
       </p>
       {venue && <VenueCard venue={venue} />}
     </div>

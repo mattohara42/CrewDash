@@ -10,12 +10,19 @@ import { EMPTY_VENUES, parseVenueData, type VenueData } from "./venues.js";
 import { parseAlertLog, type LoggedAlert } from "./alert-log.js";
 import { EMPTY_ROSTER, parseRoster, type Roster } from "./roster.js";
 
+export interface RegattaLinks {
+  registration?: string;
+  website?: string;
+}
+
 export interface StoredRegatta {
   regatta: Regatta;
   // ISO time CrewDash last fetched this regatta from CrewTimer.
   fetchedAt: string;
   // Series name set by an admin. When missing, it's suggested from the title.
   series?: string;
+  // Links an admin added: the regatta's entry page (RegattaCentral, Streamline) and website.
+  links?: RegattaLinks;
   // Event number -> when its results appeared. See speed.ts.
   resultTimes?: Record<string, ResultTimes>;
 }

@@ -65,6 +65,15 @@ describe("parsePlaces", () => {
     expect(parsePlaces("https://www.google.com/maps/@43.15,-77.61,15z")).toHaveProperty("error");
   });
 
+  it("allows colons inside a label", () => {
+    expect(parsePlaces("Regatta site (GPS: 1460 Route 9P): 43.0598, -73.7713")).toEqual({
+      places: [{ label: "Regatta site (GPS: 1460 Route 9P)", lat: 43.0598, lon: -73.7713 }],
+    });
+    expect(parsePlaces("Note: Finish: https://www.google.com/maps/@43.15,-77.61,15z")).toEqual({
+      places: [{ label: "Note: Finish", lat: 43.15, lon: -77.61 }],
+    });
+  });
+
   it("round-trips through the edit box", () => {
     const places = [{ label: "Tent", lat: 43.1, lon: -77.6 }];
     expect(parsePlaces(formatPlaces(places))).toEqual({ places });

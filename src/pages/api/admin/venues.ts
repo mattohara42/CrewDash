@@ -30,7 +30,7 @@ export const POST: APIRoute = async ({ request, redirect }) => {
         return redirect(
           withError(
             back,
-            `Couldn't read this place: "${parsed.error}". Use "Label: lat, lon" or "Label: map link".`,
+            `Nothing was saved. Couldn't read this place: "${parsed.error}". Use "Label: lat, lon" or "Label: map link".`,
           ),
           303,
         );

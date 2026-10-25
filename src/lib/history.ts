@@ -80,3 +80,22 @@ export function eventNames(records: StoredRegatta[]): string[] {
   }
   return [...names.values()].sort((a, b) => a.localeCompare(b));
 }
+
+/** The links shown on a regatta: CrewTimer results, then any the admin added. */
+export function regattaLinks(record: StoredRegatta): { label: string; href: string }[] {
+  const links = [
+    { label: "CrewTimer results", href: `https://www.crewtimer.com/regatta/${record.regatta.id}` },
+  ];
+  const registration = record.links?.registration;
+  if (registration) {
+    const host = new URL(registration).hostname;
+    const label = host.endsWith("regattacentral.com")
+      ? "RegattaCentral"
+      : host.endsWith("streamlinerowing.com")
+        ? "Streamline"
+        : "Entries";
+    links.push({ label, href: registration });
+  }
+  if (record.links?.website) links.push({ label: "Regatta website", href: record.links.website });
+  return links;
+}

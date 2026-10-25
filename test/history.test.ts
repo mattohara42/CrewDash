@@ -4,6 +4,7 @@ import type { RawRegattaResults } from "../src/crewtimer/raw.js";
 import {
   eventNames,
   historyByEvent,
+  regattaLinks,
   regattasInSeries,
   regattasInYear,
   seriesKey,
@@ -109,5 +110,32 @@ describe("eventNames", () => {
       "Womens U19 8+",
       "Womens Youth 8+",
     ]);
+  });
+});
+
+describe("regattaLinks", () => {
+  const base = { regatta: normalizeRegatta("r1", fixture as RawRegattaResults), fetchedAt: "" };
+
+  it("always links CrewTimer, then names the entries site", () => {
+    expect(regattaLinks(base)).toEqual([
+      { label: "CrewTimer results", href: "https://www.crewtimer.com/regatta/r1" },
+    ]);
+    const withLinks = {
+      ...base,
+      links: {
+        registration: "https://www.regattacentral.com/regatta/?job_id=1",
+        website: "https://example.org/",
+      },
+    };
+    expect(regattaLinks(withLinks).map((l) => l.label)).toEqual([
+      "CrewTimer results",
+      "RegattaCentral",
+      "Regatta website",
+    ]);
+    const streamline = {
+      ...base,
+      links: { registration: "https://streamlinerowing.com/regattas/x" },
+    };
+    expect(regattaLinks(streamline)[1]?.label).toBe("Streamline");
   });
 });
