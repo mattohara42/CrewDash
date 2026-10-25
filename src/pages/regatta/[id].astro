@@ -59,6 +59,7 @@ const conditions = dates.flatMap((date) => {
   return [{ c, label: multiDay ? `${formatWeekday(date)} ${kind.toLowerCase()}` : kind }];
 });
 const otherYears = regattasInSeries(records, seriesKey(series)).length > 1;
+const refreshError = Astro.url.searchParams.get("error");
 const updated = new Date(fetchedAt).toLocaleString("en-US", {
   dateStyle: "medium",
   timeStyle: "short",
@@ -83,6 +84,15 @@ const updated = new Date(fetchedAt).toLocaleString("en-US", {
       </>
     )}
   </p>
+  {canNote && (
+    <form method="post" action="/api/coach/refresh" class="refresh">
+      <input type="hidden" name="id" value={regatta.id} />
+      <button type="submit" class="secondary">
+        Refresh results
+      </button>
+    </form>
+  )}
+  {refreshError && <p class="card notice">Refreshing failed: {refreshError}</p>}
   {otherYears && (
     <p>
       <a href={`/series?${new URLSearchParams({ name: series })}`}>
@@ -148,3 +158,9 @@ const updated = new Date(fetchedAt).toLocaleString("en-US", {
     </section>
   ))}
 </Base>
+
+<style>
+  .refresh {
+    margin: 0 0 12px;
+  }
+</style>

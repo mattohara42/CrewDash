@@ -3,7 +3,7 @@ import { club as baseClub } from "./config.js";
 import { appendAlerts, noticeAlerts } from "./alert-log.js";
 import { resultNotices, startNotices } from "./notify.js";
 import { blobsPushStore, sendNotices, vapidKeys, type PushSender, type PushStore } from "./push.js";
-import type { Fetched } from "./refresh.js";
+import { fetchAndStore, type Fetched } from "./refresh.js";
 import { effectiveClub } from "./settings.js";
 import type { RegattaStore } from "./store.js";
 
@@ -41,4 +41,15 @@ export async function notifyFetched(
     console.error("Logging alerts failed:", err);
   }
   return sendNotices(notices, pushStore, await webPushSender(pushStore));
+}
+
+/** Fetches one regatta now, as an admin or coach asked, and notifies followers like the
+ * scheduled refresh does. The regatta is saved first, so a notification failure is only logged. */
+export async function refreshAndNotify(id: string, store: RegattaStore): Promise<void> {
+  const fetched = await fetchAndStore(id, store);
+  try {
+    await notifyFetched([fetched], store);
+  } catch (err) {
+    console.error("Notifying followers failed:", err);
+  }
 }

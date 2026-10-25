@@ -119,6 +119,10 @@ export function addDays(date: string, days: number): string {
   return new Date(Date.parse(`${date}T12:00:00Z`) + days * 86_400_000).toISOString().slice(0, 10);
 }
 
+// Stored regattas keep the parser's output, not CrewTimer's raw JSON. Bump this whenever
+// normalizeRegatta's output changes, and the scheduled refresh re-fetches every older copy.
+export const PARSER_VERSION = 1;
+
 /** The date an event races on. */
 export function eventDate(regatta: Pick<Regatta, "date">, event: Pick<Event, "day">): string {
   return event.day ? addDays(regatta.date, event.day) : regatta.date;

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { fetchAndStore, isRecent, refreshRecent } from "../src/lib/refresh.js";
+import { PARSER_VERSION } from "../src/crewtimer/normalize.js";
+import { fetchAndStore, isRecent, isStale, refreshRecent } from "../src/lib/refresh.js";
 import { memoryStore } from "../src/lib/store.js";
 import fixture from "./fixtures/regatta.json" with { type: "json" };
 
@@ -47,9 +48,21 @@ describe("refreshRecent", () => {
   it("re-fetches only recent regattas and keeps going after a failure", async () => {
     const store = memoryStore();
     const base = (await fetchAndStore("r1", store, respond(), now)).record.regatta;
-    await store.put({ regatta: { ...base, id: "r2", date: "2026-10-12" }, fetchedAt: "" });
-    await store.put({ regatta: { ...base, id: "r3", date: "2026-10-11" }, fetchedAt: "" });
-    await store.put({ regatta: { ...base, id: "r4", date: "2025-10-12" }, fetchedAt: "" });
+    await store.put({
+      regatta: { ...base, id: "r2", date: "2026-10-12" },
+      fetchedAt: "",
+      parserVersion: PARSER_VERSION,
+    });
+    await store.put({
+      regatta: { ...base, id: "r3", date: "2026-10-11" },
+      fetchedAt: "",
+      parserVersion: PARSER_VERSION,
+    });
+    await store.put({
+      regatta: { ...base, id: "r4", date: "2025-10-12" },
+      fetchedAt: "",
+      parserVersion: PARSER_VERSION,
+    });
 
     const fetchImpl = vi.fn(async (url: string | URL | Request) =>
       String(url).includes("r2")
@@ -59,10 +72,35 @@ describe("refreshRecent", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
 
     // r1's fixture date is 2026-10-11, so it's recent too.
+    // r4 is old but parsed by the current version, so it's left alone.
     const refreshed = await refreshRecent(store, fetchImpl, now);
     expect(refreshed.map((r) => r.record.regatta.id)).toEqual(["r1", "r3"]);
     expect(refreshed.every((r) => r.previous !== null)).toBe(true);
     expect(fetchImpl).toHaveBeenCalledTimes(3);
     expect((await store.get("r2"))?.fetchedAt).toBe("");
+  });
+});
+
+describe("refreshRecent with stale copies", () => {
+  it("re-fetches a few old regattas parsed by an earlier version", async () => {
+    const store = memoryStore();
+    const old = (await fetchAndStore("r1", store, respond(), now)).record;
+    for (const id of ["r10", "r11", "r12", "r13", "r14", "r15"]) {
+      // Made before versions existed, and long past.
+      await store.put({
+        ...old,
+        parserVersion: undefined,
+        regatta: { ...old.regatta, id, date: "2024-05-01" },
+      });
+    }
+    const fetchImpl = respond();
+    const later = new Date("2026-12-01T15:00:00Z");
+    const first = await refreshRecent(store, fetchImpl, later);
+    expect(first).toHaveLength(5);
+    const stamped = (await store.list()).filter((r) => r.parserVersion === PARSER_VERSION);
+    expect(isStale(stamped[0]!)).toBe(false);
+    // r1 is current and not recent, so it's left alone. One stale copy remains for the next run.
+    expect(await refreshRecent(store, fetchImpl, later)).toHaveLength(1);
+    expect(await refreshRecent(store, fetchImpl, later)).toHaveLength(0);
   });
 });
