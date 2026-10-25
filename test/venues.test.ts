@@ -6,6 +6,7 @@ import {
   EMPTY_VENUES,
   deleteVenue,
   formatPlaces,
+  nextAtVenue,
   parseCoordinates,
   parsePlaces,
   parseVenueData,
@@ -154,5 +155,42 @@ describe("regattasAtVenue", () => {
     data = setSeriesVenue(data, "Hillside Sprints", "lake");
     expect(regattasAtVenue(records, data, "lake").map((r) => r.regatta.id)).toEqual(["r3", "r2"]);
     expect(regattasAtVenue(records, data, "other")).toEqual([]);
+  });
+});
+
+describe("nextAtVenue", () => {
+  const record = (date: string, series: string) => ({
+    regatta: { ...normalizeRegatta("r1", fixture as RawRegattaResults), date },
+    fetchedAt: "",
+    series,
+  });
+
+  it("uses a regatta that hasn't finished", () => {
+    expect(nextAtVenue([record("2026-10-25", "Lakeview Head")], "2026-10-25")).toEqual({
+      date: "2026-10-25",
+      series: "Lakeview Head",
+      expected: false,
+    });
+  });
+
+  it("expects a finished series 52 weeks on, on the same weekday", () => {
+    // Saturday 2025-10-11 -> Saturday 2026-10-10.
+    expect(nextAtVenue([record("2025-10-11", "Lakeview Head")], "2026-03-01")).toEqual({
+      date: "2026-10-10",
+      series: "Lakeview Head",
+      expected: true,
+    });
+  });
+
+  it("puts a series already raced this season into next year", () => {
+    const next = nextAtVenue(
+      [record("2026-10-10", "Lakeview Head"), record("2026-05-02", "Hillside Sprints")],
+      "2026-10-25",
+    );
+    expect(next).toEqual({ date: "2027-05-01", series: "Hillside Sprints", expected: true });
+  });
+
+  it("is null for a venue with no regattas", () => {
+    expect(nextAtVenue([], "2026-10-25")).toBeNull();
   });
 });

@@ -1,32 +1,40 @@
 ---
 import VenueDetails from "../components/VenueDetails.astro";
 import Base from "../layouts/Base.astro";
-import { regattaDates } from "../crewtimer/normalize.js";
 import { club } from "../lib/config.js";
+import { formatDate } from "../lib/format.js";
 import { blobsStore } from "../lib/store.js";
 import { localDate } from "../lib/today.js";
-import { regattasAtVenue } from "../lib/venues.js";
+import { nextAtVenue, regattasAtVenue } from "../lib/venues.js";
 
-// Every venue in full, so families don't have to tap through. The venue of today's or the
-// next regatta comes first, then the rest by name.
+// Every venue in full, so families don't have to tap through, in the order the club races
+// there next. Venues already raced this season move to the end, and ones with no regattas
+// linked come last, by name.
 const store = blobsStore();
 const [records, data] = await Promise.all([store.list(), store.getVenues()]);
 const today = localDate(new Date(), club.timezone);
 const venues = data.venues
   .map((venue) => {
     const regattas = regattasAtVenue(records, data, venue.id);
-    // The first race day of a regatta here that hasn't finished yet.
-    const next = regattas
-      .filter((r) => regattaDates(r.regatta).at(-1)! >= today)
-      .map((r) => r.regatta.date)
-      .sort()[0];
-    return { venue, regattas, next };
+    return { venue, regattas, next: nextAtVenue(regattas, today) };
   })
   .sort(
     (a, b) =>
-      (a.next ?? "9999").localeCompare(b.next ?? "9999") ||
+      (a.next?.date ?? "9999").localeCompare(b.next?.date ?? "9999") ||
       a.venue.name.localeCompare(b.venue.name),
   );
+
+function nextLabel(next: NonNullable<(typeof venues)[number]["next"]>): string {
+  if (!next.expected && next.date <= today) return next.series;
+  if (!next.expected) return `${next.series}, ${formatDate(next.date)}`;
+  const around = new Date(`${next.date}T12:00:00Z`).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+  return `${next.series}, expected around ${around}`;
+}
 const isAdmin = Astro.locals.role === "admin";
 ---
 
@@ -50,12 +58,17 @@ const isAdmin = Astro.locals.role === "admin";
   <div class="track" data-track>
     {venues.map(({ venue, regattas, next }, i) => (
       <section class="venue" id={venue.id} aria-label={venue.name}>
-        {next && <p class="eyebrow">{next <= today ? "Racing today" : "Next regatta"}</p>}
+        {next && !next.expected && next.date <= today ? (
+          <p class="eyebrow">Racing today</p>
+        ) : (
+          i === 0 && next && <p class="eyebrow">Next up</p>
+        )}
         <h2>
           <a class="plain" href={`/venue?id=${venue.id}`}>
             {venue.name}
           </a>
         </h2>
+        {next && <p class="next">{nextLabel(next)}</p>}
         {venues.length > 1 && (
           <p class="muted small">
             {i + 1} of {venues.length} · swipe for more
@@ -144,6 +157,10 @@ const isAdmin = Astro.locals.role === "admin";
     flex: 0 0 100%;
     min-width: 0;
     scroll-snap-align: start;
+  }
+  .next {
+    margin: 0 0 4px;
+    font-weight: 600;
   }
   .small {
     font-size: 0.85rem;
