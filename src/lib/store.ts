@@ -8,6 +8,7 @@ import type { ResultTimes } from "./speed.js";
 import { parseAnnouncements, type Announcement } from "./announcements.js";
 import { EMPTY_VENUES, parseVenueData, type VenueData } from "./venues.js";
 import { parseAlertLog, type LoggedAlert } from "./alert-log.js";
+import { EMPTY_ROSTER, parseRoster, type Roster } from "./roster.js";
 
 export interface RegattaLinks {
   registration?: string;
@@ -40,6 +41,9 @@ export interface RegattaStore {
   putNotes(regattaId: string, notes: RegattaNotes): Promise<void>;
   getLineups(regattaId: string): Promise<RegattaLineups>;
   putLineups(regattaId: string, lineups: RegattaLineups): Promise<void>;
+  // The club's rowers across seasons. See roster.ts.
+  getRoster(): Promise<Roster>;
+  putRoster(roster: Roster): Promise<void>;
   // What alerts and announcements went out recently. See alert-log.ts.
   getAlertLog(): Promise<LoggedAlert[]>;
   putAlertLog(log: LoggedAlert[]): Promise<void>;
@@ -55,6 +59,7 @@ const SETTINGS_KEY = "settings";
 const VENUES_KEY = "venues";
 const ANNOUNCEMENTS_KEY = "announcements";
 const ALERTS_KEY = "alerts";
+const ROSTER_KEY = "roster";
 
 /** Netlify Blobs store. Shared by every deploy of the site, previews included. */
 export function blobsStore(): RegattaStore {
@@ -104,6 +109,13 @@ export function blobsStore(): RegattaStore {
     async putLineups(id, lineups) {
       await store.setJSON(`lineups/${id}`, lineups);
     },
+    async getRoster() {
+      return parseRoster(await store.get(ROSTER_KEY, { type: "json" }));
+    },
+    // Coaches edit it, mostly one at a time, so last write wins is fine.
+    async putRoster(roster) {
+      await store.setJSON(ROSTER_KEY, roster);
+    },
     async getAlertLog() {
       return parseAlertLog(await store.get(ALERTS_KEY, { type: "json" }));
     },
@@ -133,6 +145,7 @@ export function memoryStore(): RegattaStore {
   const notes = new Map<string, RegattaNotes>();
   const lineups = new Map<string, RegattaLineups>();
   let alertLog: LoggedAlert[] = [];
+  let roster: Roster = EMPTY_ROSTER;
   return {
     async get(id) {
       return records.get(id) ?? null;
@@ -172,6 +185,12 @@ export function memoryStore(): RegattaStore {
     },
     async putLineups(id, next) {
       lineups.set(id, next);
+    },
+    async getRoster() {
+      return roster;
+    },
+    async putRoster(next) {
+      roster = next;
     },
     async getAlertLog() {
       return alertLog;

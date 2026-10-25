@@ -1,6 +1,7 @@
 ---
 import type { ClubBoat } from "../lib/club-view.js";
 import { lineupKey, type RegattaLineups } from "../lib/lineups.js";
+import type { RosterRower } from "../lib/roster.js";
 import LineupBox from "./LineupBox.astro";
 import {
   formatGap,
@@ -21,7 +22,10 @@ interface Props {
   lineups?: {
     regattaId: string;
     eventNum: string;
+    eventName: string;
     byKey: RegattaLineups;
+    // The season's roster, for the seat pickers. Only loaded for coaches and admins.
+    roster: RosterRower[];
     canEdit: boolean;
     back: string;
   };
@@ -120,6 +124,8 @@ const MEDALS: Record<number, string> = { 1: "gold", 2: "silver", 3: "bronze" };
           <LineupBox
             regattaId={lineups.regattaId}
             eventNum={lineups.eventNum}
+            eventName={lineups.eventName}
+            roster={lineups.roster}
             bow={entry.bow}
             lineup={lineups.byKey[lineupKey(lineups.eventNum, entry.bow)]}
             canEdit={lineups.canEdit}
