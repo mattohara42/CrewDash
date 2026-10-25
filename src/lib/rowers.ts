@@ -2,10 +2,13 @@ import { normalizeName, type ClubIdentity } from "../club.js";
 import type { Event } from "../crewtimer/normalize.js";
 import { clubEvents, type ClubBoat } from "./club-view.js";
 import { lineupKey, seatLabels, type RegattaLineups } from "./lineups.js";
+import { EMPTY_ROSTER, findById, type Roster } from "./roster.js";
 import type { StoredRegatta } from "./store.js";
 
 // Rower pages, built from coach-entered lineups joined to results by event and bow number.
-// Names are typed by coaches, so the same spelling (ignoring case and spacing) is the same rower.
+// Seats linked to the roster are that rower, whatever name the seat was saved with. Older
+// unlinked seats fall back to the name, where the same spelling (ignoring case and spacing)
+// is the same rower. Roster ids are normalized names, so both kinds share one key space.
 
 export interface RowerRace {
   record: StoredRegatta;
@@ -13,6 +16,7 @@ export interface RowerRace {
   fieldSize: number;
   boat: ClubBoat;
   seat: string;
+  sub: boolean;
 }
 
 export interface Rower {
@@ -31,6 +35,7 @@ export function buildRowers(
   records: StoredRegatta[],
   lineupsById: Map<string, RegattaLineups>,
   club: ClubIdentity,
+  roster: Roster = EMPTY_ROSTER,
 ): Rower[] {
   const rowers = new Map<string, Rower>();
   const newestFirst = [...records].sort((a, b) => b.regatta.date.localeCompare(a.regatta.date));
@@ -43,14 +48,16 @@ export function buildRowers(
         if (!lineup) continue;
         const labels = seatLabels(lineup.seats.length);
         const people = [
-          ...lineup.seats.map((name, i) => ({ name, seat: labels[i]! })),
-          ...(lineup.cox ? [{ name: lineup.cox, seat: "Cox" }] : []),
+          ...lineup.seats.map((s, i) => ({ s, seat: labels[i]! })),
+          ...(lineup.cox ? [{ s: lineup.cox, seat: "Cox" }] : []),
         ];
-        for (const { name, seat } of people) {
-          const key = rowerKey(name);
+        for (const { s, seat } of people) {
+          const onRoster = s.rowerId ? findById(roster, s.rowerId) : undefined;
+          const key = onRoster?.id ?? rowerKey(s.name);
           if (!key) continue;
+          const name = onRoster?.name ?? s.name;
           const rower = rowers.get(key) ?? { key, name, races: [] };
-          rower.races.push({ record, event, fieldSize, boat, seat });
+          rower.races.push({ record, event, fieldSize, boat, seat, sub: s.sub === true });
           rowers.set(key, rower);
         }
       }

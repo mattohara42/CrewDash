@@ -7,7 +7,12 @@ import { formatDate, ordinal, statusLabel } from "../lib/format.js";
 import { allLineups, buildRowers, rowerStats } from "../lib/rowers.js";
 
 const { store, records, club } = await loadContext();
-const rowers = buildRowers(records, await allLineups(records, store), club);
+const rowers = buildRowers(
+  records,
+  await allLineups(records, store),
+  club,
+  await store.getRoster(),
+);
 ---
 
 <Base title="Following">

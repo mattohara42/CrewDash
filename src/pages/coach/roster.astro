@@ -1,0 +1,267 @@
+---
+import Base from "../../layouts/Base.astro";
+import { regattaYear } from "../../lib/history.js";
+import { linkLineups, seasonRowers } from "../../lib/roster.js";
+import { blobsStore } from "../../lib/store.js";
+import { localDate } from "../../lib/today.js";
+import { club } from "../../lib/config.js";
+
+const error = Astro.url.searchParams.get("error");
+const store = blobsStore();
+const records = await store.list();
+const thisYear = localDate(new Date(), club.timezone).slice(0, 4);
+const years = [...new Set([thisYear, ...records.map((r) => regattaYear(r.regatta))])]
+  .sort()
+  .reverse();
+const asked = Astro.url.searchParams.get("year");
+const year = asked && years.includes(asked) ? asked : thisYear;
+
+// Lineups typed before the roster existed are linked here, adding their rowers to the
+// season. It only writes when something changed, so later visits are read-only.
+let roster = await store.getRoster();
+for (const record of records.filter((r) => regattaYear(r.regatta) === year)) {
+  const linked = linkLineups(roster, await store.getLineups(record.regatta.id), year);
+  if (!linked.lineups) continue;
+  roster = linked.roster;
+  await store.putLineups(record.regatta.id, linked.lineups);
+  await store.putRoster(roster);
+}
+
+const rowers = seasonRowers(roster, year);
+const previous = String(Number(year) - 1);
+const carry = seasonRowers(roster, previous).filter((r) => !r.seasons.includes(year));
+const squads = [...new Set(roster.rowers.map((r) => r.squad).filter(Boolean))].sort();
+const BLANK_ROWS = 5;
+---
+
+<Base title={`${year} roster`}>
+  <p class="eyebrow">
+    <a href="/coach">Coach</a>
+  </p>
+  <h1>{year} roster</h1>
+  <p class="muted">
+    The rowers coaches pick from when filling a boat on a regatta page. Squad puts the likely rowers
+    first, and anyone on the roster can still sub in. Everyone in the club can see lineups, but only
+    coaches see this page.
+  </p>
+  {error && <p class="card notice">{error}</p>}
+
+  {years.length > 1 && (
+    <nav class="years" aria-label="Season">
+      {years.map((y) => (
+        <a href={`/coach/roster?year=${y}`} aria-current={y === year ? "page" : undefined}>
+          {y}
+        </a>
+      ))}
+    </nav>
+  )}
+
+  {carry.length > 0 && (
+    <form method="post" action="/api/coach/roster" class="card">
+      <input type="hidden" name="action" value="carry" />
+      <input type="hidden" name="year" value={year} />
+      <input type="hidden" name="from" value={previous} />
+      <p>
+        {carry.length} {carry.length === 1 ? "rower" : "rowers"} from {previous} aren't on the{" "}
+        {year} roster yet.
+      </p>
+      <button type="submit" class="secondary">
+        Add them to {year}
+      </button>
+    </form>
+  )}
+
+  <form method="post" action="/api/coach/roster" class="card">
+    <input type="hidden" name="action" value="save" />
+    <input type="hidden" name="year" value={year} />
+    <datalist id="squads">
+      {squads.map((s) => (
+        <option value={s} />
+      ))}
+    </datalist>
+    <table class="roster">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Squad</th>
+          <th>Role</th>
+          <th>Remove</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rowers.map((r) => (
+          <tr>
+            <td>
+              <input type="hidden" name="id" value={r.id} />
+              <input type="text" name="name" value={r.name} aria-label="Name" required />
+            </td>
+            <td>
+              <input
+                type="text"
+                name="squad"
+                value={r.squad}
+                list="squads"
+                placeholder="Boys Novice"
+                aria-label="Squad"
+              />
+            </td>
+            <td>
+              <select name="role" aria-label="Role">
+                <option value="rower" selected={r.role === "rower"}>
+                  Rower
+                </option>
+                <option value="cox" selected={r.role === "cox"}>
+                  Cox
+                </option>
+              </select>
+            </td>
+            <td>
+              <label class="remove">
+                <input type="checkbox" name="remove" value={r.id} aria-label={`Remove ${r.name}`} />
+                <span class="phone">Remove</span>
+              </label>
+            </td>
+          </tr>
+        ))}
+        {Array.from({ length: BLANK_ROWS }, () => (
+          <tr class="new">
+            <td>
+              <input type="hidden" name="id" value="" />
+              <input
+                type="text"
+                name="name"
+                placeholder="Add a rower"
+                aria-label="New rower's name"
+              />
+            </td>
+            <td>
+              <input type="text" name="squad" list="squads" aria-label="Squad" />
+            </td>
+            <td>
+              <select name="role" aria-label="Role">
+                <option value="rower">Rower</option>
+                <option value="cox">Cox</option>
+              </select>
+            </td>
+            <td></td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+    <button type="submit">Save roster</button>
+    <p class="muted small">
+      Removing someone takes them off the {year} roster only. Their past races and page stay. To add
+      more than {BLANK_ROWS} at once, save and the blank rows come back.
+    </p>
+  </form>
+
+  {rowers.length > 1 && (
+    <form method="post" action="/api/coach/roster" class="card">
+      <input type="hidden" name="action" value="merge" />
+      <input type="hidden" name="year" value={year} />
+      <h2>Same person twice?</h2>
+      <p class="muted">
+        Merge a misspelled name into the right one. Every lineup moves over, and the misspelling
+        goes away.
+      </p>
+      <div class="merge">
+        <label>
+          Merge
+          <select name="from" required>
+            <option value="">Choose…</option>
+            {rowers.map((r) => (
+              <option value={r.id}>{r.name}</option>
+            ))}
+          </select>
+        </label>
+        <label>
+          into
+          <select name="into" required>
+            <option value="">Choose…</option>
+            {rowers.map((r) => (
+              <option value={r.id}>{r.name}</option>
+            ))}
+          </select>
+        </label>
+        <button type="submit" class="secondary">
+          Merge
+        </button>
+      </div>
+    </form>
+  )}
+</Base>
+
+<style>
+  .years {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .years a[aria-current="page"] {
+    font-weight: 700;
+    text-decoration: none;
+  }
+  .roster {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .roster th {
+    text-align: left;
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+  .roster td {
+    padding: 3px 4px 3px 0;
+  }
+  .roster td:last-child {
+    text-align: center;
+  }
+  .roster input[type="text"] {
+    width: 100%;
+    min-width: 0;
+  }
+  .remove {
+    display: inline-flex;
+    gap: 4px;
+    align-items: center;
+    font-size: 0.85rem;
+  }
+  .phone {
+    display: none;
+  }
+  /* On phones each rower takes two lines: name, then squad, role and remove. */
+  @media (max-width: 560px) {
+    .phone {
+      display: inline;
+    }
+    .roster thead {
+      display: none;
+    }
+    .roster tr {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 4px 8px;
+      align-items: center;
+      padding: 8px 0;
+      border-top: 1px solid var(--border);
+    }
+    .roster td {
+      padding: 0;
+    }
+    .roster td:first-child {
+      grid-column: 1 / -1;
+    }
+  }
+  .merge {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 8px 12px;
+  }
+  .small {
+    font-size: 0.85rem;
+  }
+  button {
+    margin-top: 10px;
+  }
+</style>
