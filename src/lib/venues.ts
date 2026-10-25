@@ -1,3 +1,4 @@
+import { addDays, regattaDates } from "../crewtimer/normalize.js";
 import { regattasInSeries, seriesKey, seriesName } from "./history.js";
 import type { StoredRegatta } from "./store.js";
 
@@ -251,4 +252,29 @@ export function regattasAtVenue(
     .map(([key]) => regattasInSeries(records, key)[0])
     .filter((r): r is StoredRegatta => r !== undefined)
     .sort((a, b) => seriesName(a).localeCompare(seriesName(b)));
+}
+
+export interface NextRegatta {
+  date: string;
+  series: string;
+  // True when the date is a guess from the last time the series raced.
+  expected: boolean;
+}
+
+/**
+ * When the club next races at a venue, from the newest regatta of each series held there.
+ * A regatta that hasn't finished counts as it is. Otherwise the next one is expected 52 weeks
+ * on from the last, which keeps the weekday, so a series already raced this season lands next
+ * year. Null when no regattas are linked to the venue.
+ */
+export function nextAtVenue(regattas: StoredRegatta[], today: string): NextRegatta | null {
+  const candidates = regattas.map((record) => {
+    const series = seriesName(record);
+    const dates = regattaDates(record.regatta);
+    if (dates.at(-1)! >= today) return { date: record.regatta.date, series, expected: false };
+    let date = record.regatta.date;
+    while (date < today) date = addDays(date, 364);
+    return { date, series, expected: true };
+  });
+  return candidates.sort((a, b) => a.date.localeCompare(b.date))[0] ?? null;
 }
