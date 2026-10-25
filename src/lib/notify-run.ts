@@ -1,5 +1,6 @@
 import webpush from "web-push";
 import { club as baseClub } from "./config.js";
+import { appendAlerts, noticeAlerts } from "./alert-log.js";
 import { resultNotices, startNotices } from "./notify.js";
 import { blobsPushStore, sendNotices, vapidKeys, type PushSender, type PushStore } from "./push.js";
 import type { Fetched } from "./refresh.js";
@@ -32,5 +33,12 @@ export async function notifyFetched(
     ...resultNotices(previous?.regatta ?? null, record.regatta, club, settings),
   ]);
   if (notices.length === 0) return { sent: 0, removed: 0 };
+  // Logged whether or not anyone subscribed, so the bell shows them. A logging failure
+  // mustn't stop the alerts going out.
+  try {
+    await regattas.putAlertLog(appendAlerts(await regattas.getAlertLog(), noticeAlerts(notices)));
+  } catch (err) {
+    console.error("Logging alerts failed:", err);
+  }
   return sendNotices(notices, pushStore, await webPushSender(pushStore));
 }

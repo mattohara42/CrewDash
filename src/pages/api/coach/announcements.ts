@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { backTo, withError } from "../../../lib/admin-redirect.js";
+import { appendAlerts } from "../../../lib/alert-log.js";
 import { post, remove } from "../../../lib/announcements.js";
 import { webPushSender } from "../../../lib/notify-run.js";
 import { blobsPushStore, broadcast } from "../../../lib/push.js";
@@ -26,6 +27,21 @@ export const POST: APIRoute = async ({ request, redirect, locals }) => {
   });
   if (!result) return redirect(withError(back, "Write a message first."), 303);
   await store.putAnnouncements(result.list);
+  try {
+    const log = await store.getAlertLog();
+    await store.putAlertLog(
+      appendAlerts(log, [
+        {
+          kind: "announcement",
+          title: "Club announcement",
+          body: result.announcement.text,
+          url: "/",
+        },
+      ]),
+    );
+  } catch (err) {
+    console.error("Logging the announcement failed:", err);
+  }
 
   if (form.get("push") === "on") {
     try {

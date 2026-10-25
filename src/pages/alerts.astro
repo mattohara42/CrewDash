@@ -1,0 +1,152 @@
+---
+import Base from "../layouts/Base.astro";
+import { formatDate } from "../lib/format.js";
+import { club } from "../lib/config.js";
+import { blobsStore } from "../lib/store.js";
+import { localDate } from "../lib/today.js";
+
+// The bell: recent start and result alerts and coach announcements, newest first.
+const log = await blobsStore().getAlertLog();
+const time = (iso: string) =>
+  new Date(iso).toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: club.timezone,
+  });
+const days = [...new Set(log.map((a) => localDate(new Date(a.at), club.timezone)))];
+const LABELS = { start: "Started", result: "Result", update: "Updated", announcement: "Club" };
+---
+
+<Base title="Recent alerts">
+  <h1>Recent alerts</h1>
+  <p class="muted">
+    Starts, results and club announcements from the last two weeks, whether or not this phone has
+    alerts on. <a href="/notifications">Alert settings</a>
+  </p>
+  {log.length === 0 ? (
+    <p class="card muted">Nothing yet. Alerts show here once racing starts.</p>
+  ) : (
+    <>
+      <label class="only">
+        <input type="checkbox" data-only /> Only crews I follow
+      </label>
+      <p class="muted none" data-none hidden>
+        None for the crews you follow. Star events on the home page on race day.
+      </p>
+      {days.map((day) => (
+        <section data-day>
+          <h2>{formatDate(day)}</h2>
+          <ul class="card alerts">
+            {log
+              .filter((a) => localDate(new Date(a.at), club.timezone) === day)
+              .map((a) => (
+                <li data-key={a.eventKey ?? ""} data-kind={a.kind}>
+                  <a class="plain" href={a.url}>
+                    <span class="meta">
+                      <span class={`tag ${a.kind}`}>{LABELS[a.kind]}</span>
+                      <span class="muted">{time(a.at)}</span>
+                    </span>
+                    <span>{a.body}</span>
+                  </a>
+                </li>
+              ))}
+          </ul>
+        </section>
+      ))}
+    </>
+  )}
+</Base>
+
+<script>
+  // Opening the bell marks everything as seen on this phone, which clears its dot.
+  try {
+    localStorage.setItem("crewdash-alerts-seen", new Date().toISOString());
+  } catch {
+    // Private mode: the dot just stays.
+  }
+
+  // "Only crews I follow" uses the events starred on this phone. Announcements always show.
+  const ONLY = "crewdash-alerts-only";
+  const box = document.querySelector<HTMLInputElement>("[data-only]");
+  function followed(): Set<string> {
+    try {
+      return new Set(JSON.parse(localStorage.getItem("crewdash-follow") ?? "[]") as string[]);
+    } catch {
+      return new Set();
+    }
+  }
+  function apply() {
+    const only = !!box?.checked;
+    const keys = followed();
+    let shown = 0;
+    for (const li of document.querySelectorAll<HTMLLIElement>("li[data-kind]")) {
+      const show = !only || li.dataset.kind === "announcement" || keys.has(li.dataset.key ?? "");
+      li.hidden = !show;
+      if (show) shown++;
+    }
+    for (const section of document.querySelectorAll<HTMLElement>("[data-day]")) {
+      section.hidden = !section.querySelector("li:not([hidden])");
+    }
+    const none = document.querySelector<HTMLElement>("[data-none]");
+    if (none) none.hidden = shown > 0;
+  }
+  if (box) {
+    try {
+      box.checked = localStorage.getItem(ONLY) === "1";
+    } catch {
+      // Defaults to everything.
+    }
+    box.addEventListener("change", () => {
+      try {
+        localStorage.setItem(ONLY, box.checked ? "1" : "0");
+      } catch {
+        // Not remembered, still applied.
+      }
+      apply();
+    });
+    apply();
+  }
+</script>
+
+<style>
+  .only {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin: 12px 0;
+  }
+  .alerts {
+    list-style: none;
+    padding-top: 4px;
+    padding-bottom: 4px;
+  }
+  .alerts li + li {
+    border-top: 1px solid var(--border);
+  }
+  .alerts a {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 10px 0;
+    color: inherit;
+  }
+  .meta {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    font-size: 0.85rem;
+  }
+  .tag {
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-size: 0.75rem;
+  }
+  .tag.result,
+  .tag.update {
+    color: var(--brand-2);
+  }
+  .tag.announcement {
+    color: var(--warn);
+  }
+</style>
