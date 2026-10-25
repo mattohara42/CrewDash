@@ -74,6 +74,13 @@ export function formatWeekday(date: string): string {
   return d.toLocaleDateString("en-US", { weekday: "short", timeZone: "UTC" });
 }
 
+/** Minutes after midnight -> "9:12 AM" */
+export function formatClock(minutes: number): string {
+  const whole = Math.floor(minutes);
+  const h = Math.floor(whole / 60) % 24;
+  return `${h % 12 || 12}:${String(whole % 60).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`;
+}
+
 /** "10:40:00 AM" -> "10:40 AM". Other text passes through. */
 export function formatStart(start: string): string {
   return start.replace(/^(\d{1,2}:\d{2}):00(\s*[AP]M)$/i, "$1$2");

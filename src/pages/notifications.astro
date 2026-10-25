@@ -23,9 +23,10 @@ const events = latestYear
 <Base title="Alerts">
   <h1>Alerts</h1>
   <p class="muted">
-    Get a notification on this device when {club.name} results come in. Each event sends one alert
-    once every boat has finished, and another if a result is corrected. Alerts show event, bow,
-    place and time, never rowers' names.
+    Get a notification on this device when {club.name} boats start and when results come in. Each
+    event sends an alert when our boats start, one once every boat has finished, and another if a
+    result is corrected. Starts can arrive up to 5 minutes late. Alerts show event, bow, place and
+    time, never rowers' names.
   </p>
 
   <div id="ios-help" class="card notice" hidden>
@@ -251,7 +252,9 @@ const events = latestYear
     try {
       const sub = await currentSubscription();
       await post("/api/push/test", { endpoint: sub && sub.endpoint });
-      status("Test sent. It should arrive in a few seconds.");
+      status(
+        "Test sent. It should arrive in a few seconds. On iPhone, if no banner shows, close the app and check Notification Center, and check Settings, Notifications, CrewDash.",
+      );
     } catch (err) {
       status(err.message);
     }

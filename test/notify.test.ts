@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { normalizeRegatta, type Regatta } from "../src/crewtimer/normalize.js";
 import type { RawRegattaResults } from "../src/crewtimer/raw.js";
-import { resultNotices } from "../src/lib/notify.js";
+import { resultNotices, startNotices } from "../src/lib/notify.js";
 import { EMPTY_SETTINGS } from "../src/lib/settings.js";
 import fixture from "./fixtures/regatta.json" with { type: "json" };
 
@@ -86,5 +86,44 @@ describe("resultNotices", () => {
     for (const notice of resultNotices(before, done, withExh, EMPTY_SETTINGS)) {
       expect(notice.body).not.toMatch(/Example|Placeholder|Fictional/);
     }
+  });
+});
+
+describe("startNotices", () => {
+  const TZ = "America/New_York";
+  // Event 12 is at 9:00 AM on 2026-10-11. 9:05 AM New York is 13:05 UTC.
+  const now = new Date("2026-10-11T13:10:00Z");
+  const notStarted = (r: Regatta) =>
+    withEntry(withEntry(r, "101", { startedAt: null }), "102", { startedAt: null });
+  const started = withEntry(notStarted(done), "101", { startedAt: 9 * 60 + 5.5 });
+
+  it("notifies when a club boat starts, with its bow and start time", () => {
+    expect(startNotices(notStarted(done), started, club, EMPTY_SETTINGS, TZ, now)).toEqual([
+      {
+        regattaId: "r1",
+        eventKey: "womens u19 8+",
+        kind: "start",
+        title: "Made-up Head of the Lake",
+        body: "Started: Womens U19 8+, bow 101 at 9:05 AM",
+        url: "/regatta/r1",
+      },
+    ]);
+  });
+
+  it("notifies once per start", () => {
+    expect(startNotices(started, started, club, EMPTY_SETTINGS, TZ, now)).toEqual([]);
+  });
+
+  it("skips first fetches, other clubs and old starts", () => {
+    expect(startNotices(null, started, club, EMPTY_SETTINGS, TZ, now)).toEqual([]);
+    const otherClub = withEntry(notStarted(done), "102", { startedAt: 9 * 60 + 6 });
+    expect(startNotices(notStarted(done), otherClub, club, EMPTY_SETTINGS, TZ, now)).toEqual([]);
+    const later = new Date("2026-10-11T14:00:00Z");
+    expect(startNotices(notStarted(done), started, club, EMPTY_SETTINGS, TZ, later)).toEqual([]);
+  });
+
+  it("doesn't treat a copy stored before start times were kept as not started", () => {
+    const old = withEntry(done, "101", { startedAt: undefined });
+    expect(startNotices(old, started, club, EMPTY_SETTINGS, TZ, now)).toEqual([]);
   });
 });

@@ -19,7 +19,11 @@ self.addEventListener("push", (event) => {
     data: { url: data.url || "/" },
   };
   // Only set a tag when there is one. Some browsers drop notifications with an empty tag.
-  if (data.tag) options.tag = data.tag;
+  // renotify makes a replacement alert again instead of updating silently.
+  if (data.tag) {
+    options.tag = data.tag;
+    options.renotify = true;
+  }
   event.waitUntil(self.registration.showNotification(data.title || "CrewDash", options));
 });
 

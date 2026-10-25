@@ -205,7 +205,9 @@ export async function sendNotices(
           title: notice.title,
           body: notice.body,
           url: notice.url,
-          tag: `${notice.regattaId}:${notice.eventKey}`,
+          // Starts get their own tag, so the result that follows shows as a new alert
+          // rather than quietly replacing the start.
+          tag: `${notice.regattaId}:${notice.eventKey}${notice.kind === "start" ? ":start" : ""}`,
         };
         if (await deliver(sub, payload, send, expired)) sent++;
       }

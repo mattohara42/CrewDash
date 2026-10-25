@@ -16,6 +16,8 @@ export interface RawEntry {
   // Comma-separated, e.g. "buoy(5s), Age 16(0)". The bracketed Age number is
   // the handicap in seconds.
   PenaltyCode?: string;
+  // Time of day the boat crossed the start, "HH:MM:SS.mmm", once it has started.
+  G_Start_time_raw?: string;
 }
 
 export interface RawEvent {

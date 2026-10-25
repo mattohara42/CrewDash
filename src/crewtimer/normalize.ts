@@ -27,6 +27,9 @@ export interface Entry {
   penalties: Penalty[];
   averageAge: number | null;
   handicapSeconds: number | null;
+  // Minutes after midnight, on the event's day, that the boat started. Null until it
+  // has, and missing on records stored before start times were kept.
+  startedAt?: number | null;
 }
 
 export interface Event {
@@ -68,6 +71,14 @@ function parsePlace(place: number | string): number | null {
   return /^\d+$/.test(place.trim()) ? Number(place) : null;
 }
 
+/** "08:20:29.740" -> minutes after midnight (500.49...), or null. */
+function parseClockTime(text: string): number | null {
+  const m = /^(\d{1,2}):(\d{2}):(\d{2}(?:\.\d+)?)$/.exec(text.trim());
+  if (!m) return null;
+  const [hours, minutes, seconds] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  return hours < 24 && minutes < 60 && seconds < 60 ? hours * 60 + minutes + seconds / 60 : null;
+}
+
 export function normalizeEntry(raw: RawEntry): Entry {
   const info = parsePenaltyCode(raw.PenaltyCode);
   const adjText = (raw.AdjTime ?? "").trim();
@@ -99,6 +110,7 @@ export function normalizeEntry(raw: RawEntry): Entry {
     penalties: info.penalties,
     averageAge: info.averageAge,
     handicapSeconds: info.handicapSeconds,
+    startedAt: parseClockTime(raw.G_Start_time_raw ?? ""),
   };
 }
 
