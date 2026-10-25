@@ -34,6 +34,9 @@ export interface Event {
   name: string;
   raceType: string;
   start: string;
+  // Days after the regatta's first day. Missing for one-day regattas and on records
+  // stored before multi-day support. Use eventDate() rather than reading it directly.
+  day?: number;
   official: boolean;
   entries: Entry[];
 }
@@ -41,6 +44,7 @@ export interface Event {
 export interface Regatta {
   id: string;
   title: string;
+  // The first day. Events on later days carry a day offset.
   date: string;
   raceType: string;
   resultsPendingOfficial: boolean;
@@ -98,16 +102,34 @@ export function normalizeEntry(raw: RawEntry): Entry {
   };
 }
 
-function normalizeEvent(raw: RawEvent, regattaRaceType: string): Event {
+/** "2026-10-24" plus a number of days. */
+export function addDays(date: string, days: number): string {
+  return new Date(Date.parse(`${date}T12:00:00Z`) + days * 86_400_000).toISOString().slice(0, 10);
+}
+
+/** The date an event races on. */
+export function eventDate(regatta: Pick<Regatta, "date">, event: Pick<Event, "day">): string {
+  return event.day ? addDays(regatta.date, event.day) : regatta.date;
+}
+
+/** Every date the regatta races on, in order. */
+export function regattaDates(regatta: Pick<Regatta, "date" | "events">): string[] {
+  const dates = new Set([regatta.date, ...regatta.events.map((e) => eventDate(regatta, e))]);
+  return [...dates].sort();
+}
+
+function normalizeEvent(raw: RawEvent, regattaRaceType: string, days: string[]): Event {
   const num = String(raw.EventNum);
   // "23 Mens HS Novice 4+" -> "Mens HS Novice 4+"
   const event = raw.Event.replace(/\s+/g, " ").trim();
   const name = event.startsWith(`${num} `) ? event.slice(num.length).trim() : event;
+  const day = raw.Day ? days.indexOf(raw.Day) : -1;
   return {
     num,
     name,
     raceType: raw.RaceType || regattaRaceType,
     start: raw.Start ?? "",
+    ...(day > 0 && { day }),
     official: raw.Official === true,
     entries: listOf(raw.entries).map(normalizeEntry),
   };
@@ -119,12 +141,13 @@ export function normalizeRegatta(id: string, raw: RawRegattaResults): Regatta {
   }
   const info = raw.regattaInfo;
   const raceType = info.RaceType ?? "";
+  const days = listOf(info.DayList);
   return {
     id,
     title: info.Title,
     date: info.Date,
     raceType,
     resultsPendingOfficial: info.ResultsPendOfficial === true,
-    events: listOf(raw.results).map((event) => normalizeEvent(event, raceType)),
+    events: listOf(raw.results).map((event) => normalizeEvent(event, raceType, days)),
   };
 }

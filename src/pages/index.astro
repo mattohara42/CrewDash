@@ -10,7 +10,7 @@ import { regattaYear, regattasInYear, seriesName } from "../lib/history.js";
 import { seasonStats } from "../lib/stats.js";
 import { localDate, todayRegattas } from "../lib/today.js";
 import { venueForSeries } from "../lib/venues.js";
-import { conditionsFor } from "../lib/conditions.js";
+import { conditionsFor, conditionsKey } from "../lib/conditions.js";
 
 const { store, records, settings, club } = await loadContext();
 // On race days the page leads with today's and tomorrow's regattas.
@@ -27,7 +27,7 @@ const forecasts = await conditionsFor(withVenues, store.conditions, {
 });
 const today = withVenues.map((r) => ({
   ...r,
-  conditions: forecasts.get(r.record.regatta.id) ?? null,
+  conditions: forecasts.get(conditionsKey(r.record.regatta, r.date)) ?? null,
 }));
 const years = [...new Set(records.map((r) => regattaYear(r.regatta)))].sort().reverse();
 const asked = Astro.url.searchParams.get("year");

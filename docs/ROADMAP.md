@@ -96,7 +96,7 @@ Phase 2 (lineups) then unlocks rower pages, follow-a-rower alerts, the hot-seat 
 
 These are small and low-risk, and they decide whether some of the steps above are possible.
 
-- **A. Pre-race data.** Fetch the CrewTimer JSON for a regatta a few days before it runs, then again on the morning of the race. Does it list entries, bow numbers and event start times before any results exist? If it does, step 7 and a pre-race Today view work. If not, schedules would need RegattaCentral or manual entry.
+- **A. Pre-race data.** Fetch the CrewTimer JSON for a regatta a few days before it runs, then again on the morning of the race. Does it list entries, bow numbers and event start times before any results exist? If it does, step 7 and a pre-race Today view work. If not, schedules would need RegattaCentral or manual entry. **Answered 2026-10-24 (Head of the Fish): yes.** Entries, bow numbers and event start times were there the night before, and raced boats carry their actual start time. See HANDOFF.md.
 - **B. Results speed.** Add the results speed log before the next race weekend. It's a few lines in the refresh and answers an open item in HANDOFF.md.
 - **C. Historical weather.** Look up Open-Meteo's archive for the 2025 and 2026 Head of the Genesee mornings and check the wind looks plausible against what people remember.
 

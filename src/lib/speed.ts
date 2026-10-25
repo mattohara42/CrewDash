@@ -1,4 +1,4 @@
-import type { Event, Regatta } from "../crewtimer/normalize.js";
+import { eventDate, type Event, type Regatta } from "../crewtimer/normalize.js";
 import type { StoredRegatta } from "./store.js";
 import { startMinutes, zonedInstant } from "./today.js";
 
@@ -56,7 +56,7 @@ export function speedSummary(
     const t = record.resultTimes?.[event.num];
     const minutes = startMinutes(event.start);
     if (!t || minutes === null) continue;
-    const start = zonedInstant(record.regatta.date, minutes, timeZone).getTime();
+    const start = zonedInstant(eventDate(record.regatta, event), minutes, timeZone).getTime();
     if (t.first) first.push((Date.parse(t.first) - start) / 60_000);
     if (t.all) all.push((Date.parse(t.all) - start) / 60_000);
   }

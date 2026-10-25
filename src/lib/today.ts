@@ -1,4 +1,5 @@
 import type { ClubIdentity } from "../club.js";
+import { addDays, eventDate, regattaDates } from "../crewtimer/normalize.js";
 import { clubEvents } from "./club-view.js";
 import { formatStart, ordinal, statusLabel } from "./format.js";
 import { eventKey, type Settings } from "./settings.js";
@@ -17,8 +18,11 @@ export interface TodayEvent {
   done: boolean;
 }
 
+// One race day of a regatta. A two-day regatta shows as two cards on its first day.
 export interface TodayRegatta {
   record: StoredRegatta;
+  // The race day this card covers.
+  date: string;
   when: "Today" | "Tomorrow";
   events: TodayEvent[];
 }
@@ -26,10 +30,6 @@ export interface TodayRegatta {
 /** "2026-10-12" for the given instant in the given time zone. */
 export function localDate(now: Date, timeZone: string): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone }).format(now);
-}
-
-function addDays(date: string, days: number): string {
-  return new Date(Date.parse(`${date}T12:00:00Z`) + days * 86_400_000).toISOString().slice(0, 10);
 }
 
 /** Minutes after midnight for "9:30:00 AM", "9:30 AM" or "13:05", or null. */
@@ -77,10 +77,15 @@ export function todayRegattas(
   const today = localDate(now, timeZone);
   const tomorrow = addDays(today, 1);
   return records
-    .filter((r) => r.regatta.date === today || r.regatta.date === tomorrow)
-    .sort((a, b) => a.regatta.date.localeCompare(b.regatta.date))
-    .map((record) => {
+    .flatMap((record) =>
+      regattaDates(record.regatta)
+        .filter((date) => date === today || date === tomorrow)
+        .map((date) => ({ record, date })),
+    )
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .map(({ record, date }) => {
       const events = clubEvents(record.regatta, club)
+        .filter(({ event }) => eventDate(record.regatta, event) === date)
         .map(({ event, fieldSize, boats }) => {
           const minutes = startMinutes(event.start);
           return {
@@ -89,10 +94,7 @@ export function todayRegattas(
             key: eventKey(event.name, settings),
             name: event.name,
             start: event.start ? formatStart(event.start) : "",
-            startAt:
-              minutes === null
-                ? null
-                : zonedInstant(record.regatta.date, minutes, timeZone).toISOString(),
+            startAt: minutes === null ? null : zonedInstant(date, minutes, timeZone).toISOString(),
             boats: boats.map(({ entry }) => {
               const result =
                 entry.place !== null
@@ -114,7 +116,8 @@ export function todayRegattas(
         }));
       return {
         record,
-        when: record.regatta.date === today ? ("Today" as const) : ("Tomorrow" as const),
+        date,
+        when: date === today ? ("Today" as const) : ("Tomorrow" as const),
         events,
       };
     });

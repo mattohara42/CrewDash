@@ -5,6 +5,7 @@ import type { RawRegattaResults } from "../src/crewtimer/raw.js";
 import { EMPTY_SETTINGS } from "../src/lib/settings.js";
 import { localDate, startMinutes, todayRegattas, zonedInstant } from "../src/lib/today.js";
 import fixture from "./fixtures/regatta.json" with { type: "json" };
+import { twoDayRaw } from "./fixtures/two-day.js";
 
 const TZ = "America/New_York";
 const club = { name: "Lakeview Rowing Club", aliases: ["Lakeview Rowing Club"] };
@@ -73,5 +74,26 @@ describe("club timezone", () => {
     expect(parseClubConfig(base).timezone).toBe(TZ);
     expect(parseClubConfig({ ...base, timezone: "Europe/London" }).timezone).toBe("Europe/London");
     expect(() => parseClubConfig({ ...base, timezone: "Mars/Olympus" })).toThrow(/timezone/);
+  });
+});
+
+describe("two-day regattas", () => {
+  const twoDay = { regatta: normalizeRegatta("r2", twoDayRaw()), fetchedAt: "" };
+  const names = (cards: ReturnType<typeof todayRegattas>) =>
+    cards.map((c) => [c.when, c.date, c.events.map((e) => e.name)]);
+
+  it("shows the first day as today and the second as tomorrow", () => {
+    const sat = new Date("2026-10-10T14:00:00Z");
+    expect(names(todayRegattas([twoDay], club, EMPTY_SETTINGS, TZ, sat))).toEqual([
+      ["Today", "2026-10-10", ["Womens U19 8+"]],
+      ["Tomorrow", "2026-10-11", ["Mens Masters 60+ 1x"]],
+    ]);
+  });
+
+  it("still shows the regatta on its second day, with that day's start times", () => {
+    const sun = new Date("2026-10-11T14:00:00Z");
+    const cards = todayRegattas([twoDay], club, EMPTY_SETTINGS, TZ, sun);
+    expect(names(cards)).toEqual([["Today", "2026-10-11", ["Mens Masters 60+ 1x"]]]);
+    expect(cards[0]?.events[0]?.startAt).toBe("2026-10-11T13:30:00.000Z");
   });
 });

@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { normalizeRegatta } from "../src/crewtimer/normalize.js";
 import type { RawRegattaResults } from "../src/crewtimer/raw.js";
 import {
+  conditionsKey,
   describeConditions,
   racingHours,
   regattaConditions,
@@ -12,6 +13,7 @@ import {
 import { memoryStore } from "../src/lib/store.js";
 import { parseBearing } from "../src/lib/venues.js";
 import fixture from "./fixtures/regatta.json" with { type: "json" };
+import { twoDayRaw } from "./fixtures/two-day.js";
 
 const record = { regatta: normalizeRegatta("r1", fixture as RawRegattaResults), fetchedAt: "" };
 const venue = {
@@ -142,5 +144,31 @@ describe("parseBearing", () => {
     ["400", undefined],
   ])("%s -> %s", (text, deg) => {
     expect(parseBearing(text)).toBe(deg);
+  });
+});
+
+describe("two-day regattas", () => {
+  const twoDay = { regatta: normalizeRegatta("r2", twoDayRaw()), fetchedAt: "" };
+
+  it("takes racing hours from that day's events", () => {
+    expect(racingHours(twoDay, "2026-10-10")).toEqual([9, 10]);
+    expect(racingHours(twoDay, "2026-10-11")).toEqual([9, 11]);
+  });
+
+  it("caches each day separately, keeping the plain id for the first", async () => {
+    expect(conditionsKey(twoDay.regatta, "2026-10-10")).toBe("r2");
+    expect(conditionsKey(twoDay.regatta, "2026-10-11")).toBe("r2/2026-10-11");
+    const store = memoryStore();
+    const fetchImpl = vi.fn<typeof fetch>(async () => Response.json({ hourly }));
+    const opts = {
+      timeZone: "America/New_York",
+      units: "imperial" as const,
+      today: "2026-10-20",
+      fetchImpl,
+    };
+    await regattaConditions(twoDay, venue, store.conditions, opts, "2026-10-11");
+    expect(String(fetchImpl.mock.calls[0]![0])).toContain("start_date=2026-10-11");
+    expect(await store.conditions.get("r2/2026-10-11")).not.toBeNull();
+    expect(await store.conditions.get("r2")).toBeNull();
   });
 });

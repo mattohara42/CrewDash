@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { normalizeEntry, normalizeRegatta } from "../src/crewtimer/normalize.js";
+import {
+  eventDate,
+  normalizeEntry,
+  normalizeRegatta,
+  regattaDates,
+} from "../src/crewtimer/normalize.js";
 import type { RawEntry, RawRegattaResults } from "../src/crewtimer/raw.js";
 import fixture from "./fixtures/regatta.json" with { type: "json" };
+import { twoDayRaw } from "./fixtures/two-day.js";
 
 const regatta = normalizeRegatta("r1", fixture as RawRegattaResults);
 const [womens, masters] = regatta.events;
@@ -99,5 +105,29 @@ describe("normalizeEntry", () => {
 
   it("accepts a numeric place sent as a string", () => {
     expect(normalizeEntry(entry({ AdjTime: "10:00.000", Place: "4" })).place).toBe(4);
+  });
+});
+
+describe("multi-day regattas", () => {
+  it("dates each event from its day name", () => {
+    const r = normalizeRegatta("r2", twoDayRaw());
+    expect(r.events.map((e) => eventDate(r, e))).toEqual(["2026-10-10", "2026-10-11"]);
+    expect(regattaDates(r)).toEqual(["2026-10-10", "2026-10-11"]);
+  });
+
+  it("reads a day list stored as an object", () => {
+    const r = normalizeRegatta("r2", twoDayRaw({ "0": "Saturday", "1": "Sunday" }));
+    expect(r.events[1]?.day).toBe(1);
+  });
+
+  it("puts events with an unknown day on the first day", () => {
+    const r = normalizeRegatta("r2", twoDayRaw(["Day 1"]));
+    expect(r.events.map((e) => e.day)).toEqual([undefined, undefined]);
+    expect(regattaDates(r)).toEqual(["2026-10-10"]);
+  });
+
+  it("leaves one-day regattas as they were", () => {
+    expect(regatta.events.every((e) => !("day" in e))).toBe(true);
+    expect(regattaDates(regatta)).toEqual(["2026-10-11"]);
   });
 });
