@@ -1,0 +1,111 @@
+---
+import qrcode from "qrcode-generator";
+import Base from "../layouts/Base.astro";
+import { INVITE_DAYS, authConfigFromEnv, createInviteToken } from "../lib/auth.js";
+import { club } from "../lib/config.js";
+
+// A fresh invite each time the page opens, so the expiry is always two weeks away.
+const { sessionSecret } = authConfigFromEnv(process.env);
+const link = sessionSecret ? `${Astro.url.origin}/join?k=${createInviteToken(sessionSecret)}` : "";
+const expires = new Date(Date.now() + INVITE_DAYS * 86_400_000).toLocaleDateString("en-US", {
+  month: "long",
+  day: "numeric",
+  timeZone: club.timezone,
+});
+let qr = "";
+if (link) {
+  const code = qrcode(0, "M");
+  code.addData(link);
+  code.make();
+  qr = code.createSvgTag({ cellSize: 6, margin: 4, scalable: true });
+}
+const message = `Follow ${club.name} at regattas on CrewDash: our crews' start times, results and alerts. This link opens it, no password needed:`;
+---
+
+<Base title="Invite a parent">
+  <h1>Invite a parent</h1>
+  {link ? (
+    <>
+      <section class="card" data-share={JSON.stringify({ link, message })}>
+        <p>
+          Send this link to a {club.name} family. It opens CrewDash without the club password, then
+          they can add it to their home screen and turn on alerts.
+        </p>
+        <div class="actions">
+          <button type="button" data-native hidden>
+            Share link
+          </button>
+          <button type="button" data-copy>
+            Copy link
+          </button>
+        </div>
+        <p class="muted small" data-copied hidden role="status">
+          Copied. Paste it into a text or the team chat.
+        </p>
+      </section>
+      <section class="card scan">
+        <h2>Standing next to them?</h2>
+        <p class="muted">They can scan this with their phone's camera.</p>
+        <div class="qr" set:html={qr} />
+      </section>
+      <p class="muted small">
+        The link works for anyone who has it until {expires}, so send it to club families only. Open
+        this page again any time for a new one.
+      </p>
+    </>
+  ) : (
+    <p class="card notice">Invites need SESSION_SECRET to be set in Netlify.</p>
+  )}
+</Base>
+
+<script>
+  const box = document.querySelector<HTMLElement>("[data-share]");
+  if (box) {
+    const { link, message } = JSON.parse(box.dataset.share ?? "{}") as {
+      link: string;
+      message: string;
+    };
+    const native = box.querySelector<HTMLButtonElement>("[data-native]");
+    const copied = box.querySelector<HTMLElement>("[data-copied]");
+    if (native && navigator.share) {
+      native.hidden = false;
+      native.addEventListener("click", () => {
+        // A cancelled share sheet rejects. Nothing to do then.
+        navigator.share({ title: "CrewDash", text: message, url: link }).catch(() => {});
+      });
+    }
+    box.querySelector("[data-copy]")?.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(`${message} ${link}`);
+        if (copied) copied.hidden = false;
+      } catch {
+        // No clipboard access (an older browser or an embedded view): let them copy by hand.
+        prompt("Copy this link:", link);
+      }
+    });
+  }
+</script>
+
+<style>
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .scan {
+    text-align: center;
+  }
+  /* Scanners need dark on light whatever the page theme. */
+  .qr {
+    display: inline-block;
+    width: min(260px, 100%);
+    padding: 8px;
+    background: #fff;
+    border-radius: 8px;
+  }
+  .qr :global(svg) {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+</style>

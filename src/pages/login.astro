@@ -5,6 +5,7 @@ import { authConfigFromEnv, isConfigured, safeNext } from "../lib/auth.js";
 const params = Astro.url.searchParams;
 const next = safeNext(params.get("next"));
 const failed = params.has("error");
+const expiredInvite = params.has("invite");
 const needsAdmin = params.has("admin");
 const needsCoach = params.has("coach");
 const configured = isConfigured(authConfigFromEnv(process.env));
@@ -21,6 +22,11 @@ const configured = isConfigured(authConfigFromEnv(process.env));
   {needsAdmin && <p class="card notice">That page needs the admin password.</p>}
   {needsCoach && <p class="card notice">That page needs the coach or admin password.</p>}
   {failed && <p class="card notice">That password didn't work.</p>}
+  {expiredInvite && (
+    <p class="card notice">
+      That invite link has expired. Ask whoever sent it for a new one, or enter the club password.
+    </p>
+  )}
   <form method="post" action="/api/login" class="card">
     <input type="hidden" name="next" value={next} />
     <p>

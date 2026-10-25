@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+  INVITE_DAYS,
   canCoach,
+  createInviteToken,
   createSessionToken,
   isConfigured,
   roleForPassword,
   safeNext,
+  verifyInviteToken,
   verifySessionToken,
 } from "../src/lib/auth.js";
 
@@ -65,6 +68,39 @@ describe("session tokens", () => {
       verifySessionToken(createSessionToken("member", "s3cret", now), undefined, now),
     ).toBeNull();
   });
+});
+
+describe("invite tokens", () => {
+  it("is valid until it expires", () => {
+    const token = createInviteToken("s3cret", now);
+    const expires = now.getTime() + INVITE_DAYS * 86_400_000;
+    expect(verifyInviteToken(token, "s3cret", now)?.getTime()).toBe(expires);
+    expect(verifyInviteToken(token, "s3cret", new Date(expires + 1))).toBeNull();
+  });
+
+  it("rejects tampering and other secrets", () => {
+    const token = createInviteToken("s3cret", now);
+    const [kind, expires, signature] = token.split(".");
+    expect(
+      verifyInviteToken(`${kind}.${Number(expires) + 1}.${signature}`, "s3cret", now),
+    ).toBeNull();
+    expect(verifyInviteToken(token, "other", now)).toBeNull();
+    expect(verifyInviteToken(token, undefined, now)).toBeNull();
+  });
+
+  it("can't be swapped for a session, or a session for an invite", () => {
+    expect(verifySessionToken(createInviteToken("s3cret", now), "s3cret", now)).toBeNull();
+    expect(
+      verifyInviteToken(createSessionToken("member", "s3cret", now), "s3cret", now),
+    ).toBeNull();
+  });
+
+  it.each([null, "", "invite", "invite.1", "invite.1.2.3"])(
+    "rejects malformed invite %j",
+    (token) => {
+      expect(verifyInviteToken(token, "s3cret", now)).toBeNull();
+    },
+  );
 });
 
 describe("safeNext", () => {

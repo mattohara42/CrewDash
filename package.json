@@ -34,6 +34,7 @@
     "@astrojs/netlify": "^8.2.9",
     "@netlify/blobs": "^11.1.4",
     "astro": "^7.3.8",
+    "qrcode-generator": "^2.0.4",
     "web-push": "^3.6.7"
   }
 }

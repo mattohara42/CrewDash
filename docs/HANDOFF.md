@@ -28,6 +28,8 @@ Step 7 is partly built. Regatta pages and the Today card have "Add to calendar",
 
 Phase 2 (lineups and rower pages) still needs a `boats.xls` sample. How quickly CrewTimer results appear on race day is still unmeasured, but the refresh now logs it: each regatta records when every event's first and last results appeared (`resultTimes`, accurate to the 5-minute refresh), and the admin page shows the median minutes after the start. Check it after the next race weekend.
 
+Sharing is built. Any logged-in parent can open **Invite a parent** from the settings menu (`/share`, also linked at the end of Rowing 101). It makes an invite link (`/join?k=...`) to send through the phone's share sheet or copy, and shows it as a QR code to scan in person. The link logs a new phone in as a member, with no password, and lands on Rowing 101. It's signed with `SESSION_SECRET`, works for anyone who has it, and expires after 14 days (`INVITE_DAYS`). Nothing is stored, so the only way to cancel invites early is changing `SESSION_SECRET`, which logs everyone out. A phone that's already logged in keeps its session when it opens an invite. If the club moves to its own accounts later, this is the piece to revisit.
+
 A season is a calendar year for now. If the club thinks in fall and spring seasons, the event page can split them.
 
 ## Deployment
