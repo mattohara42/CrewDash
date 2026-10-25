@@ -1,4 +1,5 @@
 import type { ClubIdentity } from "../club.js";
+import { addDays, eventDate, regattaDates } from "../crewtimer/normalize.js";
 import { clubEvents } from "./club-view.js";
 import type { StoredRegatta } from "./store.js";
 import { startMinutes, zonedInstant } from "./today.js";
@@ -48,14 +49,13 @@ export function regattaCalendar(
   const timed = clubEvents(regatta, club).flatMap(({ event: e, boats }) => {
     const minutes = startMinutes(e.start);
     if (minutes === null) return [];
-    const start = zonedInstant(regatta.date, minutes, club.timezone);
+    const start = zonedInstant(eventDate(regatta, e), minutes, club.timezone);
     return [{ e, boats, start }];
   });
 
   if (timed.length === 0) {
-    const next = new Date(Date.parse(`${regatta.date}T12:00:00Z`) + 86_400_000)
-      .toISOString()
-      .slice(0, 10);
+    // DTEND is exclusive: the day after the last race day.
+    const next = addDays(regattaDates(regatta).at(-1)!, 1);
     event(
       regatta.id,
       regatta.title,

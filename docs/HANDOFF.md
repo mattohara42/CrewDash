@@ -2,7 +2,7 @@
 
 Where CrewDash stands, so the next person (or the next Claude session) can pick it up. The plan itself is in [PLAN.md](PLAN.md). This file covers status, decisions, findings and open items.
 
-Last updated 2026-10-12.
+Last updated 2026-10-24.
 
 ## Status
 
@@ -24,7 +24,7 @@ Lineups (Phase 2) are coach-entered. On a regatta page, coaches and admins can a
 
 Step 6 (conditions) is built for wind, temperature and rain from Open-Meteo, with no key. Its free tier is for non-commercial use and needs the attribution link shown under each line. The Today card shows the forecast, regatta pages show the day's weather, and series pages list each year's conditions. Wind is described relative to the course when the venue has a course direction. Lookups use the venue's Finish place (or its first place) and the racing hours from event start times. They're cached in the `regattas` Blobs store under `conditions/<id>`: archive results forever, forecasts and failures for an hour. Open-Meteo rate-limits by IP, and Netlify's IPs are shared, so a lookup can fail. The page then just leaves the line out. River flow (USGS) is not built yet.
 
-Step 7 is partly built. Regatta pages and the Today card have "Add to calendar", an `.ics` download with one entry per club event at its scheduled start, or one all-day entry when there are no start times. Estimated start and pass times for each boat are not built: they need to know whether CrewTimer publishes entries and start intervals before race day (experiment A). Starring an event on the Today card also adds it to this phone's alerts when the phone follows chosen events. The venue editor keeps what was typed when a save comes back with an error.
+Step 7 is partly built. Regatta pages and the Today card have "Add to calendar", an `.ics` download with one entry per club event at its scheduled start, or one all-day entry when there are no start times. Estimated start and pass times for each boat are not built yet. Experiment A is answered (see Verified against real data), so they can be: CrewTimer publishes entries, bow numbers and event start times the night before, and each boat's actual start time once it has raced. Starring an event on the Today card also adds it to this phone's alerts when the phone follows chosen events. The venue editor keeps what was typed when a save comes back with an error.
 
 Phase 2 (lineups and rower pages) still needs a `boats.xls` sample. How quickly CrewTimer results appear on race day is still unmeasured, but the refresh now logs it: each regatta records when every event's first and last results appeared (`resultTimes`, accurate to the 5-minute refresh), and the admin page shows the median minutes after the start. Check it after the next race weekend.
 
@@ -64,6 +64,13 @@ These came from the 2026 Head of the Genesee Sunday (`r16329`) and the 2025 one 
 - The "pending official" flag never clears. The 2025 regatta still shows it, so polling stops a few days after race day.
 - Event names vary in spacing and get renamed or split between years. Series titles vary in case.
 - Pittsford often enters several boats in one event, and field sizes change a lot from year to year.
+
+These came from the 2026 Head of the Fish (`r16426`), a two-day regatta, fetched on the Saturday evening. The data was kept outside the repo.
+
+- `regattaInfo.Date` is the first day only. Each event has a `Day` ("Saturday", "Sunday") that indexes `regattaInfo.DayList`. CrewDash now dates each event from it, so the Today card, calendar, weather and results-speed log use the right day. Before this, the Today card dropped the regatta on its second day.
+- A club with two boats in an event races as "Pittsford Crew (A)" and "Pittsford Crew (B)", even with only one boat. Genesee used the plain name. A trailing single boat letter now counts as the club.
+- Sunday's entries, bow numbers and event start times were all there the night before racing. `Stroke` was filled for most boats. This answers experiment A.
+- Each raced entry has `G_Start_time_raw`, the boat's actual start time of day. Saturday's morning events started 13 to 41 minutes behind schedule and caught up after lunch. Boats left about 27 seconds apart. Bow numbers run on across events, so a boat's place in the start order is its bow minus the event's first bow.
 
 Not yet seen: a sprint regatta. Sprint results may use fields the parser doesn't handle.
 

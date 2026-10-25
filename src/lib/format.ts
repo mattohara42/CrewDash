@@ -60,6 +60,20 @@ export function formatDate(date: string): string {
   });
 }
 
+/** One date, or "Sat, Oct 24, 2026 to Sun, Oct 25, 2026" for a multi-day regatta. */
+export function formatDates(dates: string[]): string {
+  return dates.length > 1
+    ? `${formatDate(dates[0]!)} to ${formatDate(dates.at(-1)!)}`
+    : formatDate(dates[0] ?? "");
+}
+
+/** "2026-10-11" -> "Sun" */
+export function formatWeekday(date: string): string {
+  const d = new Date(`${date}T12:00:00Z`);
+  if (Number.isNaN(d.getTime())) return date;
+  return d.toLocaleDateString("en-US", { weekday: "short", timeZone: "UTC" });
+}
+
 /** "10:40:00 AM" -> "10:40 AM". Other text passes through. */
 export function formatStart(start: string): string {
   return start.replace(/^(\d{1,2}:\d{2}):00(\s*[AP]M)$/i, "$1$2");

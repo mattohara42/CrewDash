@@ -24,6 +24,8 @@ export interface RawEvent {
   EventNum: string;
   RaceType?: string;
   Start?: string;
+  // Which day of a multi-day regatta, as named in RawRegattaInfo.DayList, e.g. "Sunday".
+  Day?: string;
   Official?: boolean;
   // Firebase returns arrays with gaps as objects keyed by index.
   entries?: RawEntry[] | Record<string, RawEntry>;
@@ -31,7 +33,10 @@ export interface RawEvent {
 
 export interface RawRegattaInfo {
   Title: string;
+  // The first day, "YYYY-MM-DD".
   Date: string;
+  // Day names in order, e.g. ["Saturday", "Sunday"]. Missing or one long for one-day regattas.
+  DayList?: string[] | Record<string, string>;
   RaceType?: string;
   ResultsPendOfficial?: boolean;
 }

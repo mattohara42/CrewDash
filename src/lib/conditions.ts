@@ -1,3 +1,4 @@
+import { eventDate, type Regatta } from "../crewtimer/normalize.js";
 import type { StoredRegatta } from "./store.js";
 import { startMinutes } from "./today.js";
 import { compassPoint, weatherPlace, type Venue } from "./venues.js";
@@ -35,9 +36,13 @@ const ARCHIVE_AFTER_DAYS = 6;
 const RECHECK_MS = 60 * 60_000;
 const TIMEOUT_MS = 3000;
 
-/** Racing hours from the club's event start times, or 8 am to 5 pm. */
-export function racingHours(record: StoredRegatta): [number, number] {
+/** Racing hours on a date from the event start times, or 8 am to 5 pm. */
+export function racingHours(
+  record: StoredRegatta,
+  date: string = record.regatta.date,
+): [number, number] {
   const starts = record.regatta.events
+    .filter((e) => eventDate(record.regatta, e) === date)
     .map((e) => startMinutes(e.start))
     .filter((m): m is number => m !== null);
   if (starts.length === 0) return [8, 17];
@@ -172,6 +177,12 @@ export function describeConditions(c: Conditions, courseBearing: number | null):
   return [wind, temp, rain].join(" · ");
 }
 
+/** Where one race day's conditions are cached, and their key in conditionsFor's map. */
+export function conditionsKey(regatta: Pick<Regatta, "id" | "date">, date: string): string {
+  // The first day keeps the plain id, so weather cached before multi-day support still counts.
+  return date === regatta.date ? regatta.id : `${regatta.id}/${date}`;
+}
+
 /** Conditions for a regatta at its venue, from the cache when fresh. Never throws. */
 export async function regattaConditions(
   record: StoredRegatta,
@@ -181,9 +192,11 @@ export async function regattaConditions(
     put(id: string, value: CachedConditions): Promise<void>;
   },
   opts: { timeZone: string; units: Units; today: string; now?: Date; fetchImpl?: typeof fetch },
+  // Which race day. Defaults to the first.
+  date: string = record.regatta.date,
 ): Promise<Conditions | null> {
   const place = venue ? weatherPlace(venue) : null;
-  const { date, id } = record.regatta;
+  const id = conditionsKey(record.regatta, date);
   // The forecast only reaches about two weeks ahead.
   if (!place || daysBetween(opts.today, date) > 14) return null;
   const now = opts.now ?? new Date();
@@ -192,7 +205,13 @@ export async function regattaConditions(
     if (cached && isFresh(cached, date, opts.today, now)) return cached.conditions;
     let conditions: Conditions | null = null;
     try {
-      conditions = await fetchConditions(place.lat, place.lon, date, racingHours(record), opts);
+      conditions = await fetchConditions(
+        place.lat,
+        place.lon,
+        date,
+        racingHours(record, date),
+        opts,
+      );
     } catch (err) {
       console.error("Weather lookup failed:", err);
     }
@@ -205,16 +224,22 @@ export async function regattaConditions(
   }
 }
 
-/** Looks up conditions for each regatta with a venue, in parallel. Keyed by regatta id. */
+/**
+ * Looks up conditions for each regatta with a venue, in parallel. Keyed by conditionsKey,
+ * which is the regatta id for its first day.
+ */
 export async function conditionsFor(
-  items: { record: StoredRegatta; venue: Venue | null }[],
+  items: { record: StoredRegatta; venue: Venue | null; date?: string }[],
   cache: Parameters<typeof regattaConditions>[2],
   opts: Parameters<typeof regattaConditions>[3],
 ): Promise<Map<string, Conditions>> {
   const found = await Promise.all(
     items.map(
-      async ({ record, venue }) =>
-        [record.regatta.id, await regattaConditions(record, venue, cache, opts)] as const,
+      async ({ record, venue, date = record.regatta.date }) =>
+        [
+          conditionsKey(record.regatta, date),
+          await regattaConditions(record, venue, cache, opts, date),
+        ] as const,
     ),
   );
   return new Map(found.filter((f): f is readonly [string, Conditions] => f[1] !== null));

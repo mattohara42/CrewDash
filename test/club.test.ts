@@ -10,6 +10,12 @@ describe("matchClub", () => {
     expect(matchClub("Lakeview RC", club)).toBe("match");
   });
 
+  it("matches aliases with a boat letter", () => {
+    expect(matchClub("Lakeview Rowing Club (A)", club)).toBe("match");
+    expect(matchClub("Lakeview RC (b)", club)).toBe("match");
+    expect(matchClub("Lakeview Rowing Club (AB)", club)).toBe("near");
+  });
+
   it("flags names that contain an alias as near", () => {
     expect(matchClub("Lakeview Rowing Club - EXH", club)).toBe("near");
   });

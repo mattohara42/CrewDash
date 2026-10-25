@@ -3,6 +3,7 @@ import { normalizeRegatta } from "../src/crewtimer/normalize.js";
 import type { RawRegattaResults } from "../src/crewtimer/raw.js";
 import { regattaCalendar } from "../src/lib/ics.js";
 import fixture from "./fixtures/regatta.json" with { type: "json" };
+import { twoDayRaw } from "./fixtures/two-day.js";
 
 const club = {
   name: "Lakeview Rowing Club",
@@ -44,5 +45,27 @@ describe("regattaCalendar", () => {
     expect(ics).toContain("DTSTART;VALUE=DATE:20261011");
     expect(ics).toContain("DTEND;VALUE=DATE:20261012");
     expect(ics).not.toContain("LOCATION");
+  });
+});
+
+describe("regattaCalendar on a two-day regatta", () => {
+  it("puts each event on its own day", () => {
+    const record = { regatta: normalizeRegatta("r2", twoDayRaw()), fetchedAt: "" };
+    const ics = regattaCalendar(record, club, null, now);
+    expect(ics).toContain("DTSTART:20261010T130000Z");
+    expect(ics).toContain("DTSTART:20261011T133000Z");
+  });
+
+  it("spans both days when there are no start times", () => {
+    const raw = twoDayRaw();
+    for (const e of raw.results as { Start?: string }[]) e.Start = "";
+    const ics = regattaCalendar(
+      { regatta: normalizeRegatta("r2", raw), fetchedAt: "" },
+      club,
+      null,
+      now,
+    );
+    expect(ics).toContain("DTSTART;VALUE=DATE:20261010");
+    expect(ics).toContain("DTEND;VALUE=DATE:20261012");
   });
 });
