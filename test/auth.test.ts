@@ -111,6 +111,10 @@ describe("safeNext", () => {
     ["https://evil.example", "/"],
     ["//evil.example", "/"],
     ["/\\evil.example", "/"],
+    ["/\t/evil.example", "/"],
+    ["/\n/evil.example", "/"],
+    ["/ \t/evil.example", "/%20/evil.example"],
+    ["/regatta/r1#event-3", "/regatta/r1#event-3"],
   ])("maps %j to %j", (input, output) => {
     expect(safeNext(input)).toBe(output);
   });
