@@ -1,48 +1,58 @@
 # Going public: a draft post and what it would take
 
-A first pass at sharing CrewDash beyond Pittsford, written 2026-10-26. It has a draft post, notes on screenshots, privacy and licensing, an honest look at the money, and what replacing CrewTimer or RegattaCentral would really involve. Nothing here is decided yet.
+A first pass at sharing CrewDash beyond Pittsford, written 2026-10-26. It has a draft post, notes on screenshots, privacy and licensing, an honest look at the money, and what replacing CrewTimer or RegattaCentral would really involve. Decisions so far are noted where they were made.
+
+## Status
+
+Updated 2026-10-26. Entazza (CrewTimer) still hasn't replied. OarSpotter declined, so CrewDash keeps drawing only the club's own blade. The licence is settled as AGPL-3.0 (see below). A made-up demo club is built for screenshots and trying the app (`npm run demo`), and phone screenshots from it are in [screenshots/](screenshots/).
 
 ## Draft post
 
-For a rowing parents' group, a coaches' forum or r/Rowing. It is written to invite replies, not to sell anything.
+For a rowing parents' group, a coaches' forum or r/Rowing. It leads with the one thing no current tool does: show a parent their own kid's races today, and nothing else. It is written to invite replies, not to sell anything.
 
-> **Subject:** We built our club a race-day app in two weeks. Would yours want one?
+> **Subject:** "When does my kid race?" We built the app that answers it.
 >
-> I'm a parent volunteer with a youth rowing club. Every regatta, our families had the same problems: scrolling through hundreds of entries to find our boats, not knowing when our kid races, and new parents having no idea what "Exh", "adjusted time" or "4x-" mean.
+> I'm a parent volunteer with a youth rowing club. Every regatta, I'd open the results site and see everything: every club, every event, hundreds of boats, in a layout built for regatta officials. What I actually wanted to know was simple. When does my kid race today? Where do I stand to watch? How did they do, and what does "4th, +0:12.3, Exh" even mean?
 >
-> So a few of us built CrewDash, a phone-first web app that shows a club only its own boats. It reads the public results that CrewTimer already publishes. It took about two weeks of evenings and costs our club close to nothing to run.
+> None of the regatta apps answer that, because none of them are built for one club, let alone one family. So a few of us built CrewDash, a phone-first web app that shows a club only its own boats. It reads the public results CrewTimer already publishes, took about two weeks of evenings, and costs our club close to nothing to run.
 >
-> What it does today:
+> Open it on race day and the home page is just your club's events, in start order, with a countdown to the next one and results as they land. Star your kid's crews and that's all you see. Your phone buzzes when they start and again when their results are in.
 >
-> - **Race day at a glance.** On a regatta weekend the home page becomes one screen with our events in start order, a countdown to the next start, results as they land, the weather along the course and the venue map.
-> - **Push alerts.** Phones get a notification when one of our crews is about to start and when an event's results are in. Parents can follow just their kid's crews.
-> - **Rowing 101 for new families.** Plain-language explanations of head races, boat types, handicaps and penalties, linked from every confusing term on a results page.
-> - **Venues.** Parking, viewing spots, course length and tips from parents who've been before, with one-tap map links.
-> - **Coach announcements.** "Tent moved to the east lot" goes out as a push and a banner. No group chat needed for logistics.
-> - **Context for results.** Margin to the next place, gap to a medal, crews beaten, pace per 500 m, and year-over-year at the same regatta.
-> - **Lineups and rower pages.** Coaches pick seats from the club roster, and families can follow a rower across the season.
-> - **Recaps and a season "Wrapped".** Shareable club-level images with events and places but no names, plus a full-screen banquet mode.
-> - **Add to calendar, weather, and invite links** so a parent can bring the next parent on board with a QR code.
+> Around that:
 >
-> It's private by design. The whole app sits behind a club login because most of our athletes are minors, and each club runs its own copy, so no one else holds your club's data.
+> - **Rowing 101 for new families**, linked from every confusing term on a results page.
+> - **Venue guides**: where to park, where to stand, when crews pass the footbridge, tips from parents who've been before.
+> - **Coach announcements** ("Tent moved to the east lot") as a push and a banner.
+> - **Results with context**: gap to a medal, crews beaten, pace per 500 m, this year against last year at the same regatta, and the weather along the course.
+> - **Rower pages** from coach-entered lineups, so you can follow your kid across the season.
+> - **Recaps and a season "Wrapped"** for the club's socials and the banquet, with no names on them.
+> - **Invite links** so an experienced parent can bring a new one on board with a QR code.
+>
+> It's private by design. Most of our athletes are minors, so everything sits behind a club login, and each club runs its own copy, so no one else holds your club's data. The code will be free and open source.
 >
 > I'd love to know:
 >
 > 1. Would your club use something like this?
-> 2. Should it be free and open source, so any club can run its own copy, or would you rather pay a small amount for someone to host it?
+> 2. Would you run your own copy (it takes a volunteer an hour or so), or would you want someone to host it?
 > 3. What's the one thing you wish your regatta tools did that they don't?
 >
 > Screenshots below use a made-up club.
 
-Two notes on tone. The post doesn't criticise CrewTimer, RegattaCentral or anyone else, and I'd keep it that way. CrewDash depends on CrewTimer's public results feed, and Entazza hasn't yet replied to our email (see HANDOFF.md). CrewTimer is also a small developer with a cheap product, so a "these companies are garbage" post would land on the wrong target and could get the feed locked. The contrast speaks for itself.
+Two notes on tone. The post doesn't criticise CrewTimer, RegattaCentral or anyone else, and I'd keep it that way. CrewDash depends on CrewTimer's public results feed, and Entazza hasn't replied to our email (see HANDOFF.md). CrewTimer is also a small developer with a cheap product, so a "these companies are garbage" post would land on the wrong target and could get the feed locked. The contrast speaks for itself: their tools show everything to everyone, and CrewDash shows one family what they care about.
 
 The post says "two weeks" because the first commit was 2026-10-12. "A few days" would be challenged by anyone who looks.
 
+Because Entazza hasn't replied, it's worth sending one short follow-up before posting, and saying in the README that CrewDash reads CrewTimer's public results page data and will switch to an official feed if one is offered.
+
 ## Screenshots
 
-Blurring real screenshots is risky. Names leak through blur, through crew names like "Pittsford Crew (A)" and through stroke names in small print. A better route is a demo copy of CrewDash seeded with a made-up club ("Riverside Rowing Club") and made-up regattas built from the test fixture's shape. Every screenshot then comes from fiction, and the same demo can be the public "try it" link later. It needs a seeding script and a separate Netlify site or a local build, which is a small piece of work.
+The screenshots come from a demo copy of CrewDash with a made-up club ("Riverside Rowing Club"), made-up rivals, rowers, venues and three seasons of regattas. Nothing in them is real, so nothing needs blurring. Blurring real screenshots was the riskier route: names leak through blur, through crew names and through stroke names in small print.
 
-The best screenshots are the Today card on a phone, a push notification on a lock screen, a regatta page with margins, Rowing 101 and the Wrapped banquet slide.
+`npm run demo` starts it locally with the password `demo` (`coach` and `admin` open those pages). Nothing is fetched or saved: the data is built in memory, and today's regatta is rebuilt around the clock on every page view, so the Today card always has some results in, one event racing and more to come. That works best between about 10 am and 6 pm in the demo club's time zone (US Eastern). In the evening every event already has a result.
+
+With the demo running, `node scripts/screenshots.mjs docs/screenshots` saves phone-sized shots of the main pages. Set `DEMO_THEME=dark` for dark mode or `DEMO_FULL=1` for full-length pages. The best ones for a post are `today.png`, `alerts.png`, `rower.png`, `rowing-101.png` and `venue.png`.
+
+The same demo could later be deployed as a public "try it" site. That's one Netlify site with `CREWDASH_DEMO=1` and the demo passwords set, and it costs a deploy, so it waits for your go-ahead.
 
 ## Why it matters most to new parents
 
@@ -60,21 +70,21 @@ The current design is a strong starting point, and the post should lean on it.
 
 **What a club would need to check.** Whether it has an athlete-data policy (still open for Pittsford). School-affiliated teams may fall under district rules on student data, and FERPA could apply if a school runs the team. COPPA only bites for under-13s, so middle-school programs should be careful. Clubs outside the US would need to think about GDPR. A short "privacy notes for clubs" page in the repo would cover this without us giving legal advice.
 
-**Third-party terms.** Open-Meteo's free tier is for non-commercial use. A volunteer-run, donation-supported copy is very likely fine, but a paid hosted service would need their paid plan. CrewTimer's feed isn't a documented API, so we need Entazza's blessing before telling other clubs to depend on it. OarSpotter blades are still unasked.
+**Third-party terms.** Open-Meteo's free tier is for non-commercial use. A volunteer-run, donation-supported copy is very likely fine, but a paid hosted service would need their paid plan. CrewTimer's feed isn't a documented API and Entazza hasn't replied, so other clubs should know it could change or be locked down, and that CrewDash keeps its own copy of every regatta it has fetched. OarSpotter declined, so CrewDash only ever draws the club's own blade.
 
 **If we ever host it for many clubs**, everything changes. We'd need personal accounts, a privacy policy, data processing agreements with clubs, a security and breach process, and probably insurance. That is the point where volunteer-run stops being realistic.
 
 ## Open source, donations, or paid
 
-My recommendation is open source with an optional donation link, and no hosted service for now.
+Decided 2026-10-26: open source under AGPL-3.0 (or any later version), with an optional donation link, and no hosted service for now. The licence is in `LICENSE`.
 
 Open source suits this for three reasons. Clubs can see exactly what happens to their athletes' data, which matters more than any privacy promise. Each club hosts its own copy, which keeps the compliance position above. And other parent-developers can contribute sprint support, other timing systems or other countries' formats. A donation link (GitHub Sponsors or Open Collective) can cover your time without creating an obligation to support anyone.
 
-The licence choice matters. MIT lets anyone, including a regatta software company, take the code and sell it. AGPL-3.0 lets any club use and change it freely, but anyone offering it as a hosted service must publish their changes. If you'd be unhappy to see CrewDash inside a paid product, AGPL is the better fit. This is your call.
+AGPL means any club can use and change CrewDash freely, but anyone who offers it as a hosted service must publish their changes under the same licence. A regatta software company can't quietly fold it into a paid product. MIT would have allowed that.
 
-A paid hosted version is possible later if clubs ask for it and someone wants to run it as a small business. It would need the work in the last privacy paragraph above.
+A paid hosted version is possible later if clubs ask for it and someone wants to run it as a small business. It would need the work in the last privacy paragraph above. As the copyright holder you can still offer it under other terms yourself, as long as outside contributions are covered (a simple contributor agreement, or only accepting contributions under AGPL).
 
-Before the repo goes public it needs a licence file, a README written for a club volunteer rather than a developer, setup steps that don't assume a Claude session, a scan of the git history for anything club-specific or real (the club config is Pittsford's, which is fine, but worth a look), and a decision on whether to keep Pittsford as the example or switch `club.json` to the demo club.
+Before the repo goes public it still needs a README written for a club volunteer rather than a developer, setup steps that don't assume a Claude session, a scan of the git history for anything real (the club config is Pittsford's, which is fine, but the history is worth a look), and a decision on whether to keep Pittsford as the example `club.json` or point newcomers at the demo club.
 
 ## The money, honestly
 
@@ -110,9 +120,8 @@ Steps one and two are volunteer-sized. Step three is a serious side project. Ste
 
 ## Suggested next steps
 
-1. Wait for Entazza's reply, or chase it, before posting publicly.
-2. Decide the licence (MIT or AGPL) and whether to keep the repo private until the post gets interest.
-3. Build the demo club for screenshots.
-4. Add login rate limiting.
-5. Measure Netlify usage after the next race weekend so the cost claim has a real number.
-6. Post the draft in one or two places, and see what people ask for before building more.
+1. Send Entazza one short follow-up, then post whether or not they reply.
+2. Add login rate limiting.
+3. Measure Netlify usage after the next race weekend so the cost claim has a real number.
+4. Make the repo public when the post gets interest, after the history check above.
+5. Post the draft in one or two places with the demo screenshots, and see what people ask for before building more.

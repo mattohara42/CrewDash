@@ -2,7 +2,7 @@
 
 Where CrewDash stands, so the next person (or the next Claude session) can pick it up. The plan itself is in [PLAN.md](PLAN.md). This file covers status, decisions, findings and open items.
 
-Last updated 2026-10-24.
+Last updated 2026-10-26.
 
 ## Status
 
@@ -32,6 +32,8 @@ Sharing is built. Any logged-in parent can open **Invite a parent** from the set
 
 Stored regattas keep the parser's output, not CrewTimer's raw JSON, so a parser change only reaches a stored regatta when it's fetched again. Each stored copy records the `PARSER_VERSION` (in `src/crewtimer/normalize.ts`) that made it. **Bump it whenever `normalizeRegatta`'s output changes.** The scheduled refresh then re-fetches older copies of past regattas five per run, on top of the recent ones. This came from the 2026 Head of the Fish: the multi-day fix was deployed late on the Saturday, but the stored copy was still the old parse on Sunday morning, so it didn't show as Today until a refresh. Coaches and admins now have a **Refresh results** button on each regatta page and Today card for cases like that. It fetches the regatta and sends alerts the same way the scheduled refresh does.
 
+A made-up demo club (`npm run demo`, code in `src/demo/`) runs the whole app from memory with fictional data, for screenshots and trying CrewDash out. `CREWDASH_DEMO=1` swaps `blobsStore()` for the demo store and `club.json` for `src/demo/club.json`. Today's regatta is rebuilt around the clock on every read. `scripts/screenshots.mjs` saves phone screenshots from it into `docs/screenshots/`. Plans for sharing CrewDash with other clubs are in [GOING_PUBLIC.md](GOING_PUBLIC.md).
+
 A season is a calendar year for now. If the club thinks in fall and spring seasons, the event page can split them.
 
 ## Deployment
@@ -54,7 +56,8 @@ A season is a calendar year for now. If the club thinks in fall and spring seaso
 - Exhibition boats are tagged in comparisons and show an unofficial "would have placed".
 - Push notifications are Phase 1.5.
 - PRs merge automatically once CI is green and there are no open review comments.
-- The repo is private. No real rower data goes into git either way.
+- The repo is private for now. No real rower data goes into git either way.
+- The licence is AGPL-3.0 or later (decided 2026-10-26). See GOING_PUBLIC.md.
 - The next updates are in [ROADMAP.md](ROADMAP.md): Rowing 101, venue pages, coach login with announcements, then a race-day view, analysis, conditions and schedules. Venue pages are edited on the admin page, coaches get their own login, and announcements replace two-way chat.
 
 ## Verified against real data
@@ -85,8 +88,8 @@ Not yet seen: a sprint regatta. Sprint results may use fields the parser doesn't
 - **RegattaCentral API access.** Declined on 2026-10-12. API access is limited to approved timing vendors for now. They're considering broader access and invited specific requirements, with no timeline. Our requirements reply (below) was sent on 2026-10-12. Lineups are coach-entered instead (see Status). Don't scrape RegattaCentral's website as a workaround.
 - **Sprint regatta link.** A CrewTimer link to a sprint regatta (for example the Pittsford Regatta) would let us test the parser on sprint results.
 - **Athlete-data policy.** The club should check whether it has a policy on publishing athlete information.
-- **OarSpotter.** Not yet asked about showing other clubs' blades. The draft email is below.
-- **Entazza (CrewTimer's developer).** Emailed on 2026-10-12 (the draft below). Waiting for a reply.
+- **OarSpotter.** Declined (2026-10-26). CrewDash only draws the club's own blade, from `club.json`.
+- **Entazza (CrewTimer's developer).** Emailed on 2026-10-12 (the draft below). No reply as of 2026-10-26. A short follow-up is worth sending before posting publicly.
 - **Repo About panel.** Not yet set. Suggested values are below.
 
 ## Draft email to Entazza
@@ -175,7 +178,7 @@ From RegattaCentral's API V4 documentation (`https://api.regattacentral.com/v4/`
 
 ## Draft email to OarSpotter
 
-For showing other clubs' blades next to their crews. Not yet sent. Find the contact address on oarspotter.com. Until they agree, CrewDash only draws Pittsford's own blade, from `colors.blade` in `club.json` (default: the stripe colors).
+For showing other clubs' blades next to their crews. Kept for reference: OarSpotter declined, so CrewDash only draws Pittsford's own blade, from `colors.blade` in `club.json` (default: the stripe colors).
 
 > **Subject:** Permission to show OarSpotter blade images in a club results app
 >

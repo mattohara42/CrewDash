@@ -10,4 +10,11 @@ export default tseslint.config(
     files: ["public/sw.js"],
     languageOptions: { globals: { self: "readonly", URL: "readonly" } },
   },
+  {
+    // Node scripts. The screenshot script also runs a line in the browser page.
+    files: ["scripts/*.mjs"],
+    languageOptions: {
+      globals: { process: "readonly", console: "readonly", document: "readonly" },
+    },
+  },
 );

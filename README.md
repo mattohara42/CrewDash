@@ -19,4 +19,12 @@ npm install
 npm run check   # lint, format check, typecheck and tests
 ```
 
+## Trying it with a made-up club
+
+`npm run demo` starts CrewDash with a fictional club, its rivals, rowers, venues and three seasons of regattas, all built in memory. Log in with `demo` (or `coach`, or `admin`). Today's regatta follows the clock, so the race-day view always has some results in and more to come. With the demo running, `node scripts/screenshots.mjs` saves phone-sized screenshots. See [docs/GOING_PUBLIC.md](docs/GOING_PUBLIC.md#screenshots).
+
 Never commit real regatta data. It contains rowers' names, most of them minors. Tests use the made-up fixture in `test/fixtures/`. The `data/` folder is ignored by git for local experiments.
+
+## Licence
+
+CrewDash is free software under the [GNU Affero General Public License v3.0](LICENSE) or any later version. Any club can use and change it. Anyone who runs a changed copy as a service for others must share their changes under the same licence.
