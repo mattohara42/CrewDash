@@ -1,4 +1,4 @@
-import { getStore } from "@netlify/blobs";
+import { clubStore } from "./blobs.js";
 import { regattaDates, type Regatta } from "../crewtimer/normalize.js";
 import { EMPTY_SETTINGS, parseSettings, type Settings } from "./settings.js";
 import type { CachedConditions } from "./conditions.js";
@@ -149,12 +149,13 @@ const CALENDAR_KEY = "calendar";
 const CLUB_KEY = "club";
 
 /**
- * Netlify Blobs store. Shared by every deploy of the site, previews included. With
+ * Netlify Blobs store: the site-wide one on production, the deploy's own on previews and
+ * branch deploys (see blobs.ts). With
  * CREWDASH_DEMO=1 it's the made-up demo club instead (see src/demo/seed.ts).
  */
 export function blobsStore(): RegattaStore {
   if (isDemo()) return demoStore();
-  const store = getStore({ name: "regattas", consistency: "strong" });
+  const store = clubStore("regattas");
   const calendarIO: CalendarIO = {
     async read() {
       const found = await store.getWithMetadata(CALENDAR_KEY, { type: "json" });

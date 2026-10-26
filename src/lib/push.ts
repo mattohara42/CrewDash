@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { getStore } from "@netlify/blobs";
+import { clubStore } from "./blobs.js";
 import { normalizeName } from "../club.js";
 import type { ResultNotice } from "./notify.js";
 
@@ -47,7 +47,7 @@ function subKey(endpoint: string): string {
 }
 
 export function blobsPushStore(): PushStore {
-  const store = getStore({ name: "push", consistency: "strong" });
+  const store = clubStore("push");
   return {
     async getKeys() {
       return (await store.get(KEYS, { type: "json" })) as VapidKeys | null;
