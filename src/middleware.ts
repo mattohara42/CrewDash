@@ -1,4 +1,4 @@
-import { defineMiddleware } from "astro:middleware";
+import { defineMiddleware, sequence } from "astro:middleware";
 import { SESSION_COOKIE, authConfigFromEnv, canCoach, verifySessionToken } from "./lib/auth.js";
 import { loadClub } from "./lib/club-settings.js";
 import { isDemo } from "./lib/config.js";
@@ -10,9 +10,26 @@ const PUBLIC_PATHS = new Set(["/login", "/api/login", "/join", "/manifest.webman
 // visitors would see, send pushes or fetch real results. Reading push status is fine.
 const DEMO_READ_ONLY = ["/api/admin/", "/api/coach/", "/api/push/subscribe", "/api/push/test"];
 
+// Sent with every response. No other site may frame CrewDash, so nobody can trick an admin
+// or coach into clicking its buttons inside a hidden frame.
+const SECURITY_HEADERS: Record<string, string> = {
+  "Content-Security-Policy": "frame-ancestors 'none'",
+  "X-Frame-Options": "DENY",
+  "X-Content-Type-Options": "nosniff",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+};
+
+const securityHeaders = defineMiddleware(async (_context, next) => {
+  const response = await next();
+  for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
+    response.headers.set(name, value);
+  }
+  return response;
+});
+
 // Every page requires the club password. Coach pages need the coach or admin password,
 // and admin pages the admin password.
-export const onRequest = defineMiddleware(async (context, next) => {
+const requireLogin = defineMiddleware(async (context, next) => {
   const { pathname, search } = context.url;
   // Public pages show the club's name and colors too.
   await loadClub(() => blobsStore().getClub());
@@ -49,3 +66,5 @@ export const onRequest = defineMiddleware(async (context, next) => {
   response.headers.set("Cache-Control", "private, no-store");
   return response;
 });
+
+export const onRequest = sequence(securityHeaders, requireLogin);
