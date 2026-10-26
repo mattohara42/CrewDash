@@ -66,3 +66,42 @@ describe("changeCalendar", async () => {
     expect(write).not.toHaveBeenCalled();
   });
 });
+
+describe("cachedRecords", async () => {
+  const { cachedRecords } = await import("../src/lib/store.js");
+
+  it("downloads a regatta only when its etag changes, and forgets deleted ones", async () => {
+    const cache = new Map();
+    const load = vi.fn(async (key: string) => record(key.replace("regatta/", "")));
+    const ids = (records: StoredRegatta[]) => records.map((r) => r.regatta.id);
+
+    const first = [
+      { key: "regatta/r1", etag: "a" },
+      { key: "regatta/r2", etag: "a" },
+    ];
+    expect(ids(await cachedRecords(first, cache, load))).toEqual(["r1", "r2"]);
+    expect(load).toHaveBeenCalledTimes(2);
+
+    // Nothing changed: no downloads.
+    await cachedRecords(first, cache, load);
+    expect(load).toHaveBeenCalledTimes(2);
+
+    // r2 changed and r1 was deleted.
+    expect(ids(await cachedRecords([{ key: "regatta/r2", etag: "b" }], cache, load))).toEqual([
+      "r2",
+    ]);
+    expect(load).toHaveBeenCalledTimes(3);
+    expect([...cache.keys()]).toEqual(["regatta/r2"]);
+  });
+
+  it("skips a regatta deleted between listing and download", async () => {
+    const cache = new Map();
+    const found = await cachedRecords(
+      [{ key: "regatta/gone", etag: "a" }],
+      cache,
+      async () => null,
+    );
+    expect(found).toEqual([]);
+    expect(cache.size).toBe(0);
+  });
+});

@@ -102,6 +102,43 @@ export async function changeCalendar(
   }
 }
 
+// Regattas this server instance has already downloaded, by Blobs key, with the etag they had.
+// Listing the keys returns each one's current etag, so a page view only downloads regattas
+// that changed since this instance last saw them. A cold instance downloads them all once.
+// Callers never change a record in place (the in-memory test store hands out shared objects
+// the same way), so sharing them between requests is safe.
+interface Cached {
+  etag: string;
+  record: StoredRegatta;
+}
+const listCache = new Map<string, Cached>();
+
+/**
+ * The records for these keys, from the cache when the etag still matches and from load()
+ * otherwise. Keys no longer listed are dropped from the cache.
+ */
+export async function cachedRecords(
+  listing: { key: string; etag: string }[],
+  cache: Map<string, Cached>,
+  load: (key: string) => Promise<StoredRegatta | null>,
+): Promise<StoredRegatta[]> {
+  const listed = new Set(listing.map((b) => b.key));
+  for (const key of cache.keys()) if (!listed.has(key)) cache.delete(key);
+  const records = await Promise.all(
+    listing.map(async ({ key, etag }) => {
+      const hit = cache.get(key);
+      if (hit && hit.etag === etag) return hit.record;
+      const record = await load(key);
+      // Kept under the listed etag. If the blob changed again since, the next listing
+      // shows a newer etag and it's downloaded then.
+      if (record) cache.set(key, { etag, record });
+      else cache.delete(key);
+      return record;
+    }),
+  );
+  return records.filter((r): r is StoredRegatta => r !== null);
+}
+
 export interface RegattaStore {
   get(id: string): Promise<StoredRegatta | null>;
   put(record: StoredRegatta): Promise<void>;
@@ -203,10 +240,11 @@ export function blobsStore(): RegattaStore {
     },
     async list() {
       const { blobs } = await store.list({ prefix: PREFIX });
-      const records = await Promise.all(
-        blobs.map((b) => store.get(b.key, { type: "json" }) as Promise<StoredRegatta | null>),
+      return cachedRecords(
+        blobs,
+        listCache,
+        (key) => store.get(key, { type: "json" }) as Promise<StoredRegatta | null>,
       );
-      return records.filter((r): r is StoredRegatta => r !== null);
     },
     async getClub() {
       return await store.get(CLUB_KEY, { type: "json" });
