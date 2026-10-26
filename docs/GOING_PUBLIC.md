@@ -4,7 +4,7 @@ A first pass at sharing CrewDash beyond Pittsford, written 2026-10-26. It has a 
 
 ## Status
 
-Updated 2026-10-26. Entazza (CrewTimer) still hasn't replied. OarSpotter declined, so CrewDash keeps drawing only the club's own blade. The licence is settled as AGPL-3.0 (see below). A made-up demo club is built for screenshots and trying the app (`npm run demo`), and phone screenshots from it are in [screenshots/](screenshots/).
+Updated 2026-10-26. Entazza (CrewTimer) still hasn't replied. OarSpotter declined, so CrewDash draws every club's blade itself. The licence is settled as AGPL-3.0 (see below). A made-up demo club runs locally with `npm run demo` and publicly at https://crewdash-demo.netlify.app (read-only, never fetches real results). Phone screenshots from it are in [screenshots/](screenshots/). A setup guide for a second club is in [SETUP.md](SETUP.md), with an outreach email below.
 
 ## Draft post
 
@@ -33,10 +33,10 @@ For a rowing parents' group, a coaches' forum or r/Rowing. It leads with the one
 > I'd love to know:
 >
 > 1. Would your club use something like this?
-> 2. Would you run your own copy (it takes a volunteer an hour or so), or would you want someone to host it?
+> 2. Would your club run its own copy, or would you want someone to host it? We're still working out how to make setup easy for a club volunteer.
 > 3. What's the one thing you wish your regatta tools did that they don't?
 >
-> Screenshots below use a made-up club.
+> You can try it here, with a made-up club: https://crewdash-demo.netlify.app
 
 Two notes on tone. The post doesn't criticise CrewTimer, RegattaCentral or anyone else, and I'd keep it that way. CrewDash depends on CrewTimer's public results feed, and Entazza hasn't replied to our email (see HANDOFF.md). CrewTimer is also a small developer with a cheap product, so a "these companies are garbage" post would land on the wrong target and could get the feed locked. The contrast speaks for itself: their tools show everything to everyone, and CrewDash shows one family what they care about.
 
@@ -82,7 +82,7 @@ Open source suits this for three reasons. Clubs can see exactly what happens to 
 
 AGPL means any club can use and change CrewDash freely, but anyone who offers it as a hosted service must publish their changes under the same licence. A regatta software company can't quietly fold it into a paid product. MIT would have allowed that.
 
-A paid hosted version is possible later if clubs ask for it and someone wants to run it as a small business. It would need the work in the last privacy paragraph above. As the copyright holder you can still offer it under other terms yourself, as long as outside contributions are covered (a simple contributor agreement, or only accepting contributions under AGPL).
+A paid hosted version is possible later if clubs ask for it and someone wants to run it as a small business. It would need the work in the last privacy paragraph above. As the copyright holder you can still offer it under other terms yourself, as long as outside contributions are covered (a simple contributor agreement, or only accepting contributions under AGPL). That matters for the most promising route to every family: if Entazza wanted these features inside CrewTimer, AGPL would oblige them to open-source CrewTimer too, so you would offer them the code under MIT or similar. Don't accept outside contributions without an agreement until that's settled.
 
 Before the repo goes public it still needs a README written for a club volunteer rather than a developer, setup steps that don't assume a Claude session, a scan of the git history for anything real (the club config is Pittsford's, which is fine, but the history is worth a look), and a decision on whether to keep Pittsford as the example `club.json` or point newcomers at the demo club.
 
@@ -168,9 +168,30 @@ The useful work is, in order:
 >
 > Since then I found the JSON results export in your FAQ (`results?asfile=true&format=json`), and I'd like to switch CrewDash to it, since it's documented. Is that the endpoint you'd prefer clubs use, and is a check every 5 minutes on race days alright?
 >
-> Two other questions. Other clubs have asked about running their own copy, and I'm planning to open-source CrewDash under the AGPL. Would you be comfortable with that, and would you be open to it being described as a companion to CrewTimer? And for a guide I'm writing on hosting small regattas cheaply: what does CrewTimer cost a regatta, if anything?
+> Two other questions. Other clubs have asked about running their own copy, and I'm planning to open-source CrewDash. Would you be comfortable with that, and with it being described as a companion to CrewTimer? And for a guide I'm writing on hosting small regattas cheaply: what does CrewTimer cost a regatta, if anything?
+>
+> One idea, if it's of interest. What families tell us they want is a view of their own club: their crews in start order, a star to follow their kid's boat, an alert when it starts and finishes, and plain-English explanations of the jargon. If any of that would be useful inside CrewTimer itself, so every regatta got it without clubs running anything, I'd be glad to share the code under whatever licence suits you. There's a demo with a made-up club at https://crewdash-demo.netlify.app.
 >
 > Thanks again for CrewTimer, and for open-sourcing so much of it.
+>
+> Matt O'Hara
+> Pittsford Crew
+
+### Draft: to a friendly club
+
+For the club most likely to say yes, ideally one whose coach or a parent you already know. The point is to learn what setup takes for someone who isn't us.
+
+> **Subject:** A free race-day app for your club's families?
+>
+> Hi [name],
+>
+> This fall a few of us at Pittsford built CrewDash, a phone app that shows families only their own club's boats from CrewTimer results: their crews in start order on race day, alerts when a boat starts and finishes, a Rowing 101 page for new parents, venue guides, and season recaps. Our families have taken to it.
+>
+> There's a demo with a made-up club here: https://crewdash-demo.netlify.app
+>
+> We'd love one more club to try running its own copy this spring, so we can see what setup is like for someone who didn't build it. It's free: it runs on a free Netlify account, and your club's data stays in your own copy. A parent volunteer who's comfortable with a website form could set it up in an evening, and I'm happy to help on a call.
+>
+> Interested?
 >
 > Matt O'Hara
 > Pittsford Crew
@@ -232,16 +253,11 @@ Send to regatta services or membership support (check the current address on usr
 
 Research and outreach first, as agreed on 2026-10-26. Nothing gets built until the answers are in.
 
-1. Send the three emails above (Entazza, USRowing, Streamline).
+1. Send the emails above: Entazza (with the CrewTimer partnership idea), a friendly club, USRowing and Streamline.
 2. Find one local scrimmage or small regatta willing to try the free stack, with CrewDash for families.
-3. Post on Reddit with the demo screenshots, and ask what small clubs struggle with when hosting.
+3. Post on Reddit with the demo link and screenshots, and ask what small clubs struggle with.
 4. Write the "host a small regatta for free" playbook from the answers.
 
-Small CrewDash fixes, ready whenever there's a deploy to batch them with:
+Done on 2026-10-26: the manifest and icons are static, polling is lighter off race day, logins are rate-limited, the "ET" label uses the club's time zone, race-day weather is cached ahead of page views, iPhones are prompted to install for alerts, other clubs' blades and the whole field are on regatta pages, the public demo is up, and [SETUP.md](SETUP.md) is written. CrewTimer's documented export turned out to lack regatta details and start times, so CrewDash stays on the Firebase feed.
 
-- Switch fetching to CrewTimer's documented JSON export.
-- Prerender the manifest and add root `favicon.ico` and `apple-touch-icon.png`, about 40% fewer function runs.
-- Add login rate limiting.
-- Replace the hard-coded "ET" on the regatta page with the club's time zone.
-
-Before the repo goes public: the git-history check and the README rewrite described above.
+Before the repo goes public: the git-history check described above. The Deploy to Netlify button in the README only works once it's public.

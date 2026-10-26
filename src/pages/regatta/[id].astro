@@ -63,17 +63,23 @@ const conditions = dates.flatMap((date) => {
 });
 const otherYears = regattasInSeries(records, seriesKey(series)).length > 1;
 const refreshError = Astro.url.searchParams.get("error");
+// Ends with the club's own zone, such as "EDT" or "PST", rather than assuming US Eastern.
+// timeZoneName can't be combined with dateStyle and timeStyle, so the parts are spelled out.
 const updated = new Date(fetchedAt).toLocaleString("en-US", {
-  dateStyle: "medium",
-  timeStyle: "short",
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
   timeZone: club.timezone,
+  timeZoneName: "short",
 });
 ---
 
 <Base title={regatta.title}>
   <h1>{regatta.title}</h1>
   <p class="muted">
-    {formatDates(dates)} · Results fetched {updated} ET ·{" "}
+    {formatDates(dates)} · Results fetched {updated} ·{" "}
     {regattaLinks(record).map((l) => (
       <>
         <a href={l.href}>{l.label}</a> ·{" "}

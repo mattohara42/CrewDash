@@ -1,10 +1,12 @@
 ---
 import PlaceChart from "../components/charts/PlaceChart.astro";
 import StatTiles from "../components/StatTiles.astro";
+import AlertsPrompt from "../components/AlertsPrompt.astro";
 import Today from "../components/Today.astro";
 import Base from "../layouts/Base.astro";
 import { clubEvents, clubSummary } from "../lib/club-view.js";
 import { loadContext } from "../lib/context.js";
+import { isDemo } from "../lib/config.js";
 import { formatDate } from "../lib/format.js";
 import { regattaYear, regattasInYear, seriesName } from "../lib/history.js";
 import { seasonStats } from "../lib/stats.js";
@@ -42,6 +44,7 @@ const regattas = season.map(({ regatta }) => ({
 ---
 
 <Base title={year ? `${year} season` : "Season"}>
+  {!isDemo() && <AlertsPrompt />}
   {today.length > 0 && <Today regattas={today} />}
   <h1>{year ? `${year} season` : "Season"}</h1>
 

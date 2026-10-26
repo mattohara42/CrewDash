@@ -1,0 +1,92 @@
+---
+// Nudges phones that don't get race alerts yet: iPhones must be added to the Home Screen
+// first, and installed phones still have to turn alerts on. Hidden until the script decides
+// it applies, and "Not now" hides it for two weeks on this phone.
+---
+
+<div class="card alerts-prompt" data-alerts-prompt hidden>
+  <p data-ios hidden>
+    <strong>Get race alerts on your iPhone.</strong> Tap Share, then{" "}
+    <strong>Add to Home Screen</strong>, and open CrewDash from the new icon. iPhones only send
+    alerts to apps added that way.
+  </p>
+  <p data-enable hidden>
+    <strong>Want a buzz when our crews start and finish?</strong> Turn on race alerts for this
+    phone.
+  </p>
+  <p class="actions">
+    <a class="button" href="/notifications">
+      Set up alerts
+    </a>
+    <button type="button" class="secondary" data-later>
+      Not now
+    </button>
+  </p>
+</div>
+
+<script>
+  const KEY = "crewdash:alerts-prompt-hidden-until";
+  const box = document.querySelector<HTMLElement>("[data-alerts-prompt]")!;
+  const stored = (() => {
+    try {
+      return Number(localStorage.getItem(KEY) ?? 0);
+    } catch {
+      return 0;
+    }
+  })();
+
+  async function decide(): Promise<"ios" | "enable" | null> {
+    const isIOS =
+      /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    const installed =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (navigator as { standalone?: boolean }).standalone === true;
+    if (isIOS && !installed) return "ios";
+    if (!("serviceWorker" in navigator && "PushManager" in window && "Notification" in window)) {
+      return null;
+    }
+    // Asked before and answered either way: nothing to nudge.
+    if (Notification.permission !== "default") return null;
+    const reg = await navigator.serviceWorker.getRegistration();
+    return (await reg?.pushManager.getSubscription()) ? null : "enable";
+  }
+
+  if (Date.now() > stored) {
+    void decide().then((which) => {
+      if (!which) return;
+      box.querySelector<HTMLElement>(which === "ios" ? "[data-ios]" : "[data-enable]")!.hidden =
+        false;
+      box.hidden = false;
+    });
+  }
+  box.querySelector("[data-later]")!.addEventListener("click", () => {
+    box.hidden = true;
+    try {
+      localStorage.setItem(KEY, String(Date.now() + 14 * 86_400_000));
+    } catch {
+      // Private browsing: it just shows again next time.
+    }
+  });
+</script>
+
+<style>
+  .alerts-prompt p {
+    margin: 0 0 8px;
+  }
+  /* A link styled like the site's buttons. */
+  .alerts-prompt .button {
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: var(--button);
+    color: var(--button-text);
+    font-weight: 700;
+    text-decoration: none;
+  }
+  .alerts-prompt .actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin: 0;
+  }
+</style>
