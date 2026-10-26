@@ -121,3 +121,74 @@ describe("the settings form", () => {
     expect("error" in result && result.error).toMatch(message);
   });
 });
+
+describe("crew names", () => {
+  const club = async () => {
+    const { checkClub } = await load();
+    const result = checkClub(saved);
+    if ("error" in result) throw new Error(result.error);
+    return result.club;
+  };
+
+  it("adds a name once, ignoring case and spacing, and removes it", async () => {
+    const { withAlias, withoutAlias } = await load();
+    const base = await club();
+    const added = withAlias(withAlias(base, "Lakeview - EXH"), "  lakeview  - exh ");
+    expect(added.aliases).toEqual(["Lakeview Rowing Club", "Lakeview RC", "Lakeview - EXH"]);
+    expect(withoutAlias(added, "LAKEVIEW - EXH").aliases).toEqual(base.aliases);
+  });
+
+  it("refuses to save a club with no names left", async () => {
+    const { withoutAlias, saveClub } = await load();
+    const { memoryStore } = await import("../src/lib/store.js");
+    const store = memoryStore();
+    const none = withoutAlias(withoutAlias(await club(), "Lakeview RC"), "Lakeview Rowing Club");
+    expect(await saveClub(store, none)).toMatch(/at least one name/);
+    expect(await store.getClub()).toBeNull();
+  });
+});
+
+describe("moveExtraAliases", () => {
+  const setUp = async () => {
+    const mod = await load();
+    const { memoryStore } = await import("../src/lib/store.js");
+    const store = memoryStore();
+    await store.putClub(saved);
+    await mod.loadClub(() => store.getClub(), 0);
+    return { ...mod, store };
+  };
+
+  it("moves the old extra names into the club settings, once", async () => {
+    const { moveExtraAliases, store, club } = await setUp();
+    const settings = { extraAliases: ["lakeview rc", "Lakeview - EXH"], eventAliases: { a: "b" } };
+    await store.putSettings(settings);
+    await moveExtraAliases(store, settings);
+    expect(club.aliases).toEqual(["Lakeview Rowing Club", "Lakeview RC", "Lakeview - EXH"]);
+    expect(await store.getClub()).toMatchObject({ aliases: club.aliases });
+    expect(await store.getSettings()).toEqual({ extraAliases: [], eventAliases: { a: "b" } });
+  });
+
+  it("waits until the club is set up", async () => {
+    const { moveExtraAliases, loadClub } = await load();
+    const { memoryStore } = await import("../src/lib/store.js");
+    const store = memoryStore();
+    await loadClub(() => store.getClub(), 0);
+    const settings = { extraAliases: ["Lakeview RC"], eventAliases: {} };
+    await store.putSettings(settings);
+    await moveExtraAliases(store, settings);
+    expect(await store.getClub()).toBeNull();
+    expect((await store.getSettings()).extraAliases).toEqual(["Lakeview RC"]);
+  });
+
+  it("leaves both lists alone when the club can't take the names", async () => {
+    const { moveExtraAliases, store } = await setUp();
+    const settings = {
+      extraAliases: Array.from({ length: 40 }, (_, i) => `Crew ${i}`),
+      eventAliases: {},
+    };
+    await store.putSettings(settings);
+    await moveExtraAliases(store, settings);
+    expect((await store.getSettings()).extraAliases).toHaveLength(40);
+    expect(await store.getClub()).toMatchObject({ aliases: saved.aliases });
+  });
+});

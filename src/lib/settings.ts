@@ -3,7 +3,8 @@ import { normalizeName, type ClubIdentity } from "../club.js";
 // Admin choices that live in the app instead of in git, so an admin can make
 // them without changing the club settings.
 export interface Settings {
-  // Extra crew names to count as the club, on top of the club settings' aliases.
+  // Crew names added before club settings moved to Admin. moveExtraAliases() in
+  // club-settings.ts moves them into the club's own names and empties this.
   extraAliases: string[];
   // Renamed or split events: normalized event name -> the name to group it under.
   eventAliases: Record<string, string>;
@@ -26,25 +27,11 @@ export function parseSettings(value: unknown): Settings {
   };
 }
 
-/** The club config with the admin's extra aliases added. */
+/** The club config with any not-yet-moved extra aliases added, so they count meanwhile. */
 export function effectiveClub<T extends ClubIdentity>(club: T, settings: Settings): T {
   const seen = new Set(club.aliases.map(normalizeName));
   const extra = settings.extraAliases.filter((a) => !seen.has(normalizeName(a)));
   return { ...club, aliases: [...club.aliases, ...extra] };
-}
-
-export function addAlias(settings: Settings, name: string): Settings {
-  const key = normalizeName(name);
-  if (!key || settings.extraAliases.some((a) => normalizeName(a) === key)) return settings;
-  return { ...settings, extraAliases: [...settings.extraAliases, name.trim()] };
-}
-
-export function removeAlias(settings: Settings, name: string): Settings {
-  const key = normalizeName(name);
-  return {
-    ...settings,
-    extraAliases: settings.extraAliases.filter((a) => normalizeName(a) !== key),
-  };
 }
 
 /** The key an event is grouped under across regattas, after any admin merges. */
