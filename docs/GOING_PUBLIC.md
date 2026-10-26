@@ -68,9 +68,9 @@ The current design is a strong starting point, and the post should lean on it.
 
 **What we already avoid.** No birthdates, no erg scores, no photos, no two-way chat between adults and minors (which keeps clubs clear of SafeSport's MAAPP rules on electronic messages), no rower names in notifications unless someone follows that rower, and no names in shareable recap images.
 
-**What a club would need to check.** Whether it has an athlete-data policy (still open for Pittsford). School-affiliated teams may fall under district rules on student data, and FERPA could apply if a school runs the team. COPPA only bites for under-13s, so middle-school programs should be careful. Clubs outside the US would need to think about GDPR. A short "privacy notes for clubs" page in the repo would cover this without us giving legal advice.
+**What a club would need to check.** Whether it has an athlete-data policy (still open for Pittsford). School-affiliated teams may fall under district rules on student data, and FERPA could apply if a school runs the team. COPPA only covers children under 13, so it matters for middle-school and learn-to-row programs. Its 2025 amendments (tighter consent and data-retention rules) had to be met by April 22, 2026. Clubs outside the US would need to think about GDPR. A short "privacy notes for clubs" page in the repo would cover this without us giving legal advice.
 
-**Third-party terms.** Open-Meteo's free tier is for non-commercial use. A volunteer-run, donation-supported copy is very likely fine, but a paid hosted service would need their paid plan. CrewTimer's feed isn't a documented API and Entazza hasn't replied, so other clubs should know it could change or be locked down, and that CrewDash keeps its own copy of every regatta it has fetched. OarSpotter declined, so CrewDash only ever draws the club's own blade.
+**Third-party terms.** Open-Meteo's terms allow "non-profit websites or apps that do not have subscriptions or advertising" and say "voluntary donations, including contributions through a tip jar, are permitted", with a limit of 10,000 calls a day. A donation-supported CrewDash fits. A paid hosted service would need their paid plan. CrewTimer documents a JSON results export (see the research below), which is a sturdier footing than the Firebase path CrewDash reads today. Entazza still hasn't confirmed they're happy with clubs using it. OarSpotter declined, so CrewDash only ever draws the club's own blade.
 
 **If we ever host it for many clubs**, everything changes. We'd need personal accounts, a privacy policy, data processing agreements with clubs, a security and breach process, and probably insurance. That is the point where volunteer-run stops being realistic.
 
@@ -90,38 +90,158 @@ Before the repo goes public it still needs a README written for a club volunteer
 
 The savings story is weaker than it feels, and the post shouldn't promise it.
 
-CrewDash costs a club almost nothing. Netlify's free allowance covers a club's normal traffic, and the scheduled refresh only runs on race weekends. A busy season might reach a paid tier. That should be measured on Netlify's usage page after the next race weekend before quoting any figure.
+**What CrewDash costs.** Netlify's logs for the Head of the Fish Sunday (the 24 hours to 02:00 UTC on 2026-10-26) show 782 page renders and 120 scheduled refreshes, about 900 function runs for a race day. Netlify now bills in credits. The free plan has 300 a month, compute is metered at 10 credits per GB-hour, and each production deploy costs 15 credits (third-party summaries of Netlify's 2026 pricing, worth confirming on Netlify's own page). On those numbers a race day costs about one credit of compute, and the deploys are the main cost. That's why batching deploys matters more than anything about page views. The team is on Netlify's Personal plan.
 
-But CrewDash doesn't replace anything a club currently pays for. Clubs pay regatta entry fees, which the regatta organiser sets. RegattaCentral's charges are folded into those entry fees or charged to the organiser, and card processing (around 3%) costs money whoever does it. CrewTimer is a free app, and whatever it charges goes to the regatta, not the club. I couldn't find CrewTimer's current pricing published anywhere, so I can't say how much a regatta pays for it. The money a club could save is small. The money a regatta organiser could save is real, but only by replacing the systems below.
+The same logs show easy savings. 305 of the 782 renders (39%) were for `/manifest.webmanifest`, which never changes but is rendered by a function on every request. Another 40 or so were for `/favicon.ico` and `/apple-touch-icon*.png` at the site root, which don't exist as static files, so each request runs the function and returns an error. Prerendering the manifest and adding those icon files would cut function runs by about 40%. These are small, separate fixes (see Next steps).
+
+**What CrewDash saves.** Nothing a club currently pays for. Clubs pay regatta entry fees, which the organiser sets. The research below found that the timing and registration software is cheaper than it looks: CrewTimer's app is free, and Streamline charges hosts nothing beyond card fees. The money in this sport goes to boats, travel, coaching, entry fees and USRowing membership, not to results software.
 
 What CrewDash does save is volunteer time and parent confusion, and it shows how cheaply good software can now be built. That is a more honest and more persuasive pitch.
 
-## What it would really take to replace CrewTimer and RegattaCentral
+## Replacing CrewTimer and RegattaCentral: research
 
-The short answer is that a club can't leave them on its own. Regattas choose their registration and timing systems, and every club entering that regatta goes along. Replacing them means building for regatta organisers, and convincing them to switch.
+Researched 2026-10-26 with one question in mind: not making money, but improving the experience and lowering the barrier for smaller or less well-funded clubs. The research changed the answer. Sources are listed at the end.
 
-The work splits into layers, from easiest to hardest.
+### CrewTimer is not the problem
 
-**1. Results and the family experience (done).** This is what CrewDash already does, on top of CrewTimer's data. It's the part the incumbents do worst and the part families see.
+CrewTimer is more complete and more open than we assumed. The mobile app is free on both app stores. Its documentation covers head and sprint races, multiple timing points, penalties, exhibition boats, multi-day regattas, progressions (a Google Sheets add-on), kiosk and livestream overlays, a FinishLynx connector, and a video finish system built on a roughly $1,230 network camera and an ordinary laptop. Configuration is a Google Sheet, and it imports RegattaCentral's `boats.xls` lineups directly.
 
-**2. Head race timing.** CrewTimer's core idea, volunteers at the start and finish tapping phones, is already cheap and clever. A replacement is technically small: a phone app that records bow numbers and timestamps, syncs them, handles disputes and corrections, and publishes results live. The hard parts are reliability with bad cell signal at a riverbank, clock sync between start and finish, and a referee workflow for penalties and protests. Regattas would need to trust it on their biggest day of the year, and that trust takes seasons of use at small regattas.
+Entazza has published nine repositories on GitHub under the MIT licence: the documentation, the video review and recorder apps, the FinishLynx connector, a points calculator and shared types. The shared-types README says they were released "to facilitate migration of additional CrewTimer modules to open source". Their own open-source code reads the same `crewtimer-results.firebaseio.com` feed CrewDash uses.
 
-**3. Sprint timing.** Much harder. Sprint racing needs lane timing and photo finish to settle close races, which means hardware (high frame-rate line-scan or video cameras), precise start signals, and software that referees accept. This is where specialist vendors earn their money, and I wouldn't attempt it early.
+Their FAQ documents a results export: `https://www.crewtimer.com/results?asfile=true&regatta=<id>&format=json`. Tested on 2026-10-26 with a public regatta ID, it returns the same results as JSON. That is a supported endpoint, and CrewDash should move to it.
 
-**4. Draws, schedules and progressions.** Turning entries into heats, semis and finals, lane draws, schedules with minimum gaps between a rower's races, and handling scratches. It's well-defined logic, but every regatta has its own rules and there are many edge cases. Streamline Rowing already offers this for free to regatta hosts, so that market isn't empty.
+I couldn't find what CrewTimer charges a regatta, if anything. The app is free, but the admin site doesn't publish prices. That goes on the list for Entazza.
 
-**5. Registration and payments.** This is RegattaCentral's real moat. It covers club accounts, entries, lineups, changes up to race day, entry fees with early and late rates, refunds, card processing (Stripe would do), invoicing, waivers, and checking every rower's and coach's USRowing membership and SafeSport status. That last part needs an agreement with USRowing. It also carries the heaviest legal load: payments, tax, refunds and holding thousands of minors' birthdates and membership numbers.
+What CrewTimer lacks is exactly what CrewDash adds: a view for one club and one family, alerts, venue guides, explanations for new parents. So the right move is to build on CrewTimer and offer CrewDash as its family-facing companion, not to replace it. Rebuilding phone timing would spend a season of volunteer effort recreating something that is already free, mature and partly open.
 
-**6. Adoption.** The hardest layer. Every club, coach and regatta already has RegattaCentral accounts and habits. Regattas won't switch mid-season or without a track record, and governing bodies may have arrangements in place. A replacement needs a few friendly regattas willing to run it alongside the old system for a season.
+### Free registration already exists
 
-A realistic path, if you wanted one, starts with what CrewDash does well and works down. First, make CrewDash something any club can run (open source, a demo, good setup docs). Then offer it to a few local regattas as their family-facing results app. Then build head race timing for small regattas and scrimmages, where the stakes are low. Registration and sprint timing come last, if at all. Each step is useful by itself, so stopping anywhere still leaves something good.
+Streamline Rowing says "hosting a regatta is completely FREE". The only charge is card processing at 2.9% plus 30 cents, the standard Stripe rate, which any replacement would pay too. It covers scheduling, roster import, entries, invoicing, progressions, a sprint split timer and published results, with no app to install. It isn't a niche option: the Head of the Fish and the Saratoga Invitational take entries through it. It doesn't mention USRowing membership or waiver checks.
 
-Steps one and two are volunteer-sized. Step three is a serious side project. Steps four and five are a small company, with real legal and financial obligations.
+So a small club that wants to host an unsanctioned scrimmage or regatta can already do it for close to nothing: Streamline for entries, CrewTimer for timing, a Google Sheet in between. What's missing is a guide to doing it and a good experience for families, not software.
+
+### The real barrier is USRowing's sanctioning rules
+
+USRowing's 2026 membership announcement says: "Free Regatta Sanctioning continues for events that utilize RegattaCentral." Its sanctioning page says Plus members get event insurance at "$0 if utilizing RegattaCentral as the event platform", that organisers not using RegattaCentral "must pay sanctioning fees in full", and that if not using RegattaCentral "the Regatta Director must submit compliance records for all clubs and athletes before racing begins". RegattaCentral is the "recommended platform", and the sanctioning application itself is submitted through a RegattaCentral login.
+
+That is the lock-in. A sanctioned regatta that leaves RegattaCentral pays sanctioning fees it otherwise wouldn't, and its volunteers have to check every athlete's membership, waiver and SafeSport status by hand. Better software can't remove either cost. Only USRowing can. I couldn't open the sanctioning price sheet (a PDF linked from the page), so the size of the fee is still unknown.
+
+USRowing has no public API for checking membership. Its 2026 policy notes describe integrations with its own background-check provider and with RegattaCentral (a coach dashboard), and nothing for other platforms.
+
+For comparison, British Rowing runs its own entry system, BROE2, which every affiliated competition must use. It checks memberships and ages against British Rowing's own database. That model removes the private-vendor dependency, though it doesn't make entries free.
+
+### What a small club pays to take part at all
+
+Clubs entering sanctioned regattas need a USRowing organisational membership. Dues rose in 2026 by about 3% for uninsured organisations and 7% for insured ones, and the Small tier now covers 26 to 60 members. A club that isn't a member can buy a one-off Regatta Pass for each regatta. Regatta pages quote about $250 to $265 with insurance and $100 to $105 for the Lite version, which covers up to 12 entries. Athletes racing for a member club need a Basic individual membership and a signed waiver. These costs are set by USRowing and have nothing to do with software.
+
+### What this means
+
+For a club that only travels to regattas, no software change lowers its costs much. For a club that wants to host, the free tools exist for unsanctioned events, and the barrier for sanctioned events is a USRowing policy that favours one vendor. Building a new registration or timing platform would put a great deal of volunteer effort into the parts that are already cheap, and would leave the real barrier where it is.
+
+The useful work is, in order:
+
+1. **Make the free stack usable.** Write a "host a small regatta for free" playbook: Streamline for entries, CrewTimer for timing, CrewDash for families. Include a timeline, a volunteer list, the spreadsheet set-up and what to do when something breaks. This is documentation, not code, and it's the single most useful thing for a small club thinking about hosting.
+2. **Make CrewDash the family layer for any CrewTimer regatta.** Switch to CrewTimer's documented export, keep it easy for any club to run, and make the demo public so people can try it.
+3. **Build the glue where it's missing.** Turning a Streamline entry export into a CrewTimer configuration sheet is a likely candidate. It needs a real Streamline export to check first.
+4. **Advocate, with evidence.** Ask USRowing what a non-RegattaCentral sanctioned regatta pays and what "compliance records" means in practice. Ask whether they'd offer a membership-check API to other platforms, or apply free sanctioning to any platform that meets a published standard. A note from a few small clubs, with numbers, carries weight. This costs nothing to try.
+5. **Build a replacement only for a proven gap.** If, after steps 1 to 4, small hosts still hit a wall that no free tool covers, that specific wall is worth building for. Nothing found so far is one.
+
+### Open questions, and who can answer them
+
+| Question                                                                                                                                                  | Who                         | Why it matters                                                                     |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------- | ---------------------------------------------------------------------------------- |
+| What does a regatta pay for CrewTimer, if anything? Are they happy for club apps to use the results export? Would they link to a companion like CrewDash? | Entazza                     | Whether the free stack is really free, and CrewDash's footing                      |
+| What is the sanctioning fee for a regatta not on RegattaCentral, and what do the "compliance records" involve?                                            | USRowing                    | The size of the real barrier                                                       |
+| Is there, or will there be, a way for other platforms to check membership and waivers?                                                                    | USRowing                    | Whether any non-RegattaCentral path can scale                                      |
+| Has Streamline hosted USRowing-sanctioned regattas, and how did the compliance check work?                                                                | Streamline                  | Whether a sanctioned regatta can leave RegattaCentral today                        |
+| Can Streamline export entries in a form CrewTimer's spreadsheet can take?                                                                                 | Streamline, or a real event | Whether the glue in step 3 is needed                                               |
+| Would a local small regatta or scrimmage try the free stack, with CrewDash for families?                                                                  | Local clubs                 | A real test before anyone builds anything                                          |
+| Does Pittsford have an athlete-data policy?                                                                                                               | Pittsford Crew              | Already open in HANDOFF.md, and other clubs will ask the same about their own data |
+
+### Draft: follow-up to Entazza
+
+> **Subject:** Re: CrewDash: a club results view built on CrewTimer data
+>
+> Hi Glenn,
+>
+> Following up on my note from October 12. CrewDash has been running for Pittsford Crew this fall, including the Head of the Fish, and families have found it really helpful alongside CrewTimer's results.
+>
+> Since then I found the JSON results export in your FAQ (`results?asfile=true&format=json`), and I'd like to switch CrewDash to it, since it's documented. Is that the endpoint you'd prefer clubs use, and is a check every 5 minutes on race days alright?
+>
+> Two other questions. Other clubs have asked about running their own copy, and I'm planning to open-source CrewDash under the AGPL. Would you be comfortable with that, and would you be open to it being described as a companion to CrewTimer? And for a guide I'm writing on hosting small regattas cheaply: what does CrewTimer cost a regatta, if anything?
+>
+> Thanks again for CrewTimer, and for open-sourcing so much of it.
+>
+> Matt O'Hara
+> Pittsford Crew
+
+### Draft: to USRowing
+
+Send to regatta services or membership support (check the current address on usrowing.org).
+
+> **Subject:** Sanctioning a small regatta that doesn't use RegattaCentral
+>
+> Hello,
+>
+> I'm a volunteer with Pittsford Crew, a youth club in Rochester, NY. We're looking at how smaller and less well-funded clubs could host regattas and scrimmages affordably, and I'd be grateful for help with a few questions.
+>
+> 1. What does sanctioning cost for a small regatta (under 500 competitors) that takes entries through a platform other than RegattaCentral? The 2026 price sheet linked from the sanctioning page didn't open for me.
+> 2. What do the compliance records for clubs and athletes involve in practice, and how would a regatta director check membership, waivers and SafeSport status without RegattaCentral?
+> 3. Does USRowing offer, or plan to offer, a way for other registration platforms to check membership and waiver status?
+>
+> We'd love to see more small clubs hosting, and these answers would help us write an accurate guide for them.
+>
+> Thank you,
+> Matt O'Hara
+> Pittsford Crew
+
+### Draft: to Streamline Rowing
+
+> **Subject:** Small regattas on Streamline: USRowing sanctioning and CrewTimer
+>
+> Hello,
+>
+> I'm a volunteer with Pittsford Crew. We raced at the Head of the Fish, which used Streamline for entries and CrewTimer for timing, and I'm writing a guide to help small clubs host regattas affordably. Two questions:
+>
+> 1. Have regattas on Streamline been USRowing-sanctioned, and if so, how did they handle the membership and waiver compliance check?
+> 2. Can a host export entries (event, crew, bow number, lineup) in a form that fits CrewTimer's configuration spreadsheet?
+>
+> Thanks for making hosting free. It's exactly what small clubs need.
+>
+> Matt O'Hara
+> Pittsford Crew
+
+### Sources
+
+- CrewTimer documentation and FAQ: github.com/crewtimer/crewtimer-doc (MIT). Repositories: github.com/crewtimer.
+- CrewTimer on the App Store and Google Play (free).
+- Streamline Rowing, regatta hosting: streamlinerowing.com/regatta-hosting. Regatta listings: streamlinerowing.com/regattas.
+- USRowing, Sanction a Regatta: usrowing.org/sanction-a-regatta.
+- USRowing's 2026 Membership Program: usrowing.org/news/usrowings-2026-membership-program.
+- USRowing policy changes for 2026, and the member organisation certification announcement (usrowing.org/news).
+- Regatta Pass prices: Head of the Schuylkill regatta pages on RegattaCentral (two pages give different figures).
+- British Rowing Online Entry (BROE2): britishrowing.org.
+- U.S. Center for SafeSport, MAAPP communication one-pagers.
+- FTC COPPA Rule amendments: Federal Register, 2025-04-22.
+- Open-Meteo terms: open-meteo.com/en/terms.
+- Netlify pricing changelog, 2026-04-14, plus third-party pricing summaries.
+- Stripe support: fee discount for nonprofit organisations (donations only, not registration fees).
+- Netlify observability logs for the crewdash site, 2026-10-25 to 2026-10-26.
 
 ## Suggested next steps
 
-1. Send Entazza one short follow-up, then post whether or not they reply.
-2. Add login rate limiting.
-3. Measure Netlify usage after the next race weekend so the cost claim has a real number.
-4. Make the repo public when the post gets interest, after the history check above.
-5. Post the draft in one or two places with the demo screenshots, and see what people ask for before building more.
+Research and outreach first, as agreed on 2026-10-26. Nothing gets built until the answers are in.
+
+1. Send the three emails above (Entazza, USRowing, Streamline).
+2. Find one local scrimmage or small regatta willing to try the free stack, with CrewDash for families.
+3. Post on Reddit with the demo screenshots, and ask what small clubs struggle with when hosting.
+4. Write the "host a small regatta for free" playbook from the answers.
+
+Small CrewDash fixes, ready whenever there's a deploy to batch them with:
+
+- Switch fetching to CrewTimer's documented JSON export.
+- Prerender the manifest and add root `favicon.ico` and `apple-touch-icon.png`, about 40% fewer function runs.
+- Add login rate limiting.
+- Replace the hard-coded "ET" on the regatta page with the club's time zone.
+
+Before the repo goes public: the git-history check and the README rewrite described above.
