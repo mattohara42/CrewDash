@@ -29,3 +29,24 @@ export async function fetchRegattaResults(
   }
   return body;
 }
+
+/**
+ * CrewTimer's "lastUpdatedEvent" field, a few bytes, or null if it can't be read. It may let
+ * the refresh skip downloading the whole results file when nothing changed. For now it's
+ * only compared with what the full download found (see refresh.ts), to learn whether it
+ * changes every time results or start times do.
+ */
+export async function fetchChangeMarker(
+  regattaId: string,
+  fetchImpl: typeof fetch = fetch,
+): Promise<string | null> {
+  if (!REGATTA_ID.test(regattaId)) return null;
+  try {
+    const res = await fetchImpl(`${RESULTS_BASE}/${regattaId}/lastUpdatedEvent.json`);
+    if (!res.ok) return null;
+    const value: unknown = await res.json();
+    return typeof value === "string" || typeof value === "number" ? String(value) : null;
+  } catch {
+    return null;
+  }
+}

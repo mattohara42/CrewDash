@@ -28,6 +28,8 @@ export interface StoredRegatta {
   parserVersion?: number;
   // Event number -> when its results appeared. See speed.ts.
   resultTimes?: Record<string, ResultTimes>;
+  // CrewTimer's change marker at the last scheduled refresh. See fetchChangeMarker.
+  marker?: string;
 }
 
 export interface RegattaStore {

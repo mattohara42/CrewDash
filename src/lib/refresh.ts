@@ -1,5 +1,10 @@
-import { fetchRegattaResults } from "../crewtimer/fetch.js";
-import { PARSER_VERSION, normalizeRegatta } from "../crewtimer/normalize.js";
+import { fetchChangeMarker, fetchRegattaResults } from "../crewtimer/fetch.js";
+import {
+  PARSER_VERSION,
+  normalizeRegatta,
+  regattaDates,
+  type Regatta,
+} from "../crewtimer/normalize.js";
 import { recordResultTimes } from "./speed.js";
 import type { RegattaStore, StoredRegatta } from "./store.js";
 
@@ -9,6 +14,10 @@ const REFRESH_DAYS_AFTER = 3;
 // Older regattas parsed by an earlier version are re-fetched a few at a time, so one run
 // stays well inside the scheduled function's time limit.
 const STALE_PER_RUN = 5;
+// The scheduled refresh runs every 5 minutes. Off race day (the day before, and the days
+// after) results rarely change, so a regatta is only fetched on the run in each hour's
+// first 5 minutes.
+const OFF_DAY_MINUTES = 5;
 
 export interface Fetched {
   record: StoredRegatta;
@@ -21,6 +30,8 @@ export async function fetchAndStore(
   store: RegattaStore,
   fetchImpl: typeof fetch = fetch,
   now: Date = new Date(),
+  // CrewTimer's change marker at this fetch, kept to compare with the next one.
+  marker?: string | null,
 ): Promise<Fetched> {
   const regatta = normalizeRegatta(id, await fetchRegattaResults(id, fetchImpl));
   // Keep what an admin set, such as the series name, across refreshes.
@@ -31,6 +42,8 @@ export async function fetchAndStore(
     fetchedAt: now.toISOString(),
     parserVersion: PARSER_VERSION,
     resultTimes: recordResultTimes(previous, regatta, now),
+    // A manual refresh passes no marker, which clears the old one so the next check starts fresh.
+    marker: marker ?? undefined,
   };
   await store.put(record);
   return { record, previous };
@@ -48,6 +61,30 @@ export function isRecent(date: string, now: Date = new Date()): boolean {
   return Number.isFinite(offset) && offset >= -1 && offset <= REFRESH_DAYS_AFTER;
 }
 
+/** True when the regatta races today (UTC, which matches US race hours). */
+export function isRaceDay(regatta: Pick<Regatta, "date" | "events">, now: Date): boolean {
+  return regattaDates(regatta).includes(now.toISOString().slice(0, 10));
+}
+
+/**
+ * Logs whether CrewTimer's change marker moved when the results did. "Marker missed" means
+ * results changed but the marker didn't, so skipping on the marker would have lost them.
+ */
+function logMarker({ record, previous }: Fetched): void {
+  if (!previous?.marker || !record.marker) return;
+  const markerChanged = previous.marker !== record.marker;
+  const resultsChanged = JSON.stringify(previous.regatta) !== JSON.stringify(record.regatta);
+  const verdict =
+    resultsChanged && !markerChanged
+      ? "marker missed a change"
+      : resultsChanged
+        ? "both changed"
+        : markerChanged
+          ? "marker changed, results same"
+          : "both same";
+  console.log(`Marker check ${record.regatta.id}: ${verdict}`);
+}
+
 /** True when the stored copy came from an older parser and needs fetching again. */
 export function isStale(record: StoredRegatta): boolean {
   return (record.parserVersion ?? 0) < PARSER_VERSION;
@@ -60,12 +97,19 @@ export async function refreshRecent(
   now: Date = new Date(),
 ): Promise<Fetched[]> {
   const all = await store.list();
-  const recent = all.filter((r) => isRecent(r.regatta.date, now));
+  const recent = all.filter(
+    (r) =>
+      isRecent(r.regatta.date, now) &&
+      (isRaceDay(r.regatta, now) || now.getUTCMinutes() < OFF_DAY_MINUTES),
+  );
   const stale = all.filter((r) => !isRecent(r.regatta.date, now) && isStale(r));
   const refreshed: Fetched[] = [];
   for (const { regatta } of [...recent, ...stale.slice(0, STALE_PER_RUN)]) {
     try {
-      refreshed.push(await fetchAndStore(regatta.id, store, fetchImpl, now));
+      const marker = await fetchChangeMarker(regatta.id, fetchImpl);
+      const fetched = await fetchAndStore(regatta.id, store, fetchImpl, now, marker);
+      logMarker(fetched);
+      refreshed.push(fetched);
     } catch (err) {
       // One failing regatta shouldn't stop the others. The stored copy stays.
       console.error(`Refreshing ${regatta.id} failed:`, err);

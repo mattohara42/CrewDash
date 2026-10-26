@@ -21,6 +21,7 @@ export const config: Config = {
   // Every 5 minutes on race weekends (Friday to Monday), 12:00 to 21:55 UTC.
   // That's 8 am to 6 pm US Eastern in summer and 7 am to 5 pm in winter, about
   // 120 runs a race day and none on other days, to save Netlify credits. On other
-  // days an admin can tap "Refresh now".
+  // days an admin can tap "Refresh now". Off race day itself, each regatta is only fetched
+  // once an hour (see refresh.ts).
   schedule: "*/5 12-21 * * 0,1,5,6",
 };
