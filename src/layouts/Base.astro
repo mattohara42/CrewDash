@@ -136,7 +136,10 @@ const latestAlert = alertLog[0]?.at ?? "";
     </header>
     <main>
       {isDemo() && (
-        <p class="demo-note">Demo: a made-up club with made-up results. Changes aren't saved.</p>
+        <p class="demo-note">
+          Demo: a made-up club with made-up results. Changes aren't saved.
+          <a href="https://github.com/mattohara42/CrewDash">Get CrewDash for your club</a>
+        </p>
       )}
       <Announcements announcements={announcements} />
       <slot />
