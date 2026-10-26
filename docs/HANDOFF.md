@@ -89,7 +89,10 @@ Not yet seen: a sprint regatta. Sprint results may use fields the parser doesn't
 - **Sprint regatta link.** A CrewTimer link to a sprint regatta (for example the Pittsford Regatta) would let us test the parser on sprint results.
 - **Athlete-data policy.** The club should check whether it has a policy on publishing athlete information.
 - **OarSpotter.** Declined (2026-10-26). CrewDash only draws the club's own blade, from `club.json`.
-- **Entazza (CrewTimer's developer).** Emailed on 2026-10-12 (the draft below). No reply as of 2026-10-26. A short follow-up is worth sending before posting publicly.
+- **Entazza (CrewTimer's developer).** Emailed on 2026-10-12 (the draft below). No reply as of 2026-10-26. A follow-up is drafted in GOING_PUBLIC.md.
+- **Replacing CrewTimer and RegattaCentral.** Researched 2026-10-26 (GOING_PUBLIC.md). CrewTimer's app is free and partly open source, Streamline offers free hosting, and the real barrier is USRowing's free sanctioning only for RegattaCentral events. Emails to Entazza, USRowing and Streamline are drafted there, not yet sent. Nothing gets built until they're answered.
+- **CrewTimer's documented export.** `https://www.crewtimer.com/results?asfile=true&regatta=<id>&format=json` returns results as JSON (tested 2026-10-26). `src/crewtimer/fetch.ts` should move to it.
+- **Function runs.** On the Head of the Fish Sunday, 39% of function runs were for `/manifest.webmanifest`, and more were for missing root icons. Prerendering the manifest and adding the icons would cut runs by about 40%.
 - **Repo About panel.** Not yet set. Suggested values are below.
 
 ## Draft email to Entazza
