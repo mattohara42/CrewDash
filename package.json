@@ -3,12 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "description": "Find your rower. Track your team.",
+  "license": "AGPL-3.0-or-later",
   "type": "module",
   "engines": {
     "node": ">=22"
   },
   "scripts": {
     "dev": "astro dev",
+    "demo": "CREWDASH_DEMO=1 CLUB_PASSWORD=demo COACH_PASSWORD=coach ADMIN_PASSWORD=admin SESSION_SECRET=demo-only-not-secret astro dev",
     "build": "astro build",
     "lint": "eslint .",
     "format": "prettier --write .",

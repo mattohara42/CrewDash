@@ -9,6 +9,7 @@ import { parseAnnouncements, type Announcement } from "./announcements.js";
 import { EMPTY_VENUES, parseVenueData, type VenueData } from "./venues.js";
 import { parseAlertLog, type LoggedAlert } from "./alert-log.js";
 import { EMPTY_ROSTER, parseRoster, type Roster } from "./roster.js";
+import { demoStore } from "../demo/seed.js";
 
 export interface RegattaLinks {
   registration?: string;
@@ -63,8 +64,12 @@ const ANNOUNCEMENTS_KEY = "announcements";
 const ALERTS_KEY = "alerts";
 const ROSTER_KEY = "roster";
 
-/** Netlify Blobs store. Shared by every deploy of the site, previews included. */
+/**
+ * Netlify Blobs store. Shared by every deploy of the site, previews included. With
+ * CREWDASH_DEMO=1 it's the made-up demo club instead (see src/demo/seed.ts).
+ */
 export function blobsStore(): RegattaStore {
+  if (process.env.CREWDASH_DEMO === "1") return demoStore();
   const store = getStore({ name: "regattas", consistency: "strong" });
   return {
     async get(id) {
