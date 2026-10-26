@@ -1,5 +1,6 @@
 ---
 import BoatList from "../../components/BoatList.astro";
+import FullField from "../../components/FullField.astro";
 import NoteBox from "../../components/NoteBox.astro";
 import StatTiles from "../../components/StatTiles.astro";
 import Refreshed from "../../components/Refreshed.astro";
@@ -34,9 +35,10 @@ const events = clubEvents(regatta, club);
 const summary = clubSummary(events);
 const year = regattaYear(regatta);
 const series = seriesName(record);
-const [notes, lineups] = await Promise.all([
+const [notes, lineups, blades] = await Promise.all([
   store.getNotes(regatta.id),
   store.getLineups(regatta.id),
+  store.getBlades(),
 ]);
 const dates = regattaDates(regatta);
 const multiDay = dates.length > 1;
@@ -150,6 +152,7 @@ const updated = new Date(fetchedAt).toLocaleString("en-US", {
           back,
         }}
       />
+      <FullField event={event} club={club} blades={blades} />
       <NoteBox
         regattaId={regatta.id}
         event={eventKey(event.name, settings)}

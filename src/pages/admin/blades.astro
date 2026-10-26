@@ -1,0 +1,109 @@
+---
+import Blade from "../../components/Blade.astro";
+import Base from "../../layouts/Base.astro";
+import { PATTERNS, PATTERN_LABELS } from "../../lib/blade.js";
+import { bladeFor, otherClubs } from "../../lib/blades.js";
+import { loadContext } from "../../lib/context.js";
+
+const error = Astro.url.searchParams.get("error");
+const { store, records, club } = await loadContext();
+const blades = await store.getBlades();
+// Clubs in the results, most entries first, plus any saved club not raced lately.
+const seen = otherClubs(records, club);
+const clubs = [
+  ...seen,
+  ...blades.clubs
+    .filter((b) => !seen.some((s) => bladeFor(s.name, { clubs: [b] }, club)))
+    .map((b) => ({ name: b.name, entries: 0 })),
+];
+---
+
+<Base title="Blades">
+  <p class="eyebrow">
+    <a href="/admin">Admin</a>
+  </p>
+  <h1>Other clubs' blades</h1>
+  <p class="muted">
+    Blades show next to each crew in a regatta's "whole field" list. Pick the pattern and colors
+    closest to each club's real blade. Check the club's website or racing photos. Don't copy images
+    from OarSpotter, which asked us not to use theirs.
+  </p>
+  {error && <p class="card notice">{error}</p>}
+  {clubs.length === 0 && <p class="card">Add a regatta first. Its clubs will appear here.</p>}
+  {clubs.map(({ name, entries }) => {
+    const design = bladeFor(name, blades, club);
+    const saved = design !== null;
+    return (
+      <form method="post" action="/api/admin/blades" class="card blade-row">
+        <input type="hidden" name="name" value={name} />
+        <div class="who">
+          {design ? (
+            <Blade width={56} design={design} onBrand={false} compact />
+          ) : (
+            <span class="muted small">No blade yet</span>
+          )}
+          <strong>{name}</strong>
+          {entries > 0 && (
+            <span class="muted small">
+              {entries} {entries === 1 ? "entry" : "entries"}
+            </span>
+          )}
+        </div>
+        <div class="row">
+          <label>
+            Pattern
+            <select name="pattern">
+              {PATTERNS.map((p) => (
+                <option value={p} selected={(design?.pattern ?? "plain") === p}>
+                  {PATTERN_LABELS[p]}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Blade
+            <input type="color" name="base" value={design?.base ?? "#ffffff"} />
+          </label>
+          <label>
+            Pattern color
+            <input type="color" name="accent" value={design?.accent ?? "#1f3b73"} />
+          </label>
+          <button type="submit" name="action" value="save">
+            Save
+          </button>
+          {saved && (
+            <button type="submit" name="action" value="remove" class="secondary">
+              Remove
+            </button>
+          )}
+        </div>
+      </form>
+    );
+  })}
+</Base>
+
+<style>
+  .blade-row .who {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    margin-bottom: 8px;
+  }
+  .blade-row .row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 8px 12px;
+  }
+  .blade-row label {
+    display: grid;
+    gap: 4px;
+    font-size: 0.9rem;
+  }
+  .blade-row input[type="color"] {
+    width: 48px;
+    height: 36px;
+    padding: 2px;
+  }
+</style>

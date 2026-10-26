@@ -1,0 +1,85 @@
+---
+import type { ClubConfig } from "../club.js";
+import { matchClub } from "../club.js";
+import type { Event } from "../crewtimer/normalize.js";
+import { bladeFor, fullField, type BladeData } from "../lib/blades.js";
+import { formatTime, statusLabel } from "../lib/format.js";
+import Blade from "./Blade.astro";
+
+interface Props {
+  event: Event;
+  club: ClubConfig;
+  blades: BladeData;
+}
+
+// Every crew in the event, closed by default so the page still leads with the club's own
+// boats. Club names only: other clubs' rowers aren't named.
+const { event, club, blades } = Astro.props;
+const rows = fullField(event);
+---
+
+<details class="field">
+  <summary>See the whole field ({rows.length} crews)</summary>
+  <ol>
+    {rows.map((entry) => {
+      const ours = matchClub(entry.crew, club) === "match";
+      const design = bladeFor(entry.crew, blades, club);
+      return (
+        <li class:list={{ ours }}>
+          <span class="place">{entry.place ?? ""}</span>
+          <span class="mark">
+            {design ? <Blade width={40} design={design} onBrand={false} compact /> : null}
+          </span>
+          <span class="crew">
+            {entry.crew}
+            <span class="muted small"> · bow {entry.bow}</span>
+          </span>
+          <span class="time">
+            {entry.status === "finished" && entry.adjustedTimeMs !== null
+              ? formatTime(entry.adjustedTimeMs)
+              : statusLabel(entry)}
+          </span>
+        </li>
+      );
+    })}
+  </ol>
+</details>
+
+<style>
+  .field {
+    margin-top: 12px;
+  }
+  .field summary {
+    cursor: pointer;
+    color: var(--link);
+  }
+  .field ol {
+    list-style: none;
+    margin: 8px 0 0;
+    padding: 0;
+  }
+  .field li {
+    display: grid;
+    grid-template-columns: 2ch 40px 1fr auto;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 4px;
+    border-top: 1px solid var(--border);
+  }
+  .field li.ours {
+    background: color-mix(in srgb, var(--brand-3) 18%, transparent);
+    font-weight: 600;
+  }
+  .place {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .mark {
+    display: flex;
+    align-items: center;
+  }
+  .time {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+</style>

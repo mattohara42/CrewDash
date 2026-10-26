@@ -9,6 +9,7 @@ import { parseAnnouncements, type Announcement } from "./announcements.js";
 import { EMPTY_VENUES, parseVenueData, type VenueData } from "./venues.js";
 import { parseAlertLog, type LoggedAlert } from "./alert-log.js";
 import { EMPTY_ROSTER, parseRoster, type Roster } from "./roster.js";
+import { EMPTY_BLADES, parseBladeData, type BladeData } from "./blades.js";
 import { demoStore } from "../demo/seed.js";
 
 export interface RegattaLinks {
@@ -40,6 +41,9 @@ export interface RegattaStore {
   putSettings(settings: Settings): Promise<void>;
   getVenues(): Promise<VenueData>;
   putVenues(data: VenueData): Promise<void>;
+  // Other clubs' blades, entered by the admin. See blades.ts.
+  getBlades(): Promise<BladeData>;
+  putBlades(data: BladeData): Promise<void>;
   getAnnouncements(): Promise<Announcement[]>;
   putAnnouncements(list: Announcement[]): Promise<void>;
   getNotes(regattaId: string): Promise<RegattaNotes>;
@@ -62,6 +66,7 @@ export interface RegattaStore {
 const PREFIX = "regatta/";
 const SETTINGS_KEY = "settings";
 const VENUES_KEY = "venues";
+const BLADES_KEY = "blades";
 const ANNOUNCEMENTS_KEY = "announcements";
 const ALERTS_KEY = "alerts";
 const ROSTER_KEY = "roster";
@@ -99,6 +104,12 @@ export function blobsStore(): RegattaStore {
     },
     async putVenues(data) {
       await store.setJSON(VENUES_KEY, data);
+    },
+    async getBlades() {
+      return parseBladeData(await store.get(BLADES_KEY, { type: "json" }));
+    },
+    async putBlades(data) {
+      await store.setJSON(BLADES_KEY, data);
     },
     async getAnnouncements() {
       return parseAnnouncements(await store.get(ANNOUNCEMENTS_KEY, { type: "json" }));
@@ -149,6 +160,7 @@ export function memoryStore(): RegattaStore {
   const records = new Map<string, StoredRegatta>();
   let settings: Settings = EMPTY_SETTINGS;
   let venues: VenueData = EMPTY_VENUES;
+  let blades: BladeData = EMPTY_BLADES;
   let announcements: Announcement[] = [];
   const conditions = new Map<string, CachedConditions>();
   const notes = new Map<string, RegattaNotes>();
@@ -176,6 +188,12 @@ export function memoryStore(): RegattaStore {
     },
     async putVenues(next) {
       venues = next;
+    },
+    async getBlades() {
+      return blades;
+    },
+    async putBlades(next) {
+      blades = next;
     },
     async getAnnouncements() {
       return announcements;
