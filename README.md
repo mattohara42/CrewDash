@@ -14,11 +14,7 @@ CrewDash shows a rowing club only its own boats and results, pulled from CrewTim
 
 The short version for developers:
 
-Edit `club.json`: set the club's name and every crew name it appears under in CrewTimer results.
-
-Set `timezone`, `locale`, `units` and `seasonStartMonth` for where and when the club races. [docs/SETUP.md](docs/SETUP.md) explains each one.
-
-Set `colors` in `club.json` too. `primary` is the header background behind white text, so it must be dark. `secondary` and `accent` are the two stripes under the header. `chart` holds bar and dot colors for light and dark themes, with a paler `muted` shade for last year in year-over-year charts. `npm run check` tests that the header text and chart marks keep enough contrast. Check chart colors for colorblind separation before changing them.
+A club's name, the crew names it races under, time zone, locale, units, season start and colors are edited by an admin at `/admin/club` and stored in Netlify Blobs. Saving refuses a header too light for white text and chart colors too faint for either theme. `club.json` holds the starting values used until the first save, in the same shape as the settings download, so a fork can commit its own. Check chart colors for colorblind separation before changing them.
 
 ## Contributing
 

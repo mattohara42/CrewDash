@@ -11,7 +11,7 @@ Thanks for helping. CrewDash is built by volunteers for rowing clubs, so small, 
 ## Rules that keep clubs safe
 
 - **Never commit real regatta data or real rower names.** Most rowers are minors. Tests use the made-up fixtures in `test/fixtures/`, and the demo uses the made-up club in `src/demo/`.
-- **Keep code club-neutral.** Anything about one club belongs in `club.json` or in the admin settings, never in the code.
+- **Keep code club-neutral.** Anything about one club belongs in the admin settings (club settings live at `/admin/club`), never in the code or in the upstream `club.json`, which stays a neutral example.
 - **Don't scrape** RegattaCentral or any site whose terms don't allow it.
 
 ## Licence of contributions

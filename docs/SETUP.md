@@ -31,36 +31,21 @@ The **Deploy to Netlify** button in the README is quicker and asks for the same 
 
 ## 2. Tell CrewDash who you are
 
-In your GitHub copy, open `club.json`, click the pencil icon to edit it, and change:
+Open your site, log in with the admin password and go to **Admin**, then **Club settings**. There's nothing to edit on GitHub.
 
-```json
-{
-  "name": "Riverside Rowing Club",
-  "aliases": ["Riverside Rowing Club", "Riverside Rowing Club - EXH"],
-  "timezone": "America/Chicago",
-  "units": "imperial",
-  "locale": "en-US",
-  "seasonStartMonth": 1,
-  "colors": {
-    "primary": "#14402f",
-    "secondary": "#2e8b57",
-    "accent": "#f2c14e"
-  }
-}
-```
+- **Club name**: as families know it.
+- **Names it races under**: every crew name from your CrewTimer search, one per line. Boat letters like "(A)" and "(B)" are handled for you.
+- **Time zone**: sets "today", race-day alerts and every time shown.
+- **How dates and times are written**: such as `en-US` (Oct 11, 9:30 AM) or `en-GB` (11 Oct, 09:30). The rest of the app is in English.
+- **Weather units**: mph and °F, or km/h and °C.
+- **The season starts in**: January if your season is a calendar year. A club that races September to June would pick September, and a club racing through the southern summer would pick the month its season starts. Season pages, Wrapped and the roster then run from that month, and a season shows as "2026-27".
+- **Colors**: the header sits behind white text, so it must be dark. The two stripes under it are also your blade's default colors. A preview shows them as you pick.
 
-- `aliases`: every crew name from your CrewTimer search. Boat letters like "(A)" and "(B)" are handled for you.
-- `timezone`: your time zone, written like `America/New_York`, `America/Los_Angeles` or `Europe/London`. It sets "today" and every time shown.
-- `units`: `imperial` (mph and °F) or `metric` (km/h and °C), for the weather.
-- `locale`: how dates, times and numbers are written, such as `en-US` (Oct 11, 9:30 AM) or `en-GB` (11 Oct, 09:30). The rest of the app is in English.
-- `seasonStartMonth`: the month your season starts, from 1 (January) to 12. Leave it at 1 if your season is a calendar year. A club that races September to June, or through the southern summer, would use 9. Season pages, Wrapped and the roster then run from that month, and a season shows as "2026-27".
-- `colors`: `primary` is the header behind white text, so it must be dark. `secondary` and `accent` are the two stripes under it, and your blade.
-
-Commit the change. Netlify rebuilds the site by itself in a minute or two. If a value is malformed, like a color that isn't a six-digit hex code or a misspelled time zone, the build stops and Netlify's deploy log says which. Pick a `primary` dark enough for white text to read easily.
+Save. Changes show straight away for everyone, with no rebuild. If something isn't right, like a header too light to read, the page says what and keeps what you typed. Settings live in Netlify, not GitHub, so download a copy now and then from the same page.
 
 ## 3. Add your first regatta
 
-Open your site, log in with the admin password and go to **Admin**. Paste a CrewTimer results link, such as `https://www.crewtimer.com/regatta/r16329`, and add it. Your boats appear on the home page.
+In **Admin**, paste a CrewTimer results link, such as `https://www.crewtimer.com/regatta/r16329`, and add it. Your boats appear on the home page.
 
 Then, in Admin:
 
@@ -79,7 +64,7 @@ On iPhones, alerts only work after adding CrewDash to the Home Screen. The home 
 
 ## What it costs
 
-On Netlify's free plan (300 credits a month), a club our size has used about one credit of compute on a busy race day. The scheduled refresh checks in every 5 minutes but does almost nothing unless a regatta is within a day or two, so quiet weeks cost very little. Each time the site rebuilds, which happens when you edit `club.json` or pull in an update, costs about 15 credits. So edit in batches.
+On Netlify's free plan (300 credits a month), a club our size has used about one credit of compute on a busy race day. The scheduled refresh checks in every 5 minutes but does almost nothing unless a regatta is within a day or two, so quiet weeks cost very little. Each time the site rebuilds, which happens when you pull in an update, costs about 15 credits. Changing club settings doesn't rebuild anything.
 
 ## Privacy
 
@@ -92,4 +77,4 @@ Most rowers are minors. Their results are public on CrewTimer, but CrewDash gath
 
 ## Getting updates
 
-If you forked, GitHub shows "This branch is behind" on your copy when CrewDash improves. Click **Sync fork** to pull in the changes, and Netlify rebuilds. Everything you entered in Admin is kept, because it lives in Netlify, not in GitHub. If GitHub reports a conflict in `club.json`, keep your version.
+If you forked, GitHub shows "This branch is behind" on your copy when CrewDash improves. Click **Sync fork** to pull in the changes, and Netlify rebuilds. Everything you entered in Admin, club settings included, is kept, because it lives in Netlify, not in GitHub.

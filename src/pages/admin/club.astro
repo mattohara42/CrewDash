@@ -1,0 +1,273 @@
+---
+import Base from "../../layouts/Base.astro";
+import { clubIsSetUp } from "../../lib/club-settings.js";
+import { club } from "../../lib/config.js";
+import { formatClock, formatDate } from "../../lib/format.js";
+
+const error = Astro.url.searchParams.get("error");
+const saved = Astro.url.searchParams.has("saved");
+const { colors } = club;
+
+const zones = Intl.supportedValuesOf("timeZone");
+if (!zones.includes(club.timezone)) zones.unshift(club.timezone);
+// Common choices. Any valid language tag can be typed.
+const LOCALES = [
+  ["en-US", "United States"],
+  ["en-CA", "Canada"],
+  ["en-GB", "United Kingdom"],
+  ["en-IE", "Ireland"],
+  ["en-AU", "Australia"],
+  ["en-NZ", "New Zealand"],
+  ["en-ZA", "South Africa"],
+];
+const MONTHS = Array.from({ length: 12 }, (_, i) =>
+  new Date(Date.UTC(2000, i, 1)).toLocaleDateString("en-US", { month: "long", timeZone: "UTC" }),
+);
+const example = `${formatDate("2026-10-11")}, ${formatClock(13 * 60 + 5)}`;
+---
+
+<Base title="Club settings">
+  <p class="eyebrow">
+    <a href="/admin">Admin</a>
+  </p>
+  <h1>Club settings</h1>
+  <p class="muted">
+    Who the club is, where and when it races, and its colors. Changes show straight away for
+    everyone. The home screen icon's name and color catch up within an hour.
+  </p>
+  {!clubIsSetUp() && (
+    <p class="card notice">
+      These are the starting values from club.json. Check them and save to set up your club.
+    </p>
+  )}
+  {error && <p class="card notice">{error}</p>}
+  {saved && <p class="card">Saved.</p>}
+
+  <form method="post" action="/api/admin/club" id="club">
+    <section class="card">
+      <h2>The club</h2>
+      <label for="name">Club name, as families know it</label>
+      <input id="name" name="name" type="text" required maxlength="100" value={club.name} />
+      <label for="aliases">Names it races under in CrewTimer results, one per line</label>
+      <textarea id="aliases" name="aliases" rows="4" required>{club.aliases.join("\n")}</textarea>
+      <p class="muted small">
+        Search a recent CrewTimer results page for your club and copy every spelling exactly, such
+        as "Riverside Rowing Club - EXH". Boat letters like "(A)" are handled for you.
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>Where and when</h2>
+      <label for="timezone">Time zone</label>
+      <select id="timezone" name="timezone">
+        {zones.map((z) => (
+          <option value={z} selected={z === club.timezone}>
+            {z.replaceAll("_", " ")}
+          </option>
+        ))}
+      </select>
+      <p class="muted small">Sets "today", race-day alerts and every time shown.</p>
+
+      <label for="locale">How dates and times are written</label>
+      <input id="locale" name="locale" type="text" list="locales" required value={club.locale} />
+      <datalist id="locales">
+        {LOCALES.map(([tag, where]) => (
+          <option value={tag}>{where}</option>
+        ))}
+      </datalist>
+      <p class="muted small">Right now: {example}.</p>
+
+      <label for="units">Weather units</label>
+      <select id="units" name="units">
+        <option value="imperial" selected={club.units === "imperial"}>
+          mph and °F
+        </option>
+        <option value="metric" selected={club.units === "metric"}>
+          km/h and °C
+        </option>
+      </select>
+
+      <label for="seasonStartMonth">The season starts in</label>
+      <select id="seasonStartMonth" name="seasonStartMonth">
+        {MONTHS.map((m, i) => (
+          <option value={i + 1} selected={i + 1 === club.seasonStartMonth}>
+            {m}
+          </option>
+        ))}
+      </select>
+      <p class="muted small">
+        January makes each season a calendar year. Pick September for a fall-to-spring season, or
+        the month your southern summer season starts.
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>Colors</h2>
+      <div class="preview" aria-hidden="true">
+        <div class="bar" data-color="primary">
+          {club.name}
+        </div>
+        <div class="stripe" data-color="secondary"></div>
+        <div class="stripe" data-color="accent"></div>
+      </div>
+      <div class="swatches">
+        <label>
+          Header
+          <input type="color" name="primary" value={colors.primary} />
+        </label>
+        <label>
+          First stripe
+          <input type="color" name="secondary" value={colors.secondary} />
+        </label>
+        <label>
+          Second stripe
+          <input type="color" name="accent" value={colors.accent} />
+        </label>
+        <label>
+          Blade
+          <input type="color" name="bladeBase" value={colors.blade.base} />
+        </label>
+        <label>
+          Blade tip
+          <input type="color" name="bladeTip" value={colors.blade.tip} />
+        </label>
+      </div>
+      <p class="muted small">
+        The header sits behind white text, so it must be dark. Saving checks that it's readable.
+      </p>
+      <details>
+        <summary>Chart colors</summary>
+        <p class="muted small">
+          Bars and this year's marks, with a paler shade for last year. Each theme has its own.
+        </p>
+        <div class="swatches">
+          <label>
+            Light
+            <input type="color" name="chartLightStrong" value={colors.chart.light.strong} />
+          </label>
+          <label>
+            Light, last year
+            <input type="color" name="chartLightMuted" value={colors.chart.light.muted} />
+          </label>
+          <label>
+            Dark
+            <input type="color" name="chartDarkStrong" value={colors.chart.dark.strong} />
+          </label>
+          <label>
+            Dark, last year
+            <input type="color" name="chartDarkMuted" value={colors.chart.dark.muted} />
+          </label>
+        </div>
+      </details>
+    </section>
+
+    <p>
+      <button type="submit">Save settings</button>
+    </p>
+  </form>
+
+  <div class="card">
+    <p class="muted">
+      Settings aren't kept in git and have no undo. The download is in club.json's format, so it can
+      also go into your copy of CrewDash as its starting values.
+    </p>
+    <a href="/api/admin/club-export" download>
+      Download club settings
+    </a>
+  </div>
+</Base>
+
+<script>
+  // Shows the chosen colors before saving.
+  const form = document.querySelector<HTMLFormElement>("#club");
+  const paint = () => {
+    document.querySelectorAll<HTMLElement>(".preview [data-color]").forEach((el) => {
+      const input = form?.elements.namedItem(el.dataset.color ?? "");
+      if (input instanceof HTMLInputElement) el.style.background = input.value;
+    });
+  };
+  form?.addEventListener("input", paint);
+  paint();
+
+  // A save that fails comes back with an error, and the form would lose what was typed.
+  // The fields are kept for this tab and put back after an error.
+  const KEY = "crewdash-club-draft";
+  form?.addEventListener("submit", () => {
+    const fields = Object.fromEntries(
+      [...new FormData(form)].filter(([, v]) => typeof v === "string"),
+    );
+    try {
+      sessionStorage.setItem(KEY, JSON.stringify(fields));
+    } catch {
+      // Storage blocked. Nothing to restore.
+    }
+  });
+  try {
+    const saved = sessionStorage.getItem(KEY);
+    sessionStorage.removeItem(KEY);
+    if (saved && form && new URLSearchParams(location.search).has("error")) {
+      for (const [name, value] of Object.entries(JSON.parse(saved) as Record<string, string>)) {
+        const el = form.elements.namedItem(name);
+        if (
+          el instanceof HTMLInputElement ||
+          el instanceof HTMLTextAreaElement ||
+          el instanceof HTMLSelectElement
+        ) {
+          el.value = value;
+        }
+      }
+      paint();
+    }
+  } catch {
+    // Nothing saved, or storage blocked.
+  }
+</script>
+
+<style>
+  label {
+    display: block;
+    margin-top: 10px;
+  }
+  input[type="text"],
+  textarea,
+  select {
+    width: 100%;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font: inherit;
+  }
+  .small {
+    font-size: 0.85rem;
+  }
+  .preview {
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 12px;
+  }
+  .preview .bar {
+    color: #fff;
+    font-weight: 700;
+    padding: 12px 14px;
+  }
+  .preview .stripe {
+    height: 4px;
+  }
+  .swatches {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+  }
+  .swatches label {
+    display: grid;
+    gap: 4px;
+    font-size: 0.9rem;
+  }
+  .swatches input[type="color"] {
+    width: 48px;
+    height: 36px;
+    padding: 2px;
+  }
+</style>

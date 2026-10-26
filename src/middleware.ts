@@ -1,6 +1,8 @@
 import { defineMiddleware } from "astro:middleware";
 import { SESSION_COOKIE, authConfigFromEnv, canCoach, verifySessionToken } from "./lib/auth.js";
+import { loadClub } from "./lib/club-settings.js";
 import { isDemo } from "./lib/config.js";
+import { blobsStore } from "./lib/store.js";
 
 const PUBLIC_PATHS = new Set(["/login", "/api/login", "/join", "/manifest.webmanifest"]);
 
@@ -12,6 +14,8 @@ const DEMO_READ_ONLY = ["/api/admin/", "/api/coach/", "/api/push/subscribe", "/a
 // and admin pages the admin password.
 export const onRequest = defineMiddleware(async (context, next) => {
   const { pathname, search } = context.url;
+  // Public pages show the club's name and colors too.
+  await loadClub(() => blobsStore().getClub());
   if (PUBLIC_PATHS.has(pathname)) return next();
 
   const config = authConfigFromEnv(process.env);

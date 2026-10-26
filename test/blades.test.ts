@@ -45,7 +45,7 @@ describe("club blades", () => {
     expect(bladeFor("Northgate Crew", data, club)).toBeNull();
   });
 
-  it("uses the club's own blade from club.json", () => {
+  it("uses the club's own blade from its settings", () => {
     expect(bladeFor("Lakeview Rowing Club (B)", EMPTY_BLADES, club)).toEqual({
       pattern: "tips",
       base: "#112233",

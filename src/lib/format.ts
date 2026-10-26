@@ -48,7 +48,7 @@ export function statusLabel(entry: Entry): string {
     : STATUS_LABELS[entry.status];
 }
 
-// Dates, times and numbers are written the club's way (club.json "locale"). The wording
+// Dates, times and numbers are written the club's way (the "locale" club setting). The wording
 // stays English. Some ICU versions put a narrow no-break space before AM and PM, which
 // is swapped for a plain one so the text is the same everywhere.
 function plain(text: string): string {

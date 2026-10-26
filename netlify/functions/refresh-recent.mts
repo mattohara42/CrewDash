@@ -1,17 +1,20 @@
 import type { Config } from "@netlify/functions";
 import { notifyFetched } from "../../src/lib/notify-run.js";
 import { isRefreshHour, refreshRecent, warmConditions } from "../../src/lib/refresh.js";
-import { blobsStore } from "../../src/lib/store.js";
+import { loadClub } from "../../src/lib/club-settings.js";
 import { club, isDemo } from "../../src/lib/config.js";
+import { blobsStore } from "../../src/lib/store.js";
 
 // Re-fetches regattas from the day before race day until a few days after,
 // so new and corrected results reach CrewDash, then notifies followers.
 export default async () => {
   // The demo's results are made up and never fetched.
   if (isDemo()) return;
-  // Overnight in the club's time zone there's nothing to do, so the run ends before any reads.
-  if (!isRefreshHour(club.timezone)) return;
   const store = blobsStore();
+  // The time zone is in the club's settings, one small read.
+  await loadClub(() => store.getClub());
+  // Overnight in the club's time zone there's nothing to do, so the run ends here.
+  if (!isRefreshHour(club.timezone)) return;
   const fetched = await refreshRecent(store);
   console.log(`Refreshed ${fetched.length} regattas`);
   try {

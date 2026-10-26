@@ -1,21 +1,23 @@
 import { describe, expect, it } from "vitest";
-import { parseClubConfig } from "../src/club.js";
+import { DEFAULT_COLORS, colorProblems, parseClubConfig } from "../src/club.js";
 import { contrast } from "../src/lib/color.js";
 import clubJson from "../club.json" with { type: "json" };
 
-// Surfaces from src/layouts/Base.astro. Keep in sync if they change.
-const LIGHT_SURFACE = "#ffffff";
-const DARK_SURFACE = "#141a2e";
-const { colors } = parseClubConfig(clubJson);
-
-describe("club.json colors", () => {
-  it("keep white header text readable", () => {
-    expect(contrast("#ffffff", colors.primary)).toBeGreaterThanOrEqual(4.5);
+describe("colorProblems", () => {
+  it("passes the default colors and club.json's", () => {
+    expect(colorProblems(DEFAULT_COLORS)).toEqual([]);
+    expect(colorProblems(parseClubConfig(clubJson).colors)).toEqual([]);
   });
 
-  it("keep chart marks visible on both themes", () => {
-    expect(contrast(colors.chart.light.strong, LIGHT_SURFACE)).toBeGreaterThanOrEqual(3);
-    expect(contrast(colors.chart.dark.strong, DARK_SURFACE)).toBeGreaterThanOrEqual(3);
+  it("refuses a header too light for white text and charts that can't be seen", () => {
+    expect(colorProblems({ ...DEFAULT_COLORS, primary: "#f4b81e" })).toEqual([
+      expect.stringMatching(/header color is too light/),
+    ]);
+    const chart = {
+      light: { strong: "#eeeeee", muted: "#eeeeee" },
+      dark: { strong: "#151b30", muted: "#151b30" },
+    };
+    expect(colorProblems({ ...DEFAULT_COLORS, chart })).toHaveLength(2);
   });
 });
 
@@ -29,7 +31,7 @@ describe("parseClubConfig colors", () => {
   it("rejects colors that aren't hex", () => {
     expect(() =>
       parseClubConfig({ name: "X", aliases: ["X"], colors: { primary: "red" } }),
-    ).toThrow(/colors\.primary/);
+    ).toThrow(/primary/);
     expect(() =>
       parseClubConfig({
         name: "X",

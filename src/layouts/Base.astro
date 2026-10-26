@@ -15,7 +15,7 @@ const role = Astro.locals.role;
 const path = Astro.url.pathname;
 const { colors } = club;
 
-// Club colors from club.json become CSS variables. They're validated hex values,
+// Club colors from the club settings become CSS variables. They're validated hex values,
 // so writing them into a style tag is safe.
 const clubCss = `
 :root {

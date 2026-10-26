@@ -60,7 +60,7 @@ describe("notifyFetched", () => {
       })),
     };
     const store = memoryStore();
-    // notifyFetched uses club.json's club, so count the fixture's club as ours.
+    // notifyFetched uses the club from club.json, so count the fixture's club as ours.
     await store.putSettings({ extraAliases: ["Lakeview Rowing Club"], eventAliases: {} });
     await notifyFetched(
       [{ previous: { regatta: pending, fetchedAt: "" }, record: { regatta: done, fetchedAt: "" } }],

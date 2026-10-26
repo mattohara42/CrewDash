@@ -19,7 +19,7 @@ const STALE_PER_RUN = 5;
 // first 5 minutes.
 const OFF_DAY_MINUTES = 5;
 // The schedule fires every 5 minutes around the clock, because clubs race in every time
-// zone. Runs outside these local hours end at once. Evening regattas finish by 22:00.
+// zone. Runs outside these local hours end after reading the club's settings. Evening regattas finish by 22:00.
 const FIRST_HOUR = 6;
 const LAST_HOUR = 21;
 

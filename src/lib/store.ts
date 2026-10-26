@@ -80,6 +80,10 @@ export interface RegattaStore {
   list(): Promise<StoredRegatta[]>;
   // One summary per stored regatta, from a small index rather than every regatta.
   summaries(): Promise<RegattaSummary[]>;
+  // The club's settings as an admin saved them (club.json's shape), or null if never saved.
+  // Checked with parseClubConfig when read. See club-settings.ts.
+  getClub(): Promise<unknown>;
+  putClub(value: unknown): Promise<void>;
   getSettings(): Promise<Settings>;
   putSettings(settings: Settings): Promise<void>;
   getVenues(): Promise<VenueData>;
@@ -114,6 +118,7 @@ const ANNOUNCEMENTS_KEY = "announcements";
 const ALERTS_KEY = "alerts";
 const ROSTER_KEY = "roster";
 const CALENDAR_KEY = "calendar";
+const CLUB_KEY = "club";
 
 /**
  * Netlify Blobs store. Shared by every deploy of the site, previews included. With
@@ -163,6 +168,13 @@ export function blobsStore(): RegattaStore {
         blobs.map((b) => store.get(b.key, { type: "json" }) as Promise<StoredRegatta | null>),
       );
       return records.filter((r): r is StoredRegatta => r !== null);
+    },
+    async getClub() {
+      return await store.get(CLUB_KEY, { type: "json" });
+    },
+    // One admin edits these, rarely, so last write wins is fine.
+    async putClub(value) {
+      await store.setJSON(CLUB_KEY, value);
     },
     async getSettings() {
       return parseSettings(await store.get(SETTINGS_KEY, { type: "json" }));
@@ -239,6 +251,7 @@ export function memoryStore(): RegattaStore {
   const lineups = new Map<string, RegattaLineups>();
   let alertLog: LoggedAlert[] = [];
   let roster: Roster = EMPTY_ROSTER;
+  let club: unknown = null;
   return {
     async get(id) {
       return records.get(id) ?? null;
@@ -251,6 +264,12 @@ export function memoryStore(): RegattaStore {
     },
     async summaries() {
       return [...records.values()].map(summarize);
+    },
+    async getClub() {
+      return club;
+    },
+    async putClub(next) {
+      club = next;
     },
     async getSettings() {
       return settings;
