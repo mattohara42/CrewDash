@@ -50,8 +50,8 @@ Seasons start in the month set by `seasonStartMonth` in `club.json`, for clubs t
 - Environment variables, set by the repo owner in the Netlify dashboard for the production context only: `CLUB_PASSWORD`, `ADMIN_PASSWORD`, `COACH_PASSWORD` (optional, needed for coach logins) and `SESSION_SECRET`. Deploy previews and branch deploys have no session secret, so they stay locked. Changing a variable needs a redeploy. Changing `SESSION_SECRET` logs everyone out.
 - The Netlify connector's environment-variable writes reported success but didn't save (seen twice on 2026-10-12). Set variables in the dashboard instead.
 - Results are stored in a site-wide Netlify Blobs store named `regattas`. Deploy previews share it with production.
-- `npm audit` flags high-severity advisories in Netlify's local dev and build tooling (`sharp`/`ipx`, `node-forge`, `braces`). None of it handles visitor requests. npm's only fix downgrades the adapter two major versions, so recheck when `@astrojs/netlify` updates.
-- Logins have no rate limiting yet, so the club password should be long and not reused.
+- `npm audit` was clean on 2026-10-26 after `npm audit fix` (a lockfile-only update). The advisories had all been in Netlify's dev and build tooling and Astro's font tooling, none of which handles visitor requests. Run it again when dependencies change.
+- Every response carries `frame-ancestors 'none'` and `X-Frame-Options: DENY` (so no other site can frame the admin and coach buttons), plus `nosniff` and a strict referrer policy. They're set in `src/middleware.ts`. Login redirects only go to same-site paths, read the way a browser reads them (`safeNext` in `auth.ts`).
 
 ## Decisions made
 

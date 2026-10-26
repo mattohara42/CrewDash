@@ -119,10 +119,18 @@ export function canCoach(role: Role | null | undefined): boolean {
   return role === "coach" || role === "admin";
 }
 
-/** Only same-site paths, so a crafted login link can't redirect elsewhere. */
+/**
+ * Only same-site paths, so a crafted login link can't redirect elsewhere. The path is read
+ * the way a browser reads it, which drops tabs and newlines and treats "\\" as "/", so
+ * "/\t/evil.example" can't sneak through as "//evil.example".
+ */
 export function safeNext(next: string | null | undefined, fallback = "/"): string {
-  if (!next || !next.startsWith("/") || next.startsWith("//") || next.includes("\\")) {
+  if (!next || !next.startsWith("/")) return fallback;
+  const base = "https://crewdash.invalid";
+  try {
+    const url = new URL(next, base);
+    return url.origin === base ? url.pathname + url.search + url.hash : fallback;
+  } catch {
     return fallback;
   }
-  return next;
 }
