@@ -1,5 +1,7 @@
-import { colorProblems, parseClubConfig, type ClubConfig } from "../club.js";
+import { colorProblems, normalizeName, parseClubConfig, type ClubConfig } from "../club.js";
 import { club, clubFromFile } from "./config.js";
+import type { Settings } from "./settings.js";
+import type { RegattaStore } from "./store.js";
 
 // The club's settings live in Netlify Blobs so an admin can change them without editing
 // files or rebuilding. Each server instance keeps them for a short while rather than reading
@@ -87,5 +89,45 @@ export function checkClub(value: unknown): { club: ClubConfig } | { error: strin
     return problems.length > 0 ? { error: problems.join(" ") } : { club: checked };
   } catch (err) {
     return { error: (err as Error).message };
+  }
+}
+
+/** The club with one more crew name it races under. Names already there are left alone. */
+export function withAlias(current: ClubConfig, name: string): ClubConfig {
+  const key = normalizeName(name);
+  if (!key || current.aliases.some((a) => normalizeName(a) === key)) return current;
+  return { ...current, aliases: [...current.aliases, name.trim()] };
+}
+
+/** The club without a crew name, ignoring case and spacing. */
+export function withoutAlias(current: ClubConfig, name: string): ClubConfig {
+  const key = normalizeName(name);
+  return { ...current, aliases: current.aliases.filter((a) => normalizeName(a) !== key) };
+}
+
+/** Checks the club and, if it passes, saves it and puts it into use. Returns what's wrong, if anything. */
+export async function saveClub(store: RegattaStore, next: unknown): Promise<string | null> {
+  const checked = checkClub(next);
+  if ("error" in checked) return checked.error;
+  await store.putClub(checked.club);
+  useClub(checked.club);
+  return null;
+}
+
+/**
+ * Before club settings moved to Admin, extra crew names were kept in a separate list in the
+ * admin settings. This moves them into the club's own names, once, then empties that list.
+ * Until it runs (the club must be set up first) effectiveClub() still counts them, so no name
+ * stops counting along the way. A failure leaves both lists as they were.
+ */
+export async function moveExtraAliases(store: RegattaStore, settings: Settings): Promise<void> {
+  if (!clubIsSetUp() || settings.extraAliases.length === 0) return;
+  try {
+    const next = settings.extraAliases.reduce(withAlias, { ...club });
+    const problem = await saveClub(store, next);
+    if (problem) throw new Error(problem);
+    await store.putSettings({ ...settings, extraAliases: [] });
+  } catch (err) {
+    console.error("Moving the extra crew names into club settings failed:", err);
   }
 }

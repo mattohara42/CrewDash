@@ -1,35 +1,17 @@
 import { describe, expect, it } from "vitest";
 import {
   EMPTY_SETTINGS,
-  addAlias,
   effectiveClub,
   eventKey,
   mergeEvent,
   parseSettings,
-  removeAlias,
   unmergeEvent,
 } from "../src/lib/settings.js";
 
 const club = { name: "Lakeview Rowing Club", aliases: ["Lakeview Rowing Club"] };
 
-describe("aliases", () => {
-  it("adds names once, ignoring case and spacing", () => {
-    let s = addAlias(EMPTY_SETTINGS, "Lakeview RC");
-    s = addAlias(s, "  lakeview   rc ");
-    expect(s.extraAliases).toEqual(["Lakeview RC"]);
-  });
-
-  it("ignores blank names", () => {
-    expect(addAlias(EMPTY_SETTINGS, "  ").extraAliases).toEqual([]);
-  });
-
-  it("removes names", () => {
-    expect(
-      removeAlias(addAlias(EMPTY_SETTINGS, "Lakeview RC"), "LAKEVIEW RC").extraAliases,
-    ).toEqual([]);
-  });
-
-  it("merges extra names into the club without duplicating club.json's", () => {
+describe("extra aliases not yet moved", () => {
+  it("still count, without duplicating the club's own", () => {
     const s = { ...EMPTY_SETTINGS, extraAliases: ["lakeview rowing club", "Lakeview - EXH"] };
     expect(effectiveClub(club, s).aliases).toEqual(["Lakeview Rowing Club", "Lakeview - EXH"]);
   });
