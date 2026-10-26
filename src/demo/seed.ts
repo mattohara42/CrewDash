@@ -11,6 +11,7 @@ import type { RosterRower } from "../lib/roster.js";
 import { EMPTY_SETTINGS } from "../lib/settings.js";
 import { localDate, zonedInstant } from "../lib/today.js";
 import type { VenueData } from "../lib/venues.js";
+import type { BladeData } from "../lib/blades.js";
 import { memoryStore, type RegattaStore, type StoredRegatta } from "../lib/store.js";
 
 // A made-up club for screenshots and trying CrewDash out: run `npm run demo`. Every club,
@@ -35,6 +36,38 @@ const OTHER_CLUBS = [
   ["Westfield Boat Club", "WBC"],
   ["Elm Park Rowing", "EPR"],
 ] as const;
+
+// Blades for most rivals. Two are left without one, as an admin would find them.
+const BLADES: BladeData = {
+  clubs: [
+    {
+      name: "Lakeview Rowing Club",
+      design: { pattern: "tips", base: "#1d3c8f", accent: "#ffffff" },
+    },
+    {
+      name: "Hillside Boat Club",
+      design: { pattern: "chevron", base: "#ffffff", accent: "#b22234" },
+    },
+    { name: "Northgate Crew", design: { pattern: "band", base: "#0b2545", accent: "#e8b923" } },
+    {
+      name: "Bayport Rowing Association",
+      design: { pattern: "halves", base: "#ffffff", accent: "#00796b" },
+    },
+    {
+      name: "Cedar Falls Crew",
+      design: { pattern: "stripes", base: "#5b2a86", accent: "#ffffff" },
+    },
+    {
+      name: "Harbor Point Rowing",
+      design: { pattern: "spots", base: "#e65100", accent: "#000000" },
+    },
+    {
+      name: "Maple Valley Rowing",
+      design: { pattern: "quarters", base: "#7a1f1f", accent: "#f5f5f5" },
+    },
+    { name: "Stonebridge Crew", design: { pattern: "plain", base: "#2f4f4f", accent: "#2f4f4f" } },
+  ],
+};
 
 const SURNAMES = [
   "Abbott",
@@ -547,6 +580,7 @@ function seed(now: Date): RegattaStore {
     ...pastRecords.map((r) => store.put(r)),
     ...[...lineupsById].map(([id, l]) => store.putLineups(id, l)),
     store.putVenues(VENUES),
+    store.putBlades(BLADES),
     store.putRoster({ rowers: roster(season) }),
     store.putAnnouncements([
       {

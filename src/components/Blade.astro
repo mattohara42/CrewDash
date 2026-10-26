@@ -1,24 +1,46 @@
 ---
 import { club } from "../lib/config.js";
-import { BLADE, BLADE_VIEWBOX, SHAFT, TIP } from "../lib/blade.js";
+import { BLADE, BLADE_VIEWBOX, SHAFT, accentPath, type BladeDesign } from "../lib/blade.js";
+import { ownBlade } from "../lib/blades.js";
 
 interface Props {
   width?: number;
+  // Defaults to the club's own blade from club.json.
+  design?: BladeDesign;
+  // The header draws a white shaft and outline on the club color. Results use the text color.
+  onBrand?: boolean;
+  // Just the blade, no shaft, so the pattern is big enough to read in a list.
+  compact?: boolean;
 }
 
-// The club's oar blade, in its colors from club.json. Decorative.
-const { width = 48 } = Astro.props;
-const { base, tip } = club.colors.blade;
+// An oar blade in a club's colors. Decorative: the club's name is always next to it.
+const { width = 48, design = ownBlade(club), onBrand = true, compact = false } = Astro.props;
+const accent = accentPath(design.pattern);
+// Each SVG on the page needs its own clip id.
+const clipId = `blade-${Math.random().toString(36).slice(2, 10)}`;
+const line = onBrand ? "#ffffff" : "currentColor";
+// The blade alone spans x 58 to 120 of the full drawing.
+const COMPACT_VIEWBOX = "58 0 62 30";
 ---
 
 <svg
   class="blade"
-  viewBox={BLADE_VIEWBOX}
+  viewBox={compact ? COMPACT_VIEWBOX : BLADE_VIEWBOX}
   width={width}
-  height={(width * 30) / 120}
+  height={(width * 30) / (compact ? 62 : 120)}
   aria-hidden="true"
 >
-  <path d={SHAFT} fill="#ffffff" opacity="0.85"></path>
-  <path d={BLADE} fill={base} stroke="#ffffff" stroke-width="1.5"></path>
-  <path d={TIP} fill={tip}></path>
+  <clipPath id={clipId}>
+    <path d={BLADE}></path>
+  </clipPath>
+  {!compact && <path d={SHAFT} fill={line} opacity={onBrand ? 0.85 : 0.45}></path>}
+  <path d={BLADE} fill={design.base}></path>
+  {accent && <path d={accent} fill={design.accent} clip-path={`url(#${clipId})`}></path>}
+  <path
+    d={BLADE}
+    fill="none"
+    stroke={line}
+    stroke-width="1.5"
+    stroke-opacity={onBrand ? 1 : 0.35}
+  ></path>
 </svg>
