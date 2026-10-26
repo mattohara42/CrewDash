@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { getStore } from "@netlify/blobs";
+import { clubStore } from "./blobs.js";
 
 // Slows down password guessing: after too many failed logins from one address, that
 // address waits. Addresses are stored only as a salted hash. Functions don't share memory,
@@ -21,7 +21,7 @@ export interface FailureStore {
 }
 
 export function blobsFailureStore(): FailureStore {
-  const store = getStore({ name: "logins", consistency: "strong" });
+  const store = clubStore("logins");
   return {
     async get(key) {
       return (await store.get(key, { type: "json" })) as Failures | null;
