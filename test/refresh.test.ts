@@ -37,10 +37,11 @@ describe("isRecent", () => {
 
 describe("isRefreshHour", () => {
   it.each([
-    ["2026-07-11T09:59:00Z", "America/New_York", false], // 5:59 am
-    ["2026-07-11T10:00:00Z", "America/New_York", true], // 6:00 am
-    ["2026-07-12T01:55:00Z", "America/New_York", true], // 9:55 pm
-    ["2026-07-12T02:00:00Z", "America/New_York", false], // 10:00 pm
+    ["2026-07-11T07:59:00Z", "America/New_York", false], // 3:59 am
+    ["2026-07-11T08:00:00Z", "America/New_York", true], // 4:00 am
+    ["2026-07-12T03:55:00Z", "America/New_York", true], // 11:55 pm
+    ["2026-07-12T04:00:00Z", "America/New_York", false], // midnight
+    ["2026-07-11T11:00:00Z", "America/Los_Angeles", true], // 4:00 am, a 7:00 start in Boston
     ["2026-07-11T07:00:00Z", "Europe/London", true], // 8:00 am
     ["2026-07-11T22:00:00Z", "Australia/Sydney", true], // 8:00 am the next day
     ["2026-07-11T15:00:00Z", "Australia/Sydney", false], // 1:00 am

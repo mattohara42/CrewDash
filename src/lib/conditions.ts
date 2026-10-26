@@ -1,6 +1,6 @@
 import { eventDate, type Regatta } from "../crewtimer/normalize.js";
 import type { StoredRegatta } from "./store.js";
-import { startMinutes } from "./today.js";
+import { startMinutes } from "./format.js";
 import { compassPoint, weatherPlace, type Venue } from "./venues.js";
 
 // Weather on race day from Open-Meteo (free for non-commercial use, no key, attribution

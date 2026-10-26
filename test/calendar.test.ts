@@ -26,3 +26,43 @@ describe("reconcileCalendar", () => {
     expect(Object.keys(calendar).sort()).toEqual(["gone", "r1"]);
   });
 });
+
+describe("changeCalendar", async () => {
+  const { changeCalendar } = await import("../src/lib/store.js");
+
+  it("redoes a change when another write landed first, so neither is lost", async () => {
+    // What's stored, with an etag that changes on every write.
+    let stored: Record<string, ReturnType<typeof summarize>> = {};
+    let etag = 0;
+    const io = {
+      read: async () => ({ calendar: stored, etag: etag ? String(etag) : null }),
+      write: async (next: typeof stored, seen: string | null) => {
+        if ((seen ?? "0") !== String(etag)) return false;
+        stored = next;
+        etag++;
+        return true;
+      },
+    };
+    // Another writer adds r2 between this writer's read and its write.
+    let interrupted = false;
+    await changeCalendar(io, async (calendar) => {
+      if (!interrupted) {
+        interrupted = true;
+        await changeCalendar(io, (c) => ({ ...c, r2: summarize(record("r2")) }));
+      }
+      return { ...calendar, r1: summarize(record("r1")) };
+    });
+    expect(Object.keys(stored).sort()).toEqual(["r1", "r2"]);
+  });
+
+  it("gives up after a few tries rather than loop forever", async () => {
+    const io = { read: async () => ({ calendar: {}, etag: "a" }), write: async () => false };
+    await expect(changeCalendar(io, () => ({}))).rejects.toThrow(/kept changing/);
+  });
+
+  it("writes nothing when the change is null", async () => {
+    const write = vi.fn();
+    await changeCalendar({ read: async () => ({ calendar: {}, etag: "a" }), write }, () => null);
+    expect(write).not.toHaveBeenCalled();
+  });
+});

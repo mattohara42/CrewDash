@@ -2,7 +2,8 @@ import type { ClubIdentity } from "../club.js";
 import { addDays, eventDate, regattaDates } from "../crewtimer/normalize.js";
 import { clubEvents } from "./club-view.js";
 import type { StoredRegatta } from "./store.js";
-import { startMinutes, zonedInstant } from "./today.js";
+import { startMinutes } from "./format.js";
+import { zonedInstant } from "./today.js";
 import { weatherPlace, type Venue } from "./venues.js";
 
 // "Add to calendar": an .ics file with the club's events at a regatta. It's a download,

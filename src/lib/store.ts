@@ -59,9 +59,9 @@ export function summarize(record: StoredRegatta): RegattaSummary {
  */
 export async function reconcileCalendar(
   ids: string[],
-  calendar: Record<string, RegattaSummary>,
+  calendar: Calendar,
   load: (id: string) => Promise<StoredRegatta | null>,
-): Promise<Record<string, RegattaSummary> | null> {
+): Promise<Calendar | null> {
   const missing = ids.filter((id) => !calendar[id]);
   const gone = Object.keys(calendar).filter((id) => !ids.includes(id));
   if (missing.length === 0 && gone.length === 0) return null;
@@ -72,6 +72,34 @@ export async function reconcileCalendar(
     if (record) fixed[id] = summarize(record);
   }
   return fixed;
+}
+
+type Calendar = Record<string, RegattaSummary>;
+
+// Reads and writes the calendar with its etag, so a write only lands if nobody else wrote it
+// since it was read. write() returns false when someone did.
+export interface CalendarIO {
+  read(): Promise<{ calendar: Calendar; etag: string | null }>;
+  write(calendar: Calendar, etag: string | null): Promise<boolean>;
+}
+
+const CALENDAR_TRIES = 5;
+
+/**
+ * Changes the calendar without losing another writer's change: if the calendar moved since
+ * it was read, it's read again and the change made again. change() returns null for no write.
+ */
+export async function changeCalendar(
+  io: CalendarIO,
+  change: (calendar: Calendar) => Promise<Calendar | null> | Calendar | null,
+): Promise<Calendar> {
+  for (let attempt = 1; ; attempt++) {
+    const { calendar, etag } = await io.read();
+    const next = await change(calendar);
+    if (!next) return calendar;
+    if (await io.write(next, etag)) return next;
+    if (attempt >= CALENDAR_TRIES) throw new Error("The regatta calendar kept changing.");
+  }
 }
 
 export interface RegattaStore {
@@ -122,40 +150,50 @@ const CALENDAR_KEY = "calendar";
 export function blobsStore(): RegattaStore {
   if (isDemo()) return demoStore();
   const store = getStore({ name: "regattas", consistency: "strong" });
-  const readCalendar = async () =>
-    ((await store.get(CALENDAR_KEY, { type: "json" })) ?? {}) as Record<string, RegattaSummary>;
+  const calendarIO: CalendarIO = {
+    async read() {
+      const found = await store.getWithMetadata(CALENDAR_KEY, { type: "json" });
+      return { calendar: (found?.data ?? {}) as Calendar, etag: found?.etag ?? null };
+    },
+    async write(calendar, etag) {
+      const { modified } = await store.setJSON(
+        CALENDAR_KEY,
+        calendar,
+        etag ? { onlyIfMatch: etag } : { onlyIfNew: true },
+      );
+      return modified;
+    },
+  };
   return {
     async get(id) {
       return (await store.get(PREFIX + id, { type: "json" })) as StoredRegatta | null;
     },
     async put(record) {
       await store.setJSON(PREFIX + record.regatta.id, record);
-      // Keep the calendar in step. If this write is lost, summaries() adds the regatta back
-      // the next time it reads, so a failure is only logged.
+      // Keep the calendar in step. If this fails, summaries() adds a regatta it's missing the
+      // next time it reads, so a failure is only logged.
       try {
-        const calendar = await readCalendar();
-        calendar[record.regatta.id] = summarize(record);
-        await store.setJSON(CALENDAR_KEY, calendar);
+        await changeCalendar(calendarIO, (calendar) => ({
+          ...calendar,
+          [record.regatta.id]: summarize(record),
+        }));
       } catch (err) {
         console.error("Updating the regatta calendar failed:", err);
       }
     },
-    // The calendar is checked against the stored keys on every read, so a regatta added
-    // while another write was in flight, or one stored before the calendar existed, is
-    // picked up here.
+    // The calendar is checked against the stored keys on every read, so a regatta stored
+    // before the calendar existed, or whose calendar update failed, is picked up here.
     async summaries() {
-      const [{ blobs }, calendar] = await Promise.all([
-        store.list({ prefix: PREFIX }),
-        readCalendar(),
-      ]);
+      const { blobs } = await store.list({ prefix: PREFIX });
       const ids = blobs.map((b) => b.key.slice(PREFIX.length));
-      const fixed = await reconcileCalendar(
-        ids,
-        calendar,
-        async (id) => (await store.get(PREFIX + id, { type: "json" })) as StoredRegatta | null,
+      const calendar = await changeCalendar(calendarIO, (current) =>
+        reconcileCalendar(
+          ids,
+          current,
+          async (id) => (await store.get(PREFIX + id, { type: "json" })) as StoredRegatta | null,
+        ),
       );
-      if (fixed) await store.setJSON(CALENDAR_KEY, fixed);
-      return ids.flatMap((id) => (fixed ?? calendar)[id] ?? []);
+      return ids.flatMap((id) => calendar[id] ?? []);
     },
     async list() {
       const { blobs } = await store.list({ prefix: PREFIX });

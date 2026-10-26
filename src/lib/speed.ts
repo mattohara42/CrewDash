@@ -1,6 +1,7 @@
 import { eventDate, type Event, type Regatta } from "../crewtimer/normalize.js";
 import type { StoredRegatta } from "./store.js";
-import { startMinutes, zonedInstant } from "./today.js";
+import { startMinutes } from "./format.js";
+import { zonedInstant } from "./today.js";
 
 // How long CrewTimer takes to post results after an event starts. Recorded by the
 // race-day refresh, so times are accurate to its 5-minute interval.
