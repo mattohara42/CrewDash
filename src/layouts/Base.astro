@@ -209,6 +209,19 @@ const latestAlert = alertLog[0]?.at ?? "";
       "Segoe UI",
       sans-serif;
   }
+  /* The status bar is see-through when installed, so once the page scrolls, content would
+     show behind the clock and battery. This strip stays under the status bar to cover it.
+     It has no height in a browser tab or on a phone without a notch. */
+  body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: env(safe-area-inset-top);
+    background: var(--brand);
+    z-index: 30;
+  }
   header.site {
     background: var(--brand);
     color: #ffffff;
