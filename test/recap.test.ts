@@ -5,7 +5,11 @@ import { regattaRecap, seasonWrapped } from "../src/lib/recap.js";
 import { EMPTY_SETTINGS } from "../src/lib/settings.js";
 import { EMPTY_VENUES, saveVenue, setSeriesVenue } from "../src/lib/venues.js";
 
-const club = { name: "Lakeview Rowing Club", aliases: ["Lakeview Rowing Club"] };
+const club = {
+  name: "Lakeview Rowing Club",
+  aliases: ["Lakeview Rowing Club"],
+  seasonStartMonth: 1,
+};
 const entry = (crew: string, bow: string, place: number, time: string) => ({
   Bow: bow,
   Crew: crew,
@@ -61,6 +65,14 @@ describe("seasonWrapped", () => {
     expect(w).toMatchObject({ regattas: 1, boats: 1, podiums: 1, km: 4.5, unmeasured: 0 });
     expect(w.best).toEqual({ event: "Womens U17 4+", place: 3, fieldSize: 3 });
     expect(w.improved?.savedMs).toBe(25_000);
+  });
+
+  it("takes a fall-to-spring season from both calendar years", () => {
+    const fall = { ...club, seasonStartMonth: 9 };
+    // Both regattas are in October, so they're in seasons 2025 and 2026 either way.
+    expect(
+      seasonWrapped("2025", [lastYear, thisYear], fall, EMPTY_SETTINGS, EMPTY_VENUES),
+    ).toMatchObject({ regattas: 1 });
   });
 
   it("counts boats at venues without a course length", () => {

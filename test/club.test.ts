@@ -38,6 +38,30 @@ describe("parseClubConfig", () => {
   );
 });
 
+describe("locale and seasons", () => {
+  const base = { name: "X", aliases: ["X"] };
+  it("default to US English and calendar-year seasons", () => {
+    expect(parseClubConfig(base)).toMatchObject({ locale: "en-US", seasonStartMonth: 1 });
+  });
+
+  it("accept a club's own", () => {
+    expect(parseClubConfig({ ...base, locale: "en-gb", seasonStartMonth: 9 })).toMatchObject({
+      locale: "en-GB",
+      seasonStartMonth: 9,
+    });
+  });
+
+  it.each([
+    [{ locale: "not a locale" }, /locale/],
+    [{ locale: 7 }, /locale/],
+    [{ seasonStartMonth: 0 }, /seasonStartMonth/],
+    [{ seasonStartMonth: 13 }, /seasonStartMonth/],
+    [{ seasonStartMonth: "9" }, /seasonStartMonth/],
+  ])("rejects %j", (extra, message) => {
+    expect(() => parseClubConfig({ ...base, ...extra })).toThrow(message);
+  });
+});
+
 describe("blade colors", async () => {
   const { parseClubConfig } = await import("../src/club.js");
   const base = { name: "X", aliases: ["X"] };

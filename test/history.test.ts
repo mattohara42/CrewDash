@@ -6,7 +6,10 @@ import {
   historyByEvent,
   regattaLinks,
   regattasInSeries,
-  regattasInYear,
+  currentSeason,
+  regattasInSeason,
+  seasonLabel,
+  seasonOf,
   seriesKey,
   seriesName,
   suggestSeries,
@@ -64,12 +67,48 @@ describe("series names", () => {
   });
 });
 
-describe("regattasInYear", () => {
-  it("keeps one calendar year, newest first", () => {
-    expect(regattasInYear([y2025, other, y2026], "2026").map((r) => r.regatta.id)).toEqual([
+describe("regattasInSeason", () => {
+  it("keeps one calendar year when seasons start in January, newest first", () => {
+    expect(regattasInSeason([y2025, other, y2026], "2026", 1).map((r) => r.regatta.id)).toEqual([
       "r26",
       "r9",
     ]);
+  });
+
+  it("runs a fall-to-spring season over New Year", () => {
+    // Seasons from September: fall 2025 and spring 2026 are one season, fall 2026 the next.
+    expect(regattasInSeason([y2025, other, y2026], "2025", 9).map((r) => r.regatta.id)).toEqual([
+      "r9",
+      "r25",
+    ]);
+    expect(regattasInSeason([y2025, other, y2026], "2026", 9).map((r) => r.regatta.id)).toEqual([
+      "r26",
+    ]);
+  });
+});
+
+describe("seasons", () => {
+  it.each([
+    ["2026-10-11", 1, "2026"],
+    ["2026-01-01", 1, "2026"],
+    ["2026-08-31", 9, "2025"],
+    ["2026-09-01", 9, "2026"],
+    ["2027-03-06", 9, "2026"],
+  ])("%s with seasons from month %d is season %s", (date, month, season) => {
+    expect(seasonOf(date, month)).toBe(season);
+  });
+
+  it("labels seasons over New Year with both years", () => {
+    expect(seasonLabel("2026", 1)).toBe("2026");
+    expect(seasonLabel("2026", 9)).toBe("2026-27");
+    expect(seasonLabel("2099", 9)).toBe("2099-00");
+  });
+
+  it("finds today's season in the club's time zone", () => {
+    // Already New Year's Day in Sydney while it's still December 31 in UTC.
+    const now = new Date("2026-12-31T20:00:00Z");
+    expect(currentSeason("Australia/Sydney", 1, now)).toBe("2027");
+    expect(currentSeason("America/New_York", 1, now)).toBe("2026");
   });
 });
 

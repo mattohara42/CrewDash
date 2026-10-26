@@ -8,7 +8,7 @@ import { clubEvents, clubSummary } from "../lib/club-view.js";
 import { loadContext } from "../lib/context.js";
 import { isDemo } from "../lib/config.js";
 import { formatDate } from "../lib/format.js";
-import { regattaYear, regattasInYear, seriesName } from "../lib/history.js";
+import { regattasInSeason, seasonLabel, seasonsRaced, seriesName } from "../lib/history.js";
 import { seasonStats } from "../lib/stats.js";
 import { localDate, todayRegattas } from "../lib/today.js";
 import { venueForSeries } from "../lib/venues.js";
@@ -31,10 +31,11 @@ const today = withVenues.map((r) => ({
   ...r,
   conditions: forecasts.get(conditionsKey(r.record.regatta, r.date)) ?? null,
 }));
-const years = [...new Set(records.map((r) => regattaYear(r.regatta)))].sort().reverse();
+const years = seasonsRaced(records, club.seasonStartMonth);
 const asked = Astro.url.searchParams.get("year");
 const year = asked && years.includes(asked) ? asked : years[0];
-const season = year ? regattasInYear(records, year) : [];
+const label = year ? seasonLabel(year, club.seasonStartMonth) : null;
+const season = year ? regattasInSeason(records, year, club.seasonStartMonth) : [];
 const stats = seasonStats(season, club);
 const boatsLink = (show: string) => `/boats?${new URLSearchParams({ year: year ?? "", show })}`;
 const regattas = season.map(({ regatta }) => ({
@@ -43,10 +44,10 @@ const regattas = season.map(({ regatta }) => ({
 }));
 ---
 
-<Base title={year ? `${year} season` : "Season"}>
+<Base title={label ? `${label} season` : "Season"}>
   {!isDemo() && <AlertsPrompt />}
   {today.length > 0 && <Today regattas={today} />}
-  <h1>{year ? `${year} season` : "Season"}</h1>
+  <h1>{label ? `${label} season` : "Season"}</h1>
 
   {years.length === 0 && (
     <p class="card">
@@ -63,7 +64,7 @@ const regattas = season.map(({ regatta }) => ({
     <nav class="years" aria-label="Season">
       {years.map((y) => (
         <a href={`/?year=${y}`} aria-current={y === year ? "page" : undefined}>
-          {y}
+          {seasonLabel(y, club.seasonStartMonth)}
         </a>
       ))}
     </nav>
@@ -84,7 +85,8 @@ const regattas = season.map(({ regatta }) => ({
         <section class="card">
           <h2>How our boats finished</h2>
           <p class="muted">
-            Placed boats across {year}. Exhibition boats and non-finishers aren't counted.
+            Placed boats across the {label} season. Exhibition boats and non-finishers aren't
+            counted.
           </p>
           <PlaceChart places={stats.places} hrefFor={boatsLink} />
         </section>
@@ -92,7 +94,7 @@ const regattas = season.map(({ regatta }) => ({
 
       {stats.boats > 0 && (
         <p>
-          <a href={`/wrapped?year=${year}`}>{year} Wrapped: the season in numbers</a>
+          <a href={`/wrapped?year=${year}`}>{label} Wrapped: the season in numbers</a>
         </p>
       )}
       <h2 class="section" id="regattas">

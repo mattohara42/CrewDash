@@ -1,4 +1,6 @@
 ---
+import { formatNumber } from "../lib/format.js";
+
 interface Tile {
   label: string;
   value: number;
@@ -20,7 +22,7 @@ const { tiles } = Astro.props;
     return (
       <Tag class:list={["tile", { link: t.href }]} href={t.href}>
         <dt>{t.label}</dt>
-        <dd>{t.value.toLocaleString("en-US")}</dd>
+        <dd>{formatNumber(t.value)}</dd>
         {t.hint && <p class="muted">{t.hint}</p>}
         {t.href && (
           <span class="more" aria-hidden="true">

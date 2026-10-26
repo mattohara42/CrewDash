@@ -12,7 +12,7 @@ import { EMPTY_SETTINGS } from "../lib/settings.js";
 import { localDate, zonedInstant } from "../lib/today.js";
 import type { VenueData } from "../lib/venues.js";
 import type { BladeData } from "../lib/blades.js";
-import { memoryStore, type RegattaStore, type StoredRegatta } from "../lib/store.js";
+import { memoryStore, summarize, type RegattaStore, type StoredRegatta } from "../lib/store.js";
 
 // A made-up club for screenshots and trying CrewDash out: run `npm run demo`. Every club,
 // rower, regatta and venue here is fiction. Nothing is fetched and nothing is saved: the
@@ -554,6 +554,9 @@ function seed(now: Date): RegattaStore {
     },
     async list() {
       return [...(await store.list()), raceDay(new Date()).record];
+    },
+    async summaries() {
+      return (await base.list()).map(summarize);
     },
     async getLineups(id) {
       if (id === day.record.regatta.id) {

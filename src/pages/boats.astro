@@ -2,17 +2,19 @@
 import Base from "../layouts/Base.astro";
 import { loadContext } from "../lib/context.js";
 import { formatDate, formatTime, ordinal, statusLabel } from "../lib/format.js";
-import { regattaYear, regattasInYear } from "../lib/history.js";
+import { regattasInSeason, seasonLabel, seasonsRaced } from "../lib/history.js";
 import { eventKey } from "../lib/settings.js";
 import { parseBoatFilter, seasonBoats, type BoatFilter } from "../lib/stats.js";
 
 // The boats behind a number on the season page: every boat, wins, top three, or one place.
 const { records, settings, club } = await loadContext();
-const years = [...new Set(records.map((r) => regattaYear(r.regatta)))].sort().reverse();
+const years = seasonsRaced(records, club.seasonStartMonth);
 const asked = Astro.url.searchParams.get("year");
 const year = asked && years.includes(asked) ? asked : years[0];
 const show = parseBoatFilter(Astro.url.searchParams.get("show"));
-const groups = year ? seasonBoats(regattasInYear(records, year), club, show) : [];
+const groups = year
+  ? seasonBoats(regattasInSeason(records, year, club.seasonStartMonth), club, show)
+  : [];
 const count = groups.reduce((n, g) => n + g.rows.length, 0);
 
 const TITLES: Record<BoatFilter, string> = {
@@ -31,11 +33,12 @@ const link = (s: BoatFilter) => `/boats?${new URLSearchParams({ year: year ?? ""
 
 <Base title={`${TITLES[show]}, ${year ?? ""}`}>
   <p class="eyebrow">
-    <a href={`/?year=${year ?? ""}`}>{year} season</a>
+    <a href={`/?year=${year ?? ""}`}>{year && seasonLabel(year, club.seasonStartMonth)} season</a>
   </p>
   <h1>{TITLES[show]}</h1>
   <p class="muted">
-    {count} {count === 1 ? "boat" : "boats"} in {year}
+    {count} {count === 1 ? "boat" : "boats"} in the{" "}
+    {year && seasonLabel(year, club.seasonStartMonth)} season
   </p>
   <nav class="filters" aria-label="Show">
     {FILTERS.map((f) => (

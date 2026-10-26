@@ -2,13 +2,14 @@
 import Base from "../layouts/Base.astro";
 import { EXPIRY_HOURS, MAX_ANNOUNCEMENT, active } from "../lib/announcements.js";
 import { blobsStore } from "../lib/store.js";
-import { regattaYear } from "../lib/history.js";
+import { club } from "../lib/config.js";
+import { seasonLabel, seasonsRaced } from "../lib/history.js";
 
 const error = Astro.url.searchParams.get("error");
 const store = blobsStore();
 const [list, records] = await Promise.all([store.getAnnouncements(), store.list()]);
 const current = active(list);
-const years = [...new Set(records.map((r) => regattaYear(r.regatta)))].sort().reverse();
+const years = seasonsRaced(records, club.seasonStartMonth);
 const label = (h: number) => (h < 24 ? `${h} hours` : h === 24 ? "1 day" : `${h / 24} days`);
 ---
 
@@ -78,7 +79,7 @@ const label = (h: number) => (h < 24 ? `${h} hours` : h === 24 ? "1 day" : `${h 
     {years.map((y) => (
       <p>
         <a href={`/api/coach/export?year=${y}`} download>
-          Download {y} results (CSV)
+          Download {seasonLabel(y, club.seasonStartMonth)} results (CSV)
         </a>
       </p>
     ))}

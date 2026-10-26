@@ -4,11 +4,12 @@ import {
   fetchAndStore,
   isRaceDay,
   isRecent,
+  isRefreshHour,
   isStale,
   refreshRecent,
   warmConditions,
 } from "../src/lib/refresh.js";
-import { memoryStore } from "../src/lib/store.js";
+import { memoryStore, summarize } from "../src/lib/store.js";
 import fixture from "./fixtures/regatta.json" with { type: "json" };
 
 const now = new Date("2026-10-12T15:00:00Z");
@@ -23,7 +24,29 @@ describe("isRecent", () => {
     ["2026-10-14", false],
     ["not a date", false],
   ])("%s -> %s", (date, recent) => {
-    expect(isRecent(date, now)).toBe(recent);
+    expect(isRecent(date, "America/New_York", now)).toBe(recent);
+  });
+
+  it("counts days in the club's time zone", () => {
+    // 22:00 UTC on October 12 is already October 13 in Sydney.
+    const late = new Date("2026-10-12T22:00:00Z");
+    expect(isRecent("2026-10-09", "America/New_York", late)).toBe(true);
+    expect(isRecent("2026-10-09", "Australia/Sydney", late)).toBe(false);
+  });
+});
+
+describe("isRefreshHour", () => {
+  it.each([
+    ["2026-07-11T07:59:00Z", "America/New_York", false], // 3:59 am
+    ["2026-07-11T08:00:00Z", "America/New_York", true], // 4:00 am
+    ["2026-07-12T03:55:00Z", "America/New_York", true], // 11:55 pm
+    ["2026-07-12T04:00:00Z", "America/New_York", false], // midnight
+    ["2026-07-11T11:00:00Z", "America/Los_Angeles", true], // 4:00 am, a 7:00 start in Boston
+    ["2026-07-11T07:00:00Z", "Europe/London", true], // 8:00 am
+    ["2026-07-11T22:00:00Z", "Australia/Sydney", true], // 8:00 am the next day
+    ["2026-07-11T15:00:00Z", "Australia/Sydney", false], // 1:00 am
+  ])("%s in %s -> %s", (at, zone, expected) => {
+    expect(isRefreshHour(zone, new Date(at))).toBe(expected);
   });
 });
 
@@ -131,8 +154,13 @@ describe("refreshRecent off race day", () => {
 
   it("knows race day from the event dates", async () => {
     const { regatta } = (await (await seed()).get("r1"))!;
-    expect(isRaceDay(regatta, new Date("2026-10-11T15:30:00Z"))).toBe(true);
-    expect(isRaceDay(regatta, new Date("2026-10-12T15:30:00Z"))).toBe(false);
+    const dates = summarize({ regatta, fetchedAt: "" }).dates;
+    expect(isRaceDay(dates, "America/New_York", new Date("2026-10-11T15:30:00Z"))).toBe(true);
+    expect(isRaceDay(dates, "America/New_York", new Date("2026-10-12T15:30:00Z"))).toBe(false);
+    // 02:00 UTC on the 12th is still the evening of the 11th in New York.
+    expect(isRaceDay(dates, "America/New_York", new Date("2026-10-12T02:00:00Z"))).toBe(true);
+    // 22:00 UTC on the 10th is already the morning of the 11th in Sydney.
+    expect(isRaceDay(dates, "Australia/Sydney", new Date("2026-10-10T22:00:00Z"))).toBe(true);
   });
 
   it("fetches every run on race day", async () => {

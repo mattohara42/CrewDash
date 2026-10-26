@@ -17,6 +17,8 @@ describe("demo club", () => {
   });
 
   const load = async () => {
+    // Other imports may have loaded the config before demo mode was switched on.
+    vi.resetModules();
     const { blobsStore } = await import("../src/lib/store.js");
     const { club } = await import("../src/lib/config.js");
     return { store: blobsStore(), club };

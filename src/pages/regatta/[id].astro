@@ -10,10 +10,10 @@ import Base from "../../layouts/Base.astro";
 import { clubEvents, clubSummary } from "../../lib/club-view.js";
 import { loadContext } from "../../lib/context.js";
 import { eventDate, regattaDates } from "../../crewtimer/normalize.js";
-import { formatDates, formatStart, formatWeekday } from "../../lib/format.js";
+import { formatDates, formatInstant, formatStart, formatWeekday } from "../../lib/format.js";
 import {
   regattaLinks,
-  regattaYear,
+  regattaSeason,
   regattasInSeries,
   seriesKey,
   seriesName,
@@ -33,7 +33,7 @@ if (!record) return new Response("Regatta not found", { status: 404 });
 const { regatta, fetchedAt } = record;
 const events = clubEvents(regatta, club);
 const summary = clubSummary(events);
-const year = regattaYear(regatta);
+const year = regattaSeason(regatta, club.seasonStartMonth);
 const series = seriesName(record);
 const [notes, lineups, blades] = await Promise.all([
   store.getNotes(regatta.id),
@@ -65,13 +65,12 @@ const otherYears = regattasInSeries(records, seriesKey(series)).length > 1;
 const refreshError = Astro.url.searchParams.get("error");
 // Ends with the club's own zone, such as "EDT" or "PST", rather than assuming US Eastern.
 // timeZoneName can't be combined with dateStyle and timeStyle, so the parts are spelled out.
-const updated = new Date(fetchedAt).toLocaleString("en-US", {
+const updated = formatInstant(new Date(fetchedAt), club.timezone, {
   month: "short",
   day: "numeric",
   year: "numeric",
   hour: "numeric",
   minute: "2-digit",
-  timeZone: club.timezone,
   timeZoneName: "short",
 });
 ---
@@ -114,7 +113,7 @@ const updated = new Date(fetchedAt).toLocaleString("en-US", {
     <ConditionsLine conditions={c} courseBearing={venue?.courseBearing ?? null} label={label} />
   ))}
   {venue && <VenueCard venue={venue} />}
-  {isRecent(regatta.date) && <p class="card notice">Results may still change.</p>}
+  {isRecent(regatta.date, club.timezone) && <p class="card notice">Results may still change.</p>}
   {events.length > 0 && (
     <StatTiles
       tiles={[

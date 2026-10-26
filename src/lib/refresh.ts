@@ -1,11 +1,5 @@
 import { fetchChangeMarker, fetchRegattaResults } from "../crewtimer/fetch.js";
-import {
-  PARSER_VERSION,
-  addDays,
-  normalizeRegatta,
-  regattaDates,
-  type Regatta,
-} from "../crewtimer/normalize.js";
+import { PARSER_VERSION, addDays, normalizeRegatta, regattaDates } from "../crewtimer/normalize.js";
 import { conditionsFor } from "./conditions.js";
 import { club } from "./config.js";
 import { seriesName } from "./history.js";
@@ -24,6 +18,12 @@ const STALE_PER_RUN = 5;
 // after) results rarely change, so a regatta is only fetched on the run in each hour's
 // first 5 minutes.
 const OFF_DAY_MINUTES = 5;
+// The schedule fires every 5 minutes around the clock, because clubs race in every time
+// zone. Runs outside these local hours end at once. They're wide so a regatta three time
+// zones away still fits: a 7:00 start in Boston is 4:00 in Los Angeles, and a 17:00 finish
+// in California is 20:00 in New York. Further away than that, early or late racing is missed.
+const FIRST_HOUR = 4;
+const LAST_HOUR = 23;
 
 export interface Fetched {
   record: StoredRegatta;
@@ -55,21 +55,30 @@ export async function fetchAndStore(
   return { record, previous };
 }
 
-function dayOffset(date: string, now: Date): number {
+/** Whole days from a race date to today in the club's time zone. */
+function dayOffset(date: string, timeZone: string, now: Date): number {
   const race = Date.parse(`${date}T00:00:00Z`);
-  const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  const today = Date.parse(`${localDate(now, timeZone)}T00:00:00Z`);
   return Math.round((today - race) / 86_400_000);
 }
 
 /** True while a regatta's results may still be changing. */
-export function isRecent(date: string, now: Date = new Date()): boolean {
-  const offset = dayOffset(date, now);
+export function isRecent(date: string, timeZone: string, now: Date = new Date()): boolean {
+  const offset = dayOffset(date, timeZone, now);
   return Number.isFinite(offset) && offset >= -1 && offset <= REFRESH_DAYS_AFTER;
 }
 
-/** True when the regatta races today (UTC, which matches US race hours). */
-export function isRaceDay(regatta: Pick<Regatta, "date" | "events">, now: Date): boolean {
-  return regattaDates(regatta).includes(now.toISOString().slice(0, 10));
+/** True when one of these race days is today in the club's time zone. */
+export function isRaceDay(dates: string[], timeZone: string, now: Date): boolean {
+  return dates.includes(localDate(now, timeZone));
+}
+
+/** True during the hours a scheduled refresh does anything, in the club's time zone. */
+export function isRefreshHour(timeZone: string, now: Date = new Date()): boolean {
+  const hour = Number(
+    new Intl.DateTimeFormat("en-US", { timeZone, hour: "numeric", hourCycle: "h23" }).format(now),
+  );
+  return hour >= FIRST_HOUR && hour <= LAST_HOUR;
 }
 
 /**
@@ -92,7 +101,7 @@ function logMarker({ record, previous }: Fetched): void {
 }
 
 /** True when the stored copy came from an older parser and needs fetching again. */
-export function isStale(record: StoredRegatta): boolean {
+export function isStale(record: Pick<StoredRegatta, "parserVersion">): boolean {
   return (record.parserVersion ?? 0) < PARSER_VERSION;
 }
 
@@ -102,23 +111,24 @@ export async function refreshRecent(
   fetchImpl: typeof fetch = fetch,
   now: Date = new Date(),
 ): Promise<Fetched[]> {
-  const all = await store.list();
+  const zone = club.timezone;
+  const all = await store.summaries();
   const recent = all.filter(
-    (r) =>
-      isRecent(r.regatta.date, now) &&
-      (isRaceDay(r.regatta, now) || now.getUTCMinutes() < OFF_DAY_MINUTES),
+    (s) =>
+      isRecent(s.date, zone, now) &&
+      (isRaceDay(s.dates, zone, now) || now.getUTCMinutes() < OFF_DAY_MINUTES),
   );
-  const stale = all.filter((r) => !isRecent(r.regatta.date, now) && isStale(r));
+  const stale = all.filter((s) => !isRecent(s.date, zone, now) && isStale(s));
   const refreshed: Fetched[] = [];
-  for (const { regatta } of [...recent, ...stale.slice(0, STALE_PER_RUN)]) {
+  for (const { id } of [...recent, ...stale.slice(0, STALE_PER_RUN)]) {
     try {
-      const marker = await fetchChangeMarker(regatta.id, fetchImpl);
-      const fetched = await fetchAndStore(regatta.id, store, fetchImpl, now, marker);
+      const marker = await fetchChangeMarker(id, fetchImpl);
+      const fetched = await fetchAndStore(id, store, fetchImpl, now, marker);
       logMarker(fetched);
       refreshed.push(fetched);
     } catch (err) {
       // One failing regatta shouldn't stop the others. The stored copy stays.
-      console.error(`Refreshing ${regatta.id} failed:`, err);
+      console.error(`Refreshing ${id} failed:`, err);
     }
   }
   return refreshed;
@@ -136,11 +146,18 @@ export async function warmConditions(
 ): Promise<number> {
   const today = localDate(now, club.timezone);
   const soon = [today, addDays(today, 1)];
-  const [records, venues] = await Promise.all([store.list(), store.getVenues()]);
+  const racing = (await store.summaries()).filter((s) => s.dates.some((d) => soon.includes(d)));
+  if (racing.length === 0) return 0;
+  const [records, venues] = await Promise.all([
+    Promise.all(racing.map((s) => store.get(s.id))),
+    store.getVenues(),
+  ]);
   const items = records.flatMap((record) =>
-    regattaDates(record.regatta)
-      .filter((date) => soon.includes(date))
-      .map((date) => ({ record, venue: venueForSeries(venues, seriesName(record)), date })),
+    record
+      ? regattaDates(record.regatta)
+          .filter((date) => soon.includes(date))
+          .map((date) => ({ record, venue: venueForSeries(venues, seriesName(record)), date }))
+      : [],
   );
   if (items.length > 0) {
     await conditionsFor(items, store.conditions, {

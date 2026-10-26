@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { backTo } from "../../../lib/admin-redirect.js";
-import { regattaYear } from "../../../lib/history.js";
+import { club } from "../../../lib/config.js";
+import { regattaSeason } from "../../../lib/history.js";
 import { MAX_SEATS, NEW_ROWER, lineupKey, setLineup, type Seat } from "../../../lib/lineups.js";
 import { addRower, findById, linkLineups } from "../../../lib/roster.js";
 import { blobsStore } from "../../../lib/store.js";
@@ -16,7 +17,7 @@ export const POST: APIRoute = async ({ request, redirect, locals }) => {
   const record = await store.get(id);
   if (!record) return redirect(back, 303);
 
-  const season = regattaYear(record.regatta);
+  const season = regattaSeason(record.regatta, club.seasonStartMonth);
   let roster = await store.getRoster();
   const seatFrom = (prefix: string, role: "rower" | "cox"): Seat | null => {
     const picked = field(prefix);

@@ -39,6 +39,8 @@ In your GitHub copy, open `club.json`, click the pencil icon to edit it, and cha
   "aliases": ["Riverside Rowing Club", "Riverside Rowing Club - EXH"],
   "timezone": "America/Chicago",
   "units": "imperial",
+  "locale": "en-US",
+  "seasonStartMonth": 1,
   "colors": {
     "primary": "#14402f",
     "secondary": "#2e8b57",
@@ -50,6 +52,8 @@ In your GitHub copy, open `club.json`, click the pencil icon to edit it, and cha
 - `aliases`: every crew name from your CrewTimer search. Boat letters like "(A)" and "(B)" are handled for you.
 - `timezone`: your time zone, written like `America/New_York`, `America/Los_Angeles` or `Europe/London`. It sets "today" and every time shown.
 - `units`: `imperial` (mph and °F) or `metric` (km/h and °C), for the weather.
+- `locale`: how dates, times and numbers are written, such as `en-US` (Oct 11, 9:30 AM) or `en-GB` (11 Oct, 09:30). The rest of the app is in English.
+- `seasonStartMonth`: the month your season starts, from 1 (January) to 12. Leave it at 1 if your season is a calendar year. A club that races September to June, or through the southern summer, would use 9. Season pages, Wrapped and the roster then run from that month, and a season shows as "2026-27".
 - `colors`: `primary` is the header behind white text, so it must be dark. `secondary` and `accent` are the two stripes under it, and your blade.
 
 Commit the change. Netlify rebuilds the site by itself in a minute or two. If a value is malformed, like a color that isn't a six-digit hex code or a misspelled time zone, the build stops and Netlify's deploy log says which. Pick a `primary` dark enough for white text to read easily.
@@ -65,7 +69,7 @@ Then, in Admin:
 - Write **club tips** for the Rowing 101 page: where your tent is, how food works, who to ask.
 - Set **other clubs' blades** for the clubs you race most.
 
-After each race weekend, add that weekend's regattas the same way. On race weekends CrewDash checks for new results every 5 minutes and sends alerts by itself.
+After each race weekend, add that weekend's regattas the same way. On race days CrewDash checks for new results every 5 minutes and sends alerts by itself, whatever the day of the week and wherever you are.
 
 ## 4. Invite families
 
@@ -75,7 +79,7 @@ On iPhones, alerts only work after adding CrewDash to the Home Screen. The home 
 
 ## What it costs
 
-On Netlify's free plan (300 credits a month), a club our size has used about one credit of compute on a busy race day. The scheduled refresh only runs on race weekends. Each time the site rebuilds, which happens when you edit `club.json` or pull in an update, costs about 15 credits. So edit in batches.
+On Netlify's free plan (300 credits a month), a club our size has used about one credit of compute on a busy race day. The scheduled refresh checks in every 5 minutes but does almost nothing unless a regatta is within a day or two, so quiet weeks cost very little. Each time the site rebuilds, which happens when you edit `club.json` or pull in an update, costs about 15 credits. So edit in batches.
 
 ## Privacy
 
