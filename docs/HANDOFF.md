@@ -62,7 +62,7 @@ A season is a calendar year for now. If the club thinks in fall and spring seaso
 - Exhibition boats are tagged in comparisons and show an unofficial "would have placed".
 - Push notifications are Phase 1.5.
 - PRs merge automatically once CI is green and there are no open review comments.
-- The repo is private for now. No real rower data goes into git either way.
+- The repo is public as of 2026-10-26. The full history was checked first: no regatta data, rower names or secrets were ever committed. No real rower data goes into git, ever.
 - The licence is AGPL-3.0 or later (decided 2026-10-26). See GOING_PUBLIC.md.
 - The next updates are in [ROADMAP.md](ROADMAP.md): Rowing 101, venue pages, coach login with announcements, then a race-day view, analysis, conditions and schedules. Venue pages are edited on the admin page, coaches get their own login, and announcements replace two-way chat.
 
@@ -131,7 +131,7 @@ If they point us to a supported API, only `src/crewtimer/fetch.ts` should need t
 
 ## RegattaCentral API
 
-**Outcome (2026-10-12):** Diego Sanabria (API Engineer) replied that API access is limited to approved timing vendors and their regatta timing workflows, so CrewDash can't have a key for now. They're considering broader capabilities for rowing organizations and third-party apps, with athlete privacy central to that, and welcomed specific requirements. They gave no timeline. The notes below stay as reference in case access opens up.
+**Outcome (2026-10-12):** an API engineer at RegattaCentral replied that API access is limited to approved timing vendors and their regatta timing workflows, so CrewDash can't have a key for now. They're considering broader capabilities for rowing organizations and third-party apps, with athlete privacy central to that, and welcomed specific requirements. They gave no timeline. The notes below stay as reference in case access opens up.
 
 From RegattaCentral's API V4 documentation (`https://api.regattacentral.com/v4/`, the cookbook PDF and the `rc-api.xsd` schema), read on 2026-10-12. The pages sit behind Cloudflare, so read them in a browser.
 
@@ -173,7 +173,7 @@ From RegattaCentral's API V4 documentation (`https://api.regattacentral.com/v4/`
 
 ## Reply to RegattaCentral (requirements, as they invited, sent 2026-10-12)
 
-> Hi Diego,
+> Hi [name],
 >
 > Thanks for the quick and clear reply, that's understood. Since you asked, here's what we'd use if broader access opens up:
 >

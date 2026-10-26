@@ -4,7 +4,7 @@ A first pass at sharing CrewDash beyond Pittsford, written 2026-10-26. It has a 
 
 ## Status
 
-Updated 2026-10-26. Entazza (CrewTimer) still hasn't replied. OarSpotter declined, so CrewDash draws every club's blade itself. The licence is settled as AGPL-3.0 (see below). A made-up demo club runs locally with `npm run demo` and publicly at https://crewdash-demo.netlify.app (read-only, never fetches real results). Phone screenshots from it are in [screenshots/](screenshots/). A setup guide for a second club is in [SETUP.md](SETUP.md), with an outreach email below.
+Updated 2026-10-26. The repo is public: https://github.com/mattohara42/CrewDash. Entazza (CrewTimer) still hasn't replied. OarSpotter declined, so CrewDash draws every club's blade itself. The licence is settled as AGPL-3.0 (see below). A made-up demo club runs locally with `npm run demo` and publicly at https://crewdash-demo.netlify.app (read-only, never fetches real results). Phone screenshots from it are in [screenshots/](screenshots/). A setup guide for a second club is in [SETUP.md](SETUP.md), with an outreach email below.
 
 ## Draft post
 
@@ -28,7 +28,7 @@ For a rowing parents' group, a coaches' forum or r/Rowing. It leads with the one
 > - **Recaps and a season "Wrapped"** for the club's socials and the banquet, with no names on them.
 > - **Invite links** so an experienced parent can bring a new one on board with a QR code.
 >
-> It's private by design. Most of our athletes are minors, so everything sits behind a club login, and each club runs its own copy, so no one else holds your club's data. The code will be free and open source.
+> It's private by design. Most of our athletes are minors, so everything sits behind a club login, and each club runs its own copy, so no one else holds your club's data. The code is free and open source: https://github.com/mattohara42/CrewDash
 >
 > I'd love to know:
 >
@@ -84,7 +84,7 @@ AGPL means any club can use and change CrewDash freely, but anyone who offers it
 
 A paid hosted version is possible later if clubs ask for it and someone wants to run it as a small business. It would need the work in the last privacy paragraph above. As the copyright holder you can still offer it under other terms yourself, as long as outside contributions are covered (a simple contributor agreement, or only accepting contributions under AGPL). That matters for the most promising route to every family: if Entazza wanted these features inside CrewTimer, AGPL would oblige them to open-source CrewTimer too, so you would offer them the code under MIT or similar. Don't accept outside contributions without an agreement until that's settled.
 
-Before the repo goes public it still needs a README written for a club volunteer rather than a developer, setup steps that don't assume a Claude session, a scan of the git history for anything real (the club config is Pittsford's, which is fine, but the history is worth a look), and a decision on whether to keep Pittsford as the example `club.json` or point newcomers at the demo club.
+The repo went public on 2026-10-26, after a check of the full history found no regatta data, rower names or secrets. Setup steps for a club volunteer are in [SETUP.md](SETUP.md). Outside contributions are accepted on the terms in `CONTRIBUTING.md`, which keep the option of offering the code to Entazza under other terms.
 
 ## The money, honestly
 
@@ -260,4 +260,4 @@ Research and outreach first, as agreed on 2026-10-26. Nothing gets built until t
 
 Done on 2026-10-26: the manifest and icons are static, polling is lighter off race day, logins are rate-limited, the "ET" label uses the club's time zone, race-day weather is cached ahead of page views, iPhones are prompted to install for alerts, other clubs' blades and the whole field are on regatta pages, the public demo is up, and [SETUP.md](SETUP.md) is written. CrewTimer's documented export turned out to lack regatta details and start times, so CrewDash stays on the Firebase feed.
 
-Before the repo goes public: the git-history check described above. The Deploy to Netlify button in the README only works once it's public.
+The repo is public, and the Deploy to Netlify button in the README works.
