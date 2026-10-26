@@ -47,6 +47,18 @@ describe("loadClub", () => {
     expect(read).toHaveBeenCalledTimes(2);
   });
 
+  it("refuses to run on club.json when the settings have never been read", async () => {
+    const { loadClub, club, clubFromFile } = await load();
+    await expect(
+      loadClub(async () => {
+        throw new Error("Blobs down");
+      }, 0),
+    ).rejects.toThrow(/Couldn't load/);
+    // The next request tries again rather than waiting 30 seconds.
+    await loadClub(async () => null, 1);
+    expect(club).toEqual(clubFromFile());
+  });
+
   it("keeps the settings in use when Blobs fails or what's saved is bad", async () => {
     const { loadClub, club } = await load();
     await loadClub(async () => saved, 0);

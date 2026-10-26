@@ -61,7 +61,7 @@ Raw times are not compared across regattas. Head race courses differ in length a
 
 **Phase 1.5: Push notifications.** CrewDash becomes installable on a phone's home screen and sends web push notifications when a club boat gets a result.
 
-- A scheduled Netlify function polls CrewTimer every 5 minutes from 6 am to 10 pm in the club's time zone, for regattas from the day before race day until 3 days after. It fires around the clock, because clubs race in every time zone and on any day, but a run with nothing to do ends after one small read. An admin can also tap "Refresh now", which notifies the same way. Scheduled functions have a 30-second limit, and one small fetch per active regatta fits within it.
+- A scheduled Netlify function polls CrewTimer every 5 minutes from 4 am to midnight in the club's time zone, for regattas from the day before race day until 3 days after. It fires around the clock, because clubs race in every time zone and on any day, but a run with nothing to do ends after one small read. An admin can also tap "Refresh now", which notifies the same way. Scheduled functions have a 30-second limit, and one small fetch per active regatta fits within it.
 - Phone subscriptions are stored in Netlify Blobs.
 - An event notifies once, when every boat in it has a result. In head races, early places are provisional until then. Adding a regatta for the first time never notifies, so adding a finished regatta doesn't send a burst of old results.
 - The keys that sign notifications are generated on first use and stored in Netlify Blobs, so there's nothing to configure.

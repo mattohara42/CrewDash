@@ -1,7 +1,7 @@
 import type { ClubIdentity } from "../club.js";
 import { addDays, eventDate, regattaDates } from "../crewtimer/normalize.js";
 import { clubEvents } from "./club-view.js";
-import { formatStart, ordinal, statusLabel } from "./format.js";
+import { formatStart, ordinal, startMinutes, statusLabel } from "./format.js";
 import { eventKey, type Settings } from "./settings.js";
 import type { StoredRegatta } from "./store.js";
 
@@ -30,20 +30,6 @@ export interface TodayRegatta {
 /** "2026-10-12" for the given instant in the given time zone. */
 export function localDate(now: Date, timeZone: string): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone }).format(now);
-}
-
-/** Minutes after midnight for "9:30:00 AM", "9:30 AM" or "13:05", or null. */
-export function startMinutes(start: string): number | null {
-  const m = /^(\d{1,2}):(\d{2})(?::\d{2})?\s*([AP]M)?$/i.exec(start.trim());
-  if (!m) return null;
-  let hours = Number(m[1]);
-  const minutes = Number(m[2]);
-  const ampm = m[3]?.toUpperCase();
-  if (ampm) {
-    if (hours < 1 || hours > 12) return null;
-    hours = (hours % 12) + (ampm === "PM" ? 12 : 0);
-  }
-  return hours < 24 && minutes < 60 ? hours * 60 + minutes : null;
 }
 
 /** The instant a local wall-clock time on a date happens in a time zone. */

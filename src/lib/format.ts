@@ -105,18 +105,26 @@ export function formatNumber(n: number, locale: string = club.locale): string {
   return n.toLocaleString(locale);
 }
 
+/** Minutes after midnight for "9:30:00 AM", "9:30 AM" or "13:05", or null. */
+export function startMinutes(start: string): number | null {
+  const m = /^(\d{1,2}):(\d{2})(?::\d{2})?\s*([AP]M)?$/i.exec(start.trim());
+  if (!m) return null;
+  let hours = Number(m[1]);
+  const minutes = Number(m[2]);
+  const ampm = m[3]?.toUpperCase();
+  if (ampm) {
+    if (hours < 1 || hours > 12) return null;
+    hours = (hours % 12) + (ampm === "PM" ? 12 : 0);
+  }
+  return hours < 24 && minutes < 60 ? hours * 60 + minutes : null;
+}
+
 /**
  * A start time from CrewTimer in the club's way: "10:40:00 AM" -> "10:40 AM" (en-US) or
  * "10:40" (en-GB). Times with seconds other than :00, and other text, pass through.
  */
 export function formatStart(start: string, locale: string = club.locale): string {
-  const m = /^(\d{1,2}):(\d{2})(?::00)?\s*([AP]M)?$/i.exec(start.trim());
-  if (!m) return start;
-  let hours = Number(m[1]);
-  const ampm = m[3]?.toUpperCase();
-  if (ampm) {
-    if (hours < 1 || hours > 12) return start;
-    hours = (hours % 12) + (ampm === "PM" ? 12 : 0);
-  }
-  return hours < 24 && Number(m[2]) < 60 ? formatClock(hours * 60 + Number(m[2]), locale) : start;
+  const minutes = startMinutes(start);
+  if (minutes === null || /:\d{2}:(?!00\b)\d{2}/.test(start)) return start;
+  return formatClock(minutes, locale);
 }

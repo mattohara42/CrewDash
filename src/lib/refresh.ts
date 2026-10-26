@@ -1,10 +1,10 @@
 import { fetchChangeMarker, fetchRegattaResults } from "../crewtimer/fetch.js";
-import { PARSER_VERSION, addDays, normalizeRegatta } from "../crewtimer/normalize.js";
+import { PARSER_VERSION, addDays, normalizeRegatta, regattaDates } from "../crewtimer/normalize.js";
 import { conditionsFor } from "./conditions.js";
 import { club } from "./config.js";
 import { seriesName } from "./history.js";
 import { recordResultTimes } from "./speed.js";
-import { summarize, type RegattaStore, type RegattaSummary, type StoredRegatta } from "./store.js";
+import type { RegattaStore, StoredRegatta } from "./store.js";
 import { localDate } from "./today.js";
 import { venueForSeries } from "./venues.js";
 
@@ -19,9 +19,12 @@ const STALE_PER_RUN = 5;
 // first 5 minutes.
 const OFF_DAY_MINUTES = 5;
 // The schedule fires every 5 minutes around the clock, because clubs race in every time
-// zone. Runs outside these local hours end after reading the club's settings. Evening regattas finish by 22:00.
-const FIRST_HOUR = 6;
-const LAST_HOUR = 21;
+// zone. Runs outside these local hours end after reading the club's settings. They're wide
+// so a regatta three time zones away still fits: a 7:00 start in Boston is 4:00 in Los
+// Angeles, and a 17:00 finish in California is 20:00 in New York. Further away than that,
+// early or late racing is missed.
+const FIRST_HOUR = 4;
+const LAST_HOUR = 23;
 
 export interface Fetched {
   record: StoredRegatta;
@@ -99,12 +102,8 @@ function logMarker({ record, previous }: Fetched): void {
 }
 
 /** True when the stored copy came from an older parser and needs fetching again. */
-export function isStale(record: StoredRegatta): boolean {
+export function isStale(record: Pick<StoredRegatta, "parserVersion">): boolean {
   return (record.parserVersion ?? 0) < PARSER_VERSION;
-}
-
-function isStaleSummary(summary: RegattaSummary): boolean {
-  return summary.parserVersion < PARSER_VERSION;
 }
 
 /** Re-fetches every stored regatta that is still recent, and a few stale older ones. */
@@ -120,7 +119,7 @@ export async function refreshRecent(
       isRecent(s.date, zone, now) &&
       (isRaceDay(s.dates, zone, now) || now.getUTCMinutes() < OFF_DAY_MINUTES),
   );
-  const stale = all.filter((s) => !isRecent(s.date, zone, now) && isStaleSummary(s));
+  const stale = all.filter((s) => !isRecent(s.date, zone, now) && isStale(s));
   const refreshed: Fetched[] = [];
   for (const { id } of [...recent, ...stale.slice(0, STALE_PER_RUN)]) {
     try {
@@ -156,8 +155,8 @@ export async function warmConditions(
   ]);
   const items = records.flatMap((record) =>
     record
-      ? summarize(record)
-          .dates.filter((date) => soon.includes(date))
+      ? regattaDates(record.regatta)
+          .filter((date) => soon.includes(date))
           .map((date) => ({ record, venue: venueForSeries(venues, seriesName(record)), date }))
       : [],
   );

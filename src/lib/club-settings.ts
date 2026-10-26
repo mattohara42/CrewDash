@@ -8,6 +8,7 @@ import { club, clubFromFile } from "./config.js";
 
 const FRESH_MS = 30_000;
 let loadedAt = Number.NEGATIVE_INFINITY;
+let loaded = false;
 let saved = false;
 
 /** True once an admin has saved settings, rather than the site running on club.json. */
@@ -17,6 +18,7 @@ export function clubIsSetUp(): boolean {
 
 function apply(next: ClubConfig, isSaved: boolean, now: number): void {
   Object.assign(club, next);
+  loaded = true;
   saved = isSaved;
   loadedAt = now;
 }
@@ -24,7 +26,10 @@ function apply(next: ClubConfig, isSaved: boolean, now: number): void {
 /**
  * Brings `club` up to date with the saved settings, at most every 30 seconds. With nothing
  * saved it uses club.json. If Blobs can't be read, or what's saved doesn't pass the checks,
- * the settings already in use stay and the problem is logged.
+ * the settings already in use stay and the problem is logged. A server that has never read
+ * them throws instead: club.json is only a placeholder, and running on it would match none
+ * of the club's boats (losing alerts) and show the admin an empty setup form to save over
+ * the real settings.
  */
 export async function loadClub(
   read: () => Promise<unknown>,
@@ -36,6 +41,7 @@ export async function loadClub(
     if (value === null || value === undefined) apply(clubFromFile(), false, now);
     else apply(parseClubConfig(value), true, now);
   } catch (err) {
+    if (!loaded) throw new Error("Couldn't load the club settings.", { cause: err });
     // Try again after the usual wait rather than on every request.
     loadedAt = now;
     console.error("Loading the club settings failed:", err);

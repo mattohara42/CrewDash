@@ -3,7 +3,8 @@ import { parseClubConfig } from "../src/club.js";
 import { normalizeRegatta } from "../src/crewtimer/normalize.js";
 import type { RawRegattaResults } from "../src/crewtimer/raw.js";
 import { EMPTY_SETTINGS } from "../src/lib/settings.js";
-import { localDate, startMinutes, todayRegattas, zonedInstant } from "../src/lib/today.js";
+import { startMinutes } from "../src/lib/format.js";
+import { localDate, todayRegattas, zonedInstant } from "../src/lib/today.js";
 import fixture from "./fixtures/regatta.json" with { type: "json" };
 import { twoDayRaw } from "./fixtures/two-day.js";
 
