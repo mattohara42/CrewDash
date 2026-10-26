@@ -1,7 +1,7 @@
 ---
 import Base from "../layouts/Base.astro";
 import { nearMatches } from "../lib/club-view.js";
-import { clubIsSetUp } from "../lib/club-settings.js";
+import { clubIsSetUp, moveExtraAliases } from "../lib/club-settings.js";
 import { club as baseClub } from "../lib/config.js";
 import { loadContext } from "../lib/context.js";
 import { regattaDates } from "../crewtimer/normalize.js";
@@ -12,6 +12,8 @@ import { NEW_VENUE } from "../lib/venues.js";
 
 const error = Astro.url.searchParams.get("error");
 const { store, records, settings, club } = await loadContext();
+// Names added to the old separate list join the club settings, once.
+await moveExtraAliases(store, settings);
 const venueData = await store.getVenues();
 const regattas = records
   .map((record) => ({
@@ -147,18 +149,20 @@ const merges = Object.entries(settings.eventAliases).sort(([a], [b]) => a.locale
   <h2>Names counted as {club.name}</h2>
   <div class="card">
     <p class="muted">
-      From <a href="/admin/club">club settings</a>: {baseClub.aliases.join(", ")}
+      The crew names the club races under in CrewTimer results. Add one from a "Not counted" name
+      above, or edit the list in <a href="/admin/club">club settings</a>.
     </p>
-    {settings.extraAliases.length === 0 && <p class="muted">No extra names added here.</p>}
-    {settings.extraAliases.map((name) => (
+    {baseClub.aliases.map((name) => (
       <form method="post" action="/api/admin/aliases" class="row">
         <span>{name}</span>
         <input type="hidden" name="name" value={name} />
         <input type="hidden" name="action" value="remove" />
         <input type="hidden" name="back" value="/admin" />
-        <button type="submit" class="secondary">
-          Remove
-        </button>
+        {baseClub.aliases.length > 1 && (
+          <button type="submit" class="secondary">
+            Remove
+          </button>
+        )}
       </form>
     ))}
   </div>
