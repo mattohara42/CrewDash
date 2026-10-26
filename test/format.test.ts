@@ -41,6 +41,29 @@ describe("formatDate", () => {
     expect(formatDate("2026-10-11")).toBe("Sun, Oct 11, 2026");
     expect(formatDate("TBD")).toBe("TBD");
   });
+
+  it("follows the club's locale", () => {
+    // Some ICU versions put a comma after the weekday.
+    expect(formatDate("2026-10-11", "en-GB")).toMatch(/^Sun,? 11 Oct 2026$/);
+  });
+});
+
+describe("formatClock", async () => {
+  const { formatClock } = await import("../src/lib/format.js");
+  it("writes US times with AM and PM and others in 24 hours", () => {
+    expect(formatClock(9 * 60 + 12)).toBe("9:12 AM");
+    expect(formatClock(13 * 60 + 5)).toBe("1:05 PM");
+    expect(formatClock(13 * 60 + 5, "en-GB")).toBe("13:05");
+    expect(formatClock(13 * 60 + 5.7, "en-GB")).toBe("13:05");
+  });
+});
+
+describe("formatNumber", async () => {
+  const { formatNumber } = await import("../src/lib/format.js");
+  it("follows the club's locale", () => {
+    expect(formatNumber(1234.5)).toBe("1,234.5");
+    expect(formatNumber(1234.5, "de-DE")).toBe("1.234,5");
+  });
 });
 
 describe("formatStart", () => {
@@ -48,6 +71,9 @@ describe("formatStart", () => {
     expect(formatStart("10:40:00 AM")).toBe("10:40 AM");
     expect(formatStart("9:05:30 PM")).toBe("9:05:30 PM");
     expect(formatStart("After lunch")).toBe("After lunch");
+    expect(formatStart("13:05")).toBe("1:05 PM");
+    expect(formatStart("10:40:00 AM", "en-GB")).toBe("10:40");
+    expect(formatStart("13:00:00 PM")).toBe("13:00:00 PM");
   });
 });
 

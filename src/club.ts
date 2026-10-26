@@ -33,9 +33,33 @@ export interface ClubConfig extends ClubIdentity {
   timezone: string;
   // Units for weather: mph and °F, or km/h and °C.
   units: "imperial" | "metric";
+  // BCP 47 language tag for how dates, times and numbers are written, like "en-GB".
+  locale: string;
+  // The month a season starts, 1 to 12. 1 makes a season a calendar year. Clubs that
+  // race September to June, or in the southern summer, start it in the autumn.
+  seasonStartMonth: number;
 }
 
 export const DEFAULT_TIMEZONE = "America/New_York";
+export const DEFAULT_LOCALE = "en-US";
+
+function parseLocale(value: unknown): string {
+  if (value === undefined) return DEFAULT_LOCALE;
+  try {
+    if (typeof value !== "string" || value.trim() === "") throw new Error();
+    return Intl.getCanonicalLocales(value)[0]!;
+  } catch {
+    throw new Error('club.json locale must be a language tag like "en-US" or "en-GB"');
+  }
+}
+
+function parseSeasonStart(value: unknown): number {
+  if (value === undefined) return 1;
+  if (typeof value !== "number" || !Number.isInteger(value) || value < 1 || value > 12) {
+    throw new Error("club.json seasonStartMonth must be a month number from 1 to 12");
+  }
+  return value;
+}
 
 function parseTimezone(value: unknown): string {
   if (value === undefined) return DEFAULT_TIMEZONE;
@@ -115,6 +139,8 @@ export function parseClubConfig(value: unknown): ClubConfig {
     colors: parseColors((v as { colors?: unknown }).colors),
     timezone: parseTimezone((v as { timezone?: unknown }).timezone),
     units: (v as { units?: unknown }).units === "metric" ? "metric" : "imperial",
+    locale: parseLocale((v as { locale?: unknown }).locale),
+    seasonStartMonth: parseSeasonStart((v as { seasonStartMonth?: unknown }).seasonStartMonth),
   };
 }
 

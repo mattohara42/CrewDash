@@ -25,6 +25,7 @@ export async function notifyFetched(
   regattas: RegattaStore,
   pushStore: PushStore = blobsPushStore(),
 ): Promise<{ sent: number; removed: number }> {
+  if (fetched.length === 0) return { sent: 0, removed: 0 };
   const settings = await regattas.getSettings();
   const club = effectiveClub(baseClub, settings);
   const now = new Date();

@@ -4,23 +4,26 @@ import Base from "../layouts/Base.astro";
 import { normalizeName } from "../club.js";
 import { loadContext } from "../lib/context.js";
 import { formatDate } from "../lib/format.js";
-import { historyByEvent, regattasInYear } from "../lib/history.js";
+import { currentSeason, historyByEvent, regattasInSeason, seasonLabel } from "../lib/history.js";
 
 // One event followed through a season, for example every Men's U19 4+ the club raced this year.
 const params = Astro.url.searchParams;
 const key = normalizeName(params.get("name") ?? "");
-const year = params.get("year") ?? String(new Date().getUTCFullYear());
 const { records, settings, club } = await loadContext();
-const group = historyByEvent(regattasInYear(records, year), club, settings).find(
-  (g) => g.key === key,
-);
+const year = params.get("year") ?? currentSeason(club.timezone, club.seasonStartMonth);
+const label = seasonLabel(year, club.seasonStartMonth);
+const group = historyByEvent(
+  regattasInSeason(records, year, club.seasonStartMonth),
+  club,
+  settings,
+).find((g) => g.key === key);
 if (!group) return new Response("No boats found for that event", { status: 404 });
 ---
 
-<Base title={`${group.name} ${year}`}>
+<Base title={`${group.name} ${label}`}>
   <h1>{group.name}</h1>
   <p class="muted">
-    {year} season · {club.name} boats at each regatta, newest first. Courses differ between
+    {label} season · {club.name} boats at each regatta, newest first. Courses differ between
     regattas, so compare places and margins rather than times.
   </p>
   {group.rows.map((row) => (

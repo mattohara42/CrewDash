@@ -3,7 +3,8 @@ import type { Lineup, RegattaLineups, Seat } from "./lineups.js";
 
 // The club's rowers, so lineups pick people instead of retyping names. One list for the
 // club, with the seasons each rower is on, so a rower keeps their id (and their page and
-// followers) from one season to the next. A season is a calendar year for now.
+// followers) from one season to the next. A season is named by the year it starts (see
+// seasonOf in history.ts).
 
 export interface RosterRower {
   // The rower's name, normalized, when they were added (with " 2" etc. if taken). It never

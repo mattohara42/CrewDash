@@ -1,5 +1,5 @@
 import { getStore } from "@netlify/blobs";
-import type { Regatta } from "../crewtimer/normalize.js";
+import { regattaDates, type Regatta } from "../crewtimer/normalize.js";
 import { EMPTY_SETTINGS, parseSettings, type Settings } from "./settings.js";
 import type { CachedConditions } from "./conditions.js";
 import { parseLineups, type RegattaLineups } from "./lineups.js";
@@ -34,10 +34,52 @@ export interface StoredRegatta {
   marker?: string;
 }
 
+// What the scheduled refresh needs to know about a stored regatta, without downloading it.
+export interface RegattaSummary {
+  id: string;
+  // The first race day, which is the regatta's date.
+  date: string;
+  // Every race day.
+  dates: string[];
+  parserVersion: number;
+}
+
+export function summarize(record: StoredRegatta): RegattaSummary {
+  return {
+    id: record.regatta.id,
+    date: record.regatta.date,
+    dates: regattaDates(record.regatta),
+    parserVersion: record.parserVersion ?? 0,
+  };
+}
+
+/**
+ * Brings the calendar in line with the regattas actually stored: adds any it's missing and
+ * drops any no longer there. Returns the corrected calendar, or null when it was right.
+ */
+export async function reconcileCalendar(
+  ids: string[],
+  calendar: Record<string, RegattaSummary>,
+  load: (id: string) => Promise<StoredRegatta | null>,
+): Promise<Record<string, RegattaSummary> | null> {
+  const missing = ids.filter((id) => !calendar[id]);
+  const gone = Object.keys(calendar).filter((id) => !ids.includes(id));
+  if (missing.length === 0 && gone.length === 0) return null;
+  const fixed = { ...calendar };
+  for (const id of gone) delete fixed[id];
+  for (const id of missing) {
+    const record = await load(id);
+    if (record) fixed[id] = summarize(record);
+  }
+  return fixed;
+}
+
 export interface RegattaStore {
   get(id: string): Promise<StoredRegatta | null>;
   put(record: StoredRegatta): Promise<void>;
   list(): Promise<StoredRegatta[]>;
+  // One summary per stored regatta, from a small index rather than every regatta.
+  summaries(): Promise<RegattaSummary[]>;
   getSettings(): Promise<Settings>;
   putSettings(settings: Settings): Promise<void>;
   getVenues(): Promise<VenueData>;
@@ -71,6 +113,7 @@ const BLADES_KEY = "blades";
 const ANNOUNCEMENTS_KEY = "announcements";
 const ALERTS_KEY = "alerts";
 const ROSTER_KEY = "roster";
+const CALENDAR_KEY = "calendar";
 
 /**
  * Netlify Blobs store. Shared by every deploy of the site, previews included. With
@@ -79,12 +122,40 @@ const ROSTER_KEY = "roster";
 export function blobsStore(): RegattaStore {
   if (isDemo()) return demoStore();
   const store = getStore({ name: "regattas", consistency: "strong" });
+  const readCalendar = async () =>
+    ((await store.get(CALENDAR_KEY, { type: "json" })) ?? {}) as Record<string, RegattaSummary>;
   return {
     async get(id) {
       return (await store.get(PREFIX + id, { type: "json" })) as StoredRegatta | null;
     },
     async put(record) {
       await store.setJSON(PREFIX + record.regatta.id, record);
+      // Keep the calendar in step. If this write is lost, summaries() adds the regatta back
+      // the next time it reads, so a failure is only logged.
+      try {
+        const calendar = await readCalendar();
+        calendar[record.regatta.id] = summarize(record);
+        await store.setJSON(CALENDAR_KEY, calendar);
+      } catch (err) {
+        console.error("Updating the regatta calendar failed:", err);
+      }
+    },
+    // The calendar is checked against the stored keys on every read, so a regatta added
+    // while another write was in flight, or one stored before the calendar existed, is
+    // picked up here.
+    async summaries() {
+      const [{ blobs }, calendar] = await Promise.all([
+        store.list({ prefix: PREFIX }),
+        readCalendar(),
+      ]);
+      const ids = blobs.map((b) => b.key.slice(PREFIX.length));
+      const fixed = await reconcileCalendar(
+        ids,
+        calendar,
+        async (id) => (await store.get(PREFIX + id, { type: "json" })) as StoredRegatta | null,
+      );
+      if (fixed) await store.setJSON(CALENDAR_KEY, fixed);
+      return ids.flatMap((id) => (fixed ?? calendar)[id] ?? []);
     },
     async list() {
       const { blobs } = await store.list({ prefix: PREFIX });
@@ -177,6 +248,9 @@ export function memoryStore(): RegattaStore {
     },
     async list() {
       return [...records.values()];
+    },
+    async summaries() {
+      return [...records.values()].map(summarize);
     },
     async getSettings() {
       return settings;

@@ -1,25 +1,24 @@
 ---
 import Base from "../../layouts/Base.astro";
-import { regattaYear } from "../../lib/history.js";
+import { currentSeason, regattaSeason, seasonLabel } from "../../lib/history.js";
 import { linkLineups, seasonRowers } from "../../lib/roster.js";
 import { blobsStore } from "../../lib/store.js";
-import { localDate } from "../../lib/today.js";
 import { club } from "../../lib/config.js";
 
 const error = Astro.url.searchParams.get("error");
 const store = blobsStore();
 const records = await store.list();
-const thisYear = localDate(new Date(), club.timezone).slice(0, 4);
-const years = [...new Set([thisYear, ...records.map((r) => regattaYear(r.regatta))])]
-  .sort()
-  .reverse();
+const thisYear = currentSeason(club.timezone, club.seasonStartMonth);
+const seasonOfRecord = (r: (typeof records)[number]) =>
+  regattaSeason(r.regatta, club.seasonStartMonth);
+const years = [...new Set([thisYear, ...records.map(seasonOfRecord)])].sort().reverse();
 const asked = Astro.url.searchParams.get("year");
 const year = asked && years.includes(asked) ? asked : thisYear;
 
 // Lineups typed before the roster existed are linked here, adding their rowers to the
 // season. It only writes when something changed, so later visits are read-only.
 let roster = await store.getRoster();
-for (const record of records.filter((r) => regattaYear(r.regatta) === year)) {
+for (const record of records.filter((r) => seasonOfRecord(r) === year)) {
   const linked = linkLineups(roster, await store.getLineups(record.regatta.id), year);
   if (!linked.lineups) continue;
   roster = linked.roster;
@@ -27,6 +26,7 @@ for (const record of records.filter((r) => regattaYear(r.regatta) === year)) {
   await store.putRoster(roster);
 }
 
+const label = seasonLabel(year, club.seasonStartMonth);
 const rowers = seasonRowers(roster, year);
 const previous = String(Number(year) - 1);
 const carry = seasonRowers(roster, previous).filter((r) => !r.seasons.includes(year));
@@ -34,11 +34,11 @@ const squads = [...new Set(roster.rowers.map((r) => r.squad).filter(Boolean))].s
 const BLANK_ROWS = 5;
 ---
 
-<Base title={`${year} roster`}>
+<Base title={`${label} roster`}>
   <p class="eyebrow">
     <a href="/coach">Coach</a>
   </p>
-  <h1>{year} roster</h1>
+  <h1>{label} roster</h1>
   <p class="muted">
     The rowers coaches pick from when filling a boat on a regatta page. Squad puts the likely rowers
     first, and anyone on the roster can still sub in. Everyone in the club can see lineups, but only
@@ -50,7 +50,7 @@ const BLANK_ROWS = 5;
     <nav class="years" aria-label="Season">
       {years.map((y) => (
         <a href={`/coach/roster?year=${y}`} aria-current={y === year ? "page" : undefined}>
-          {y}
+          {seasonLabel(y, club.seasonStartMonth)}
         </a>
       ))}
     </nav>
@@ -62,11 +62,11 @@ const BLANK_ROWS = 5;
       <input type="hidden" name="year" value={year} />
       <input type="hidden" name="from" value={previous} />
       <p>
-        {carry.length} {carry.length === 1 ? "rower" : "rowers"} from {previous} aren't on the{" "}
-        {year} roster yet.
+        {carry.length} {carry.length === 1 ? "rower" : "rowers"} from{" "}
+        {seasonLabel(previous, club.seasonStartMonth)} aren't on the {label} roster yet.
       </p>
       <button type="submit" class="secondary">
-        Add them to {year}
+        Add them to {label}
       </button>
     </form>
   )}
@@ -150,8 +150,8 @@ const BLANK_ROWS = 5;
     </table>
     <button type="submit">Save roster</button>
     <p class="muted small">
-      Removing someone takes them off the {year} roster only. Their past races and page stay. To add
-      more than {BLANK_ROWS} at once, save and the blank rows come back.
+      Removing someone takes them off the {label} roster only. Their past races and page stay. To
+      add more than {BLANK_ROWS} at once, save and the blank rows come back.
     </p>
   </form>
 

@@ -1,6 +1,12 @@
 import type { ClubIdentity } from "../club.js";
 import { clubEvents } from "./club-view.js";
-import { regattaYear, regattasInSeries, regattasInYear, seriesKey, seriesName } from "./history.js";
+import {
+  regattaSeason,
+  regattasInSeason,
+  regattasInSeries,
+  seriesKey,
+  seriesName,
+} from "./history.js";
 import type { Settings } from "./settings.js";
 import { marginComparison, seasonStats, type MarginComparison } from "./stats.js";
 import type { StoredRegatta } from "./store.js";
@@ -80,11 +86,11 @@ export function regattaRecap(
 export function seasonWrapped(
   year: string,
   records: StoredRegatta[],
-  club: ClubIdentity,
+  club: ClubIdentity & { seasonStartMonth: number },
   settings: Settings,
   venues: VenueData,
 ) {
-  const season = regattasInYear(records, year);
+  const season = regattasInSeason(records, year, club.seasonStartMonth);
   const stats = seasonStats(season, club);
   let metres = 0;
   let unmeasured = 0;
@@ -105,7 +111,9 @@ export function seasonWrapped(
     .flatMap((key) =>
       gains(
         marginComparison(
-          regattasInSeries(records, key).filter((r) => regattaYear(r.regatta) <= year),
+          regattasInSeries(records, key).filter(
+            (r) => regattaSeason(r.regatta, club.seasonStartMonth) <= year,
+          ),
           club,
           settings,
         ),

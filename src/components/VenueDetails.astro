@@ -1,6 +1,6 @@
 ---
 import { regattaDates } from "../crewtimer/normalize.js";
-import { formatDates } from "../lib/format.js";
+import { formatDates, formatNumber } from "../lib/format.js";
 import { seriesName } from "../lib/history.js";
 import type { StoredRegatta } from "../lib/store.js";
 import { mapLinks, type Venue } from "../lib/venues.js";
@@ -19,7 +19,7 @@ const { venue, regattas, heading: H } = Astro.props;
 ---
 
 {venue.courseLengthM && (
-  <p class="muted">Course length {(venue.courseLengthM / 1000).toLocaleString("en-US")} km</p>
+  <p class="muted">Course length {formatNumber(venue.courseLengthM / 1000)} km</p>
 )}
 
 {venue.places.length > 0 && (

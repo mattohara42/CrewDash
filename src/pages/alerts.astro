@@ -1,6 +1,6 @@
 ---
 import Base from "../layouts/Base.astro";
-import { formatDate } from "../lib/format.js";
+import { formatDate, formatInstant } from "../lib/format.js";
 import { club } from "../lib/config.js";
 import { blobsStore } from "../lib/store.js";
 import { localDate } from "../lib/today.js";
@@ -8,11 +8,7 @@ import { localDate } from "../lib/today.js";
 // The bell: recent start and result alerts and coach announcements, newest first.
 const log = await blobsStore().getAlertLog();
 const time = (iso: string) =>
-  new Date(iso).toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    timeZone: club.timezone,
-  });
+  formatInstant(new Date(iso), club.timezone, { hour: "numeric", minute: "2-digit" });
 const days = [...new Set(log.map((a) => localDate(new Date(a.at), club.timezone)))];
 const LABELS = { start: "Started", result: "Result", update: "Updated", announcement: "Club" };
 ---

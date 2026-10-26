@@ -3,14 +3,15 @@ import ShareCard from "../components/ShareCard.astro";
 import Base from "../layouts/Base.astro";
 import { loadContext } from "../lib/context.js";
 import { formatGap, ordinal } from "../lib/format.js";
-import { regattaYear } from "../lib/history.js";
+import { seasonLabel, seasonsRaced } from "../lib/history.js";
 import { seasonWrapped } from "../lib/recap.js";
 
 const { store, records, settings, club } = await loadContext();
-const years = [...new Set(records.map((r) => regattaYear(r.regatta)))].sort().reverse();
+const years = seasonsRaced(records, club.seasonStartMonth);
 const asked = Astro.url.searchParams.get("year");
 const year = asked && years.includes(asked) ? asked : years[0];
 if (!year) return Astro.redirect("/");
+const label = seasonLabel(year, club.seasonStartMonth);
 const w = seasonWrapped(year, records, club, settings, await store.getVenues());
 
 // One big fact per slide. Banquet mode shows them full screen, one at a time.
@@ -50,9 +51,9 @@ const cardLines = [
 ];
 ---
 
-<Base title={`${year} Wrapped`}>
+<Base title={`${label} Wrapped`}>
   <p class="eyebrow">{club.name}</p>
-  <h1>{year} Wrapped</h1>
+  <h1>{label} Wrapped</h1>
   <p class="muted">
     The season in numbers. Tap <strong>Banquet mode</strong> to show it full screen, one slide at a
     time.
@@ -62,7 +63,7 @@ const cardLines = [
       {years.map((y) => (
         <>
           <a href={`/wrapped?year=${y}`} aria-current={y === year ? "page" : undefined}>
-            {y}
+            {seasonLabel(y, club.seasonStartMonth)}
           </a>{" "}
         </>
       ))}
@@ -85,7 +86,7 @@ const cardLines = [
   </div>
 
   <ShareCard
-    title={`${year} season`}
+    title={`${label} season`}
     subtitle={`${w.regattas} ${w.regattas === 1 ? "regatta" : "regattas"}`}
     stats={[
       { label: "Boats", value: w.boats },
@@ -93,7 +94,7 @@ const cardLines = [
       { label: "Top three", value: w.podiums },
     ]}
     lines={cardLines}
-    filename={`${year}-wrapped.png`}
+    filename={`${label}-wrapped.png`}
   />
 </Base>
 

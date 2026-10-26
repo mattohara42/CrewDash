@@ -3,14 +3,14 @@ import qrcode from "qrcode-generator";
 import Base from "../layouts/Base.astro";
 import { INVITE_DAYS, authConfigFromEnv, createInviteToken } from "../lib/auth.js";
 import { club } from "../lib/config.js";
+import { formatInstant } from "../lib/format.js";
 
 // A fresh invite each time the page opens, so the expiry is always two weeks away.
 const { sessionSecret } = authConfigFromEnv(process.env);
 const link = sessionSecret ? `${Astro.url.origin}/join?k=${createInviteToken(sessionSecret)}` : "";
-const expires = new Date(Date.now() + INVITE_DAYS * 86_400_000).toLocaleDateString("en-US", {
+const expires = formatInstant(new Date(Date.now() + INVITE_DAYS * 86_400_000), club.timezone, {
   month: "long",
   day: "numeric",
-  timeZone: club.timezone,
 });
 let qr = "";
 if (link) {

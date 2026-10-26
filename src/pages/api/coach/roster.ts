@@ -9,13 +9,17 @@ import {
   seasonRowers,
 } from "../../../lib/roster.js";
 import { blobsStore } from "../../../lib/store.js";
+import { club } from "../../../lib/config.js";
+import { currentSeason } from "../../../lib/history.js";
 
 // Roster edits: save the season's list, carry last season's rowers over, or merge a
 // duplicate. Coaches and admins only (see middleware).
 export const POST: APIRoute = async ({ request, redirect }) => {
   const form = await request.formData();
   const field = (name: string) => String(form.get(name) ?? "").trim();
-  const year = /^\d{4}$/.test(field("year")) ? field("year") : String(new Date().getFullYear());
+  const year = /^\d{4}$/.test(field("year"))
+    ? field("year")
+    : currentSeason(club.timezone, club.seasonStartMonth);
   const back = `/coach/roster?year=${year}`;
   const store = blobsStore();
   let roster = await store.getRoster();

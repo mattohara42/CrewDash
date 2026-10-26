@@ -2,21 +2,20 @@
 import webpush from "web-push";
 import Base from "../layouts/Base.astro";
 import { loadContext } from "../lib/context.js";
-import { historyByEvent, regattaYear, regattasInYear } from "../lib/history.js";
+import { historyByEvent, regattasInSeason, seasonLabel, seasonsRaced } from "../lib/history.js";
 import { blobsPushStore, vapidKeys } from "../lib/push.js";
 
 const { records, settings, club } = await loadContext();
 const { publicKey } = await vapidKeys(blobsPushStore(), () => webpush.generateVAPIDKeys());
-// Offer the events the club raced in its most recent year.
-const latestYear = records
-  .map((r) => regattaYear(r.regatta))
-  .sort()
-  .at(-1);
-const events = latestYear
-  ? historyByEvent(regattasInYear(records, latestYear), club, settings).map((g) => ({
-      key: g.key,
-      name: g.name,
-    }))
+// Offer the events the club raced in its most recent season.
+const latest = seasonsRaced(records, club.seasonStartMonth)[0];
+const events = latest
+  ? historyByEvent(regattasInSeason(records, latest, club.seasonStartMonth), club, settings).map(
+      (g) => ({
+        key: g.key,
+        name: g.name,
+      }),
+    )
   : [];
 ---
 
@@ -54,7 +53,9 @@ const events = latestYear
     </p>
     {events.length > 0 && (
       <fieldset id="events">
-        <legend class="muted">Or only these events ({latestYear})</legend>
+        <legend class="muted">
+          Or only these events ({latest && seasonLabel(latest, club.seasonStartMonth)})
+        </legend>
         {events.map((e) => (
           <label class="check">
             <input type="checkbox" name="event" value={e.key} />

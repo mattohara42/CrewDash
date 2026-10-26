@@ -1,6 +1,7 @@
 ---
 import type { Announcement } from "../lib/announcements.js";
 import { club } from "../lib/config.js";
+import { formatInstant } from "../lib/format.js";
 
 interface Props {
   announcements: Announcement[];
@@ -8,11 +9,10 @@ interface Props {
 
 const { announcements } = Astro.props;
 const time = (iso: string) =>
-  new Date(iso).toLocaleString("en-US", {
+  formatInstant(new Date(iso), club.timezone, {
     weekday: "short",
     hour: "numeric",
     minute: "2-digit",
-    timeZone: club.timezone,
   });
 ---
 

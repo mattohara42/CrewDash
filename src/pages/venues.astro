@@ -2,7 +2,7 @@
 import VenueDetails from "../components/VenueDetails.astro";
 import Base from "../layouts/Base.astro";
 import { club } from "../lib/config.js";
-import { formatDate } from "../lib/format.js";
+import { formatDate, formatInstant } from "../lib/format.js";
 import { blobsStore } from "../lib/store.js";
 import { localDate } from "../lib/today.js";
 import { nextAtVenue, regattasAtVenue } from "../lib/venues.js";
@@ -27,11 +27,10 @@ const venues = data.venues
 function nextLabel(next: NonNullable<(typeof venues)[number]["next"]>): string {
   if (!next.expected && next.date <= today) return next.series;
   if (!next.expected) return `${next.series}, ${formatDate(next.date)}`;
-  const around = new Date(`${next.date}T12:00:00Z`).toLocaleDateString("en-US", {
+  const around = formatInstant(new Date(`${next.date}T12:00:00Z`), "UTC", {
     month: "short",
     day: "numeric",
     year: "numeric",
-    timeZone: "UTC",
   });
   return `${next.series}, expected around ${around}`;
 }
