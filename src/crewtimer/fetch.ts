@@ -18,6 +18,10 @@ export async function fetchRegattaResults(
   if (!REGATTA_ID.test(regattaId)) {
     throw new Error(`Not a CrewTimer regatta id: ${regattaId}`);
   }
+  // Real results name real rowers, most of them minors, and the demo is public.
+  if (process.env.CREWDASH_DEMO === "1") {
+    throw new Error("The demo doesn't fetch real results.");
+  }
   const res = await fetchImpl(`${RESULTS_BASE}/${regattaId}.json`);
   if (!res.ok) {
     throw new Error(`CrewTimer returned ${res.status} for ${regattaId}`);
@@ -40,7 +44,7 @@ export async function fetchChangeMarker(
   regattaId: string,
   fetchImpl: typeof fetch = fetch,
 ): Promise<string | null> {
-  if (!REGATTA_ID.test(regattaId)) return null;
+  if (!REGATTA_ID.test(regattaId) || process.env.CREWDASH_DEMO === "1") return null;
   try {
     const res = await fetchImpl(`${RESULTS_BASE}/${regattaId}/lastUpdatedEvent.json`);
     if (!res.ok) return null;

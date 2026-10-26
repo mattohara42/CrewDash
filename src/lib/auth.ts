@@ -18,7 +18,19 @@ export interface AuthConfig {
 export const SESSION_COOKIE = "crewdash_session";
 export const SESSION_DAYS = 30;
 
+// The demo's passwords are printed on its login page. Its data is made up, and it's
+// read-only (see middleware.ts), so they open nothing real.
+export const DEMO_PASSWORDS = { member: "demo", coach: "coach", admin: "admin" } as const;
+
 export function authConfigFromEnv(env: Record<string, string | undefined>): AuthConfig {
+  if (env.CREWDASH_DEMO === "1") {
+    return {
+      clubPassword: DEMO_PASSWORDS.member,
+      coachPassword: DEMO_PASSWORDS.coach,
+      adminPassword: DEMO_PASSWORDS.admin,
+      sessionSecret: "crewdash-demo-only-not-a-secret",
+    };
+  }
   return {
     clubPassword: env.CLUB_PASSWORD,
     adminPassword: env.ADMIN_PASSWORD,

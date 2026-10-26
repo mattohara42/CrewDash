@@ -1,12 +1,18 @@
 import { fetchChangeMarker, fetchRegattaResults } from "../crewtimer/fetch.js";
 import {
   PARSER_VERSION,
+  addDays,
   normalizeRegatta,
   regattaDates,
   type Regatta,
 } from "../crewtimer/normalize.js";
+import { conditionsFor } from "./conditions.js";
+import { club } from "./config.js";
+import { seriesName } from "./history.js";
 import { recordResultTimes } from "./speed.js";
 import type { RegattaStore, StoredRegatta } from "./store.js";
+import { localDate } from "./today.js";
+import { venueForSeries } from "./venues.js";
 
 // CrewTimer's "pending official" flag can stay set forever, so regattas are
 // re-fetched from the day before race day until this many days after it.
@@ -116,4 +122,34 @@ export async function refreshRecent(
     }
   }
   return refreshed;
+}
+
+/**
+ * Looks up the weather for regattas racing today or tomorrow, so parents' page views find it
+ * cached instead of waiting on Open-Meteo. Cached forecasts stay fresh for an hour, so this
+ * asks at most once an hour per race day. Returns how many race days it covered.
+ */
+export async function warmConditions(
+  store: RegattaStore,
+  now: Date = new Date(),
+  fetchImpl?: typeof fetch,
+): Promise<number> {
+  const today = localDate(now, club.timezone);
+  const soon = [today, addDays(today, 1)];
+  const [records, venues] = await Promise.all([store.list(), store.getVenues()]);
+  const items = records.flatMap((record) =>
+    regattaDates(record.regatta)
+      .filter((date) => soon.includes(date))
+      .map((date) => ({ record, venue: venueForSeries(venues, seriesName(record)), date })),
+  );
+  if (items.length > 0) {
+    await conditionsFor(items, store.conditions, {
+      timeZone: club.timezone,
+      units: club.units,
+      today,
+      now,
+      fetchImpl,
+    });
+  }
+  return items.length;
 }

@@ -7,3 +7,10 @@
   for = "/manifest.webmanifest"
   [headers.values]
     Content-Type = "application/manifest+json"
+
+# Asked for by the "Deploy to Netlify" button. See docs/SETUP.md.
+[template.environment]
+  CLUB_PASSWORD = "Password families use. Long and not used elsewhere."
+  ADMIN_PASSWORD = "Password for whoever adds regattas. Keep it to one or two people."
+  COACH_PASSWORD = "Optional. Password for coaches to post announcements and lineups."
+  SESSION_SECRET = "A long random string, 32 characters or more. Changing it logs everyone out."

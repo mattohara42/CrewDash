@@ -10,7 +10,7 @@
   },
   "scripts": {
     "dev": "astro dev",
-    "demo": "CREWDASH_DEMO=1 CLUB_PASSWORD=demo COACH_PASSWORD=coach ADMIN_PASSWORD=admin SESSION_SECRET=demo-only-not-secret astro dev",
+    "demo": "CREWDASH_DEMO=1 astro dev",
     "build": "astro build",
     "lint": "eslint .",
     "format": "prettier --write .",

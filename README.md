@@ -4,7 +4,15 @@ Find your rower. Track your team.
 
 CrewDash shows a rowing club only its own boats and results, pulled from CrewTimer's public results. See [docs/PLAN.md](docs/PLAN.md) for the plan.
 
+**Try it:** [crewdash-demo.netlify.app](https://crewdash-demo.netlify.app) is a demo with a made-up club and made-up results. The password is on its login page.
+
 ## Setting up for your club
+
+[docs/SETUP.md](docs/SETUP.md) walks a club volunteer through it, start to finish.
+
+[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/mattohara42/CrewDash)
+
+The button works once the repository is public. The short version for developers:
 
 Edit `club.json`: set the club's name and every crew name it appears under in CrewTimer results.
 

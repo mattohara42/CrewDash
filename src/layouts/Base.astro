@@ -3,7 +3,7 @@ import Announcements from "../components/Announcements.astro";
 import Blade from "../components/Blade.astro";
 import { active } from "../lib/announcements.js";
 import { canCoach } from "../lib/auth.js";
-import { club } from "../lib/config.js";
+import { club, isDemo } from "../lib/config.js";
 import { blobsStore } from "../lib/store.js";
 
 interface Props {
@@ -135,6 +135,9 @@ const latestAlert = alertLog[0]?.at ?? "";
       <div class="stripes" aria-hidden="true"></div>
     </header>
     <main>
+      {isDemo() && (
+        <p class="demo-note">Demo: a made-up club with made-up results. Changes aren't saved.</p>
+      )}
       <Announcements announcements={announcements} />
       <slot />
     </main>
@@ -511,5 +514,12 @@ const latestAlert = alertLog[0]?.at ?? "";
     text-align: left;
     padding: 4px 6px;
     border-bottom: 1px solid var(--border);
+  }
+  .demo-note {
+    margin: 0 0 12px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--brand-3) 22%, transparent);
+    font-size: 0.9rem;
   }
 </style>

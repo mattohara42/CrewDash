@@ -1,6 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 import { PARSER_VERSION } from "../src/crewtimer/normalize.js";
-import { fetchAndStore, isRaceDay, isRecent, isStale, refreshRecent } from "../src/lib/refresh.js";
+import {
+  fetchAndStore,
+  isRaceDay,
+  isRecent,
+  isStale,
+  refreshRecent,
+  warmConditions,
+} from "../src/lib/refresh.js";
 import { memoryStore } from "../src/lib/store.js";
 import fixture from "./fixtures/regatta.json" with { type: "json" };
 
@@ -156,5 +163,51 @@ describe("refreshRecent off race day", () => {
     await fetchAndStore("r1", store, respond(), raceDay);
     expect((await store.get("r1"))?.marker).toBeUndefined();
     log.mockRestore();
+  });
+});
+
+describe("warmConditions", () => {
+  const hourly = {
+    hourly: {
+      time: Array.from({ length: 24 }, (_, h) => `2026-10-11T${String(h).padStart(2, "0")}:00`),
+      temperature_2m: Array(24).fill(55),
+      precipitation: Array(24).fill(0),
+      wind_speed_10m: Array(24).fill(8),
+      wind_direction_10m: Array(24).fill(180),
+    },
+  };
+
+  it("caches the weather for a regatta racing today, once an hour at most", async () => {
+    const store = memoryStore();
+    await fetchAndStore("r1", store, respond(), now);
+    await store.putVenues({
+      venues: [
+        {
+          id: "lake",
+          name: "Lake",
+          courseLengthM: 5000,
+          courseBearing: 0,
+          places: [{ label: "Finish", lat: 43, lon: -77.6 }],
+          notes: "",
+        },
+      ],
+      seriesVenue: { "made-up head of the lake": "lake" },
+      clubTips: "",
+      chatUrl: "",
+    });
+    const weather = vi.fn(async () => new Response(JSON.stringify(hourly)));
+    const raceMorning = new Date("2026-10-11T13:00:00Z");
+    expect(await warmConditions(store, raceMorning, weather)).toBe(1);
+    expect((await store.conditions.get("r1"))?.conditions?.windSpeed).toBe(8);
+    await warmConditions(store, new Date("2026-10-11T13:30:00Z"), weather);
+    expect(weather).toHaveBeenCalledTimes(1);
+  });
+
+  it("does nothing when no regatta races today or tomorrow", async () => {
+    const store = memoryStore();
+    await fetchAndStore("r1", store, respond(), now);
+    const weather = vi.fn();
+    expect(await warmConditions(store, new Date("2026-10-20T13:00:00Z"), weather)).toBe(0);
+    expect(weather).not.toHaveBeenCalled();
   });
 });

@@ -11,6 +11,7 @@ import { parseAlertLog, type LoggedAlert } from "./alert-log.js";
 import { EMPTY_ROSTER, parseRoster, type Roster } from "./roster.js";
 import { EMPTY_BLADES, parseBladeData, type BladeData } from "./blades.js";
 import { demoStore } from "../demo/seed.js";
+import { isDemo } from "./config.js";
 
 export interface RegattaLinks {
   registration?: string;
@@ -76,7 +77,7 @@ const ROSTER_KEY = "roster";
  * CREWDASH_DEMO=1 it's the made-up demo club instead (see src/demo/seed.ts).
  */
 export function blobsStore(): RegattaStore {
-  if (process.env.CREWDASH_DEMO === "1") return demoStore();
+  if (isDemo()) return demoStore();
   const store = getStore({ name: "regattas", consistency: "strong" });
   return {
     async get(id) {

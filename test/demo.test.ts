@@ -52,6 +52,22 @@ describe("demo club", () => {
     expect(Object.keys(await store.getLineups(kettle.regatta.id)).length).toBeGreaterThan(0);
   });
 
+  it("has public passwords that only work in demo mode", async () => {
+    const { authConfigFromEnv, roleForPassword } = await import("../src/lib/auth.js");
+    const demo = authConfigFromEnv({ CREWDASH_DEMO: "1" });
+    expect(roleForPassword("demo", demo)).toBe("member");
+    expect(roleForPassword("admin", demo)).toBe("admin");
+    expect(roleForPassword("demo", authConfigFromEnv({}))).toBeNull();
+  });
+
+  it("never fetches real results", async () => {
+    const { fetchChangeMarker, fetchRegattaResults } = await import("../src/crewtimer/fetch.js");
+    const fetchImpl = vi.fn();
+    await expect(fetchRegattaResults("r16426", fetchImpl)).rejects.toThrow(/demo/);
+    expect(await fetchChangeMarker("r16426", fetchImpl)).toBeNull();
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
   it("never looks up the weather", async () => {
     const { store } = await load();
     const [record] = await store.list();

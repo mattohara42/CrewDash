@@ -1,10 +1,12 @@
 ---
 import Base from "../layouts/Base.astro";
-import { authConfigFromEnv, isConfigured, safeNext } from "../lib/auth.js";
+import { DEMO_PASSWORDS, authConfigFromEnv, isConfigured, safeNext } from "../lib/auth.js";
+import { isDemo } from "../lib/config.js";
 
 const params = Astro.url.searchParams;
 const next = safeNext(params.get("next"));
-const failed = params.has("error");
+const failed = params.get("error") === "1";
+const waiting = params.get("error") === "wait";
 const expiredInvite = params.has("invite");
 const needsAdmin = params.has("admin");
 const needsCoach = params.has("coach");
@@ -19,9 +21,21 @@ const configured = isConfigured(authConfigFromEnv(process.env));
       Netlify.
     </p>
   )}
+  {isDemo() && (
+    <p class="card notice">
+      This is a demo with a made-up club. Log in with <strong>{DEMO_PASSWORDS.member}</strong>, or
+      try <strong>{DEMO_PASSWORDS.coach}</strong> or <strong>{DEMO_PASSWORDS.admin}</strong> to see
+      the coach and admin pages.
+    </p>
+  )}
   {needsAdmin && <p class="card notice">That page needs the admin password.</p>}
   {needsCoach && <p class="card notice">That page needs the coach or admin password.</p>}
   {failed && <p class="card notice">That password didn't work.</p>}
+  {waiting && (
+    <p class="card notice">
+      Too many wrong passwords from this network. Wait 15 minutes and try again.
+    </p>
+  )}
   {expiredInvite && (
     <p class="card notice">
       That invite link has expired. Ask whoever sent it for a new one, or enter the club password.
