@@ -1,9 +1,9 @@
 import { normalizeName, type ClubIdentity } from "../club.js";
 
 // Admin choices that live in the app instead of in git, so an admin can make
-// them without editing club.json.
+// them without changing the club settings.
 export interface Settings {
-  // Extra crew names to count as the club, on top of club.json's aliases.
+  // Extra crew names to count as the club, on top of the club settings' aliases.
   extraAliases: string[];
   // Renamed or split events: normalized event name -> the name to group it under.
   eventAliases: Record<string, string>;

@@ -1,13 +1,8 @@
 {
-  "name": "Pittsford Crew",
-  "aliases": ["Pittsford Crew", "Pittsford Crew - EXH"],
-  "colors": {
-    "primary": "#0e1a45",
-    "secondary": "#7b2232",
-    "accent": "#f4b81e",
-    "chart": {
-      "light": { "strong": "#3b5bb0", "muted": "#a3b4de" },
-      "dark": { "strong": "#b8860b", "muted": "#6e5414" }
-    }
-  }
+  "name": "Your Rowing Club",
+  "aliases": ["Your Rowing Club"],
+  "timezone": "America/New_York",
+  "units": "imperial",
+  "locale": "en-US",
+  "seasonStartMonth": 1
 }

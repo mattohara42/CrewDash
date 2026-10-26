@@ -30,12 +30,22 @@ describe("parseClubConfig", () => {
     expect(parseClubConfig(clubJson).aliases.length).toBeGreaterThan(0);
   });
 
-  it.each([null, {}, { name: "X", aliases: [] }, { name: "X", aliases: [" "] }])(
-    "rejects %j",
-    (value) => {
-      expect(() => parseClubConfig(value)).toThrow(/club\.json/);
-    },
-  );
+  it.each([
+    null,
+    {},
+    { name: "X", aliases: [] },
+    { name: "X", aliases: [" "] },
+    { name: " ", aliases: ["X"] },
+  ])("rejects %j", (value) => {
+    expect(() => parseClubConfig(value)).toThrow(/at least one name/);
+  });
+
+  it("rejects overlong names and alias lists", () => {
+    expect(() => parseClubConfig({ name: "X".repeat(101), aliases: ["X"] })).toThrow(/at most/);
+    expect(() =>
+      parseClubConfig({ name: "X", aliases: Array.from({ length: 31 }, (_, i) => `X${i}`) }),
+    ).toThrow(/at most 30/);
+  });
 });
 
 describe("locale and seasons", () => {
@@ -52,11 +62,11 @@ describe("locale and seasons", () => {
   });
 
   it.each([
-    [{ locale: "not a locale" }, /locale/],
-    [{ locale: 7 }, /locale/],
-    [{ seasonStartMonth: 0 }, /seasonStartMonth/],
-    [{ seasonStartMonth: 13 }, /seasonStartMonth/],
-    [{ seasonStartMonth: "9" }, /seasonStartMonth/],
+    [{ locale: "not a locale" }, /Locale/],
+    [{ locale: 7 }, /Locale/],
+    [{ seasonStartMonth: 0 }, /Season start/],
+    [{ seasonStartMonth: 13 }, /Season start/],
+    [{ seasonStartMonth: "9" }, /Season start/],
   ])("rejects %j", (extra, message) => {
     expect(() => parseClubConfig({ ...base, ...extra })).toThrow(message);
   });

@@ -1,6 +1,7 @@
 ---
 import Base from "../layouts/Base.astro";
 import { nearMatches } from "../lib/club-view.js";
+import { clubIsSetUp } from "../lib/club-settings.js";
 import { club as baseClub } from "../lib/config.js";
 import { loadContext } from "../lib/context.js";
 import { regattaDates } from "../crewtimer/normalize.js";
@@ -25,8 +26,14 @@ const merges = Object.entries(settings.eventAliases).sort(([a], [b]) => a.locale
 
 <Base title="Admin">
   <h1>Admin</h1>
+  {!clubIsSetUp() && (
+    <p class="card notice">
+      <a href="/admin/club">Set up your club</a>: its name, the names it races under, time zone,
+      season and colors.
+    </p>
+  )}
   <p>
-    <a href="/admin/venues">Venues and club tips</a> ·{" "}
+    <a href="/admin/club">Club settings</a> · <a href="/admin/venues">Venues and club tips</a> ·{" "}
     <a href="/admin/blades">Other clubs' blades</a>
   </p>
   {error && <p class="card notice">{error}</p>}
@@ -139,7 +146,9 @@ const merges = Object.entries(settings.eventAliases).sort(([a], [b]) => a.locale
 
   <h2>Names counted as {club.name}</h2>
   <div class="card">
-    <p class="muted">From club.json: {baseClub.aliases.join(", ")}</p>
+    <p class="muted">
+      From <a href="/admin/club">club settings</a>: {baseClub.aliases.join(", ")}
+    </p>
     {settings.extraAliases.length === 0 && <p class="muted">No extra names added here.</p>}
     {settings.extraAliases.map((name) => (
       <form method="post" action="/api/admin/aliases" class="row">

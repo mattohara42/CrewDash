@@ -1,5 +1,7 @@
-// Everything club-specific lives in club.json at the repo root. Another club
-// forks the repo and edits that file.
+// Everything club-specific is in the club's settings, edited by an admin at /admin/club and
+// stored in Netlify Blobs. club.json at the repo root holds the starting values used until
+// then. The same rules check both, so messages name the setting, not the file.
+import { contrast } from "./lib/color.js";
 
 export interface ChartColors {
   // Bars and this year's marks.
@@ -41,6 +43,8 @@ export interface ClubConfig extends ClubIdentity {
 }
 
 export const DEFAULT_TIMEZONE = "America/New_York";
+const MAX_NAME = 100;
+const MAX_ALIASES = 30;
 export const DEFAULT_LOCALE = "en-US";
 
 function parseLocale(value: unknown): string {
@@ -49,14 +53,14 @@ function parseLocale(value: unknown): string {
     if (typeof value !== "string" || value.trim() === "") throw new Error();
     return Intl.getCanonicalLocales(value)[0]!;
   } catch {
-    throw new Error('club.json locale must be a language tag like "en-US" or "en-GB"');
+    throw new Error('Locale must be a language tag like "en-US" or "en-GB".');
   }
 }
 
 function parseSeasonStart(value: unknown): number {
   if (value === undefined) return 1;
   if (typeof value !== "number" || !Number.isInteger(value) || value < 1 || value > 12) {
-    throw new Error("club.json seasonStartMonth must be a month number from 1 to 12");
+    throw new Error("Season start must be a month from 1 to 12.");
   }
   return value;
 }
@@ -68,7 +72,7 @@ function parseTimezone(value: unknown): string {
     new Intl.DateTimeFormat("en-US", { timeZone: value });
     return value;
   } catch {
-    throw new Error('club.json timezone must be an IANA time zone like "America/New_York"');
+    throw new Error('Time zone must be an IANA time zone like "America/New_York".');
   }
 }
 
@@ -88,7 +92,7 @@ const HEX = /^#[0-9a-f]{6}$/i;
 function hex(value: unknown, fallback: string, field: string): string {
   if (value === undefined) return fallback;
   if (typeof value !== "string" || !HEX.test(value)) {
-    throw new Error(`club.json colors.${field} must be a hex color like "#0e1a45"`);
+    throw new Error(`Color ${field} must be a hex color like "#0e1a45".`);
   }
   return value;
 }
@@ -116,6 +120,25 @@ function parseColors(value: unknown): ClubColors {
   };
 }
 
+// Page surfaces from src/layouts/Base.astro, light and dark. Keep in sync if they change.
+export const LIGHT_SURFACE = "#ffffff";
+export const DARK_SURFACE = "#141a2e";
+
+/** What makes these colors hard to read, if anything. Saving club settings refuses them. */
+export function colorProblems(colors: ClubColors): string[] {
+  const problems: string[] = [];
+  if (contrast("#ffffff", colors.primary) < 4.5) {
+    problems.push("The header color is too light for white text. Pick a darker one.");
+  }
+  if (contrast(colors.chart.light.strong, LIGHT_SURFACE) < 3) {
+    problems.push("The light-theme chart color is too pale to see on white.");
+  }
+  if (contrast(colors.chart.dark.strong, DARK_SURFACE) < 3) {
+    problems.push("The dark-theme chart color is too dark to see in dark mode.");
+  }
+  return problems;
+}
+
 export type ClubMatch = "match" | "near" | "none";
 
 export function normalizeName(name: string): string {
@@ -127,11 +150,18 @@ export function parseClubConfig(value: unknown): ClubConfig {
   if (
     !v ||
     typeof v.name !== "string" ||
+    v.name.trim() === "" ||
     !Array.isArray(v.aliases) ||
     v.aliases.length === 0 ||
     !v.aliases.every((a) => typeof a === "string" && a.trim() !== "")
   ) {
-    throw new Error('club.json needs a "name" and a non-empty "aliases" list of names');
+    throw new Error("Give the club a name and at least one name it races under.");
+  }
+  if (v.name.length > MAX_NAME || v.aliases.some((a) => a.length > MAX_NAME)) {
+    throw new Error(`Names can be at most ${MAX_NAME} characters.`);
+  }
+  if (v.aliases.length > MAX_ALIASES) {
+    throw new Error(`List at most ${MAX_ALIASES} names the club races under.`);
   }
   return {
     name: v.name,

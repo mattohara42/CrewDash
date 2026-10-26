@@ -1,4 +1,4 @@
-// WCAG contrast, used by tests to check club.json colors stay readable.
+// WCAG contrast, used to check the club's colors stay readable (see colorProblems in club.ts).
 
 function channel(c: number): number {
   const s = c / 255;

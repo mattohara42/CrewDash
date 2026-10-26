@@ -19,9 +19,10 @@ const STALE_PER_RUN = 5;
 // first 5 minutes.
 const OFF_DAY_MINUTES = 5;
 // The schedule fires every 5 minutes around the clock, because clubs race in every time
-// zone. Runs outside these local hours end at once. They're wide so a regatta three time
-// zones away still fits: a 7:00 start in Boston is 4:00 in Los Angeles, and a 17:00 finish
-// in California is 20:00 in New York. Further away than that, early or late racing is missed.
+// zone. Runs outside these local hours end after reading the club's settings. They're wide
+// so a regatta three time zones away still fits: a 7:00 start in Boston is 4:00 in Los
+// Angeles, and a 17:00 finish in California is 20:00 in New York. Further away than that,
+// early or late racing is missed.
 const FIRST_HOUR = 4;
 const LAST_HOUR = 23;
 

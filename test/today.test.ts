@@ -74,7 +74,7 @@ describe("club timezone", () => {
   it("defaults to US Eastern and rejects unknown zones", () => {
     expect(parseClubConfig(base).timezone).toBe(TZ);
     expect(parseClubConfig({ ...base, timezone: "Europe/London" }).timezone).toBe("Europe/London");
-    expect(() => parseClubConfig({ ...base, timezone: "Mars/Olympus" })).toThrow(/timezone/);
+    expect(() => parseClubConfig({ ...base, timezone: "Mars/Olympus" })).toThrow(/Time zone/);
   });
 });
 

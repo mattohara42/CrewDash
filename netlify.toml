@@ -2,12 +2,6 @@
   command = "npm run build"
   publish = "dist"
 
-# The manifest is a prerendered static file, and Netlify doesn't know its type.
-[[headers]]
-  for = "/manifest.webmanifest"
-  [headers.values]
-    Content-Type = "application/manifest+json"
-
 # Asked for by the "Deploy to Netlify" button. See docs/SETUP.md.
 [template.environment]
   CLUB_PASSWORD = "Password families use. Long and not used elsewhere."

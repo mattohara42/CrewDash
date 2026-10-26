@@ -64,7 +64,7 @@ export function removeClubBlade(data: BladeData, name: string): BladeData {
   return { clubs: data.clubs.filter((c) => clubKey(c.name) !== clubKey(name)) };
 }
 
-/** This club's own blade, from club.json. */
+/** This club's own blade, from the club settings. */
 export function ownBlade(club: Pick<ClubConfig, "colors">): BladeDesign {
   return { pattern: "tips", base: club.colors.blade.base, accent: club.colors.blade.tip };
 }
