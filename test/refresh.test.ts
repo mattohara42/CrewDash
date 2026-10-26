@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { PARSER_VERSION } from "../src/crewtimer/normalize.js";
-import { fetchAndStore, isRecent, isStale, refreshRecent } from "../src/lib/refresh.js";
+import { fetchAndStore, isRaceDay, isRecent, isStale, refreshRecent } from "../src/lib/refresh.js";
 import { memoryStore } from "../src/lib/store.js";
 import fixture from "./fixtures/regatta.json" with { type: "json" };
 
@@ -76,7 +76,10 @@ describe("refreshRecent", () => {
     const refreshed = await refreshRecent(store, fetchImpl, now);
     expect(refreshed.map((r) => r.record.regatta.id)).toEqual(["r1", "r3"]);
     expect(refreshed.every((r) => r.previous !== null)).toBe(true);
-    expect(fetchImpl).toHaveBeenCalledTimes(3);
+    const fullFetches = fetchImpl.mock.calls.filter(
+      ([url]) => !String(url).includes("lastUpdated"),
+    );
+    expect(fullFetches).toHaveLength(3);
     expect((await store.get("r2"))?.fetchedAt).toBe("");
   });
 });
@@ -102,5 +105,56 @@ describe("refreshRecent with stale copies", () => {
     // r1 is current and not recent, so it's left alone. One stale copy remains for the next run.
     expect(await refreshRecent(store, fetchImpl, later)).toHaveLength(1);
     expect(await refreshRecent(store, fetchImpl, later)).toHaveLength(0);
+  });
+});
+
+describe("refreshRecent off race day", () => {
+  // The fixture races on 2026-10-11.
+  const seed = async () => {
+    const store = memoryStore();
+    await fetchAndStore("r1", store, respond(), now);
+    return store;
+  };
+  const marker = (value: string) =>
+    vi.fn(async (url: string | URL | Request) =>
+      String(url).includes("lastUpdatedEvent")
+        ? new Response(JSON.stringify(value))
+        : new Response(JSON.stringify(fixture)),
+    );
+
+  it("knows race day from the event dates", async () => {
+    const { regatta } = (await (await seed()).get("r1"))!;
+    expect(isRaceDay(regatta, new Date("2026-10-11T15:30:00Z"))).toBe(true);
+    expect(isRaceDay(regatta, new Date("2026-10-12T15:30:00Z"))).toBe(false);
+  });
+
+  it("fetches every run on race day", async () => {
+    const store = await seed();
+    const refreshed = await refreshRecent(store, marker("1"), new Date("2026-10-11T15:35:00Z"));
+    expect(refreshed).toHaveLength(1);
+  });
+
+  it("fetches only on the first run of each hour after race day", async () => {
+    const store = await seed();
+    expect(await refreshRecent(store, marker("1"), new Date("2026-10-12T15:35:00Z"))).toHaveLength(
+      0,
+    );
+    expect(await refreshRecent(store, marker("1"), new Date("2026-10-12T16:00:00Z"))).toHaveLength(
+      1,
+    );
+  });
+
+  it("keeps CrewTimer's change marker and logs whether it moved with the results", async () => {
+    const store = await seed();
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const raceDay = new Date("2026-10-11T15:00:00Z");
+    await refreshRecent(store, marker("86"), raceDay);
+    expect((await store.get("r1"))?.marker).toBe("86");
+    await refreshRecent(store, marker("87"), raceDay);
+    expect(log).toHaveBeenCalledWith("Marker check r1: marker changed, results same");
+    // A coach's Refresh results passes no marker, so the old one doesn't skew the next check.
+    await fetchAndStore("r1", store, respond(), raceDay);
+    expect((await store.get("r1"))?.marker).toBeUndefined();
+    log.mockRestore();
   });
 });
