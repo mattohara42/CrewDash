@@ -11,6 +11,7 @@ import {
   otherClubs,
   parseBladeData,
   removeClubBlade,
+  sameClub,
   setClubBlade,
 } from "../src/lib/blades.js";
 import fixture from "./fixtures/regatta.json" with { type: "json" };
@@ -74,6 +75,13 @@ describe("crewClub", () => {
     ["Hillside Boat Club - EXH", "Hillside Boat Club"],
     ["  Hillside   Boat Club ", "Hillside Boat Club"],
   ])("%s -> %s", (crew, name) => expect(crewClub(crew)).toBe(name));
+});
+
+describe("sameClub", () => {
+  it("ignores boat letters, exhibition crews, case and spacing", () => {
+    expect(sameClub("Hillside Boat Club (B)", "hillside  boat club - EXH")).toBe(true);
+    expect(sameClub("Hillside Boat Club", "Hillside Rowing Club")).toBe(false);
+  });
 });
 
 describe("club blades", () => {

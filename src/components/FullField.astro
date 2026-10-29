@@ -2,7 +2,7 @@
 import type { ClubConfig } from "../club.js";
 import { matchClub } from "../club.js";
 import type { Event } from "../crewtimer/normalize.js";
-import { bladeFor, fullField, type BladeData } from "../lib/blades.js";
+import { bladeFor, crewClub, fullField, type BladeData } from "../lib/blades.js";
 import { formatTime, statusLabel } from "../lib/format.js";
 import Blade from "./Blade.astro";
 
@@ -16,6 +16,10 @@ interface Props {
 // boats. Club names only: other clubs' rowers aren't named.
 const { event, club, blades } = Astro.props;
 const rows = fullField(event);
+// Admins get a link to add a missing blade, which comes back here after saving.
+const admin = Astro.locals.role === "admin";
+const addBlade = (crew: string) =>
+  `/admin/blades?${new URLSearchParams({ club: crewClub(crew), back: Astro.url.pathname })}`;
 ---
 
 <details class="field">
@@ -28,7 +32,13 @@ const rows = fullField(event);
         <li class:list={{ ours }}>
           <span class="place">{entry.place ?? ""}</span>
           <span class="mark">
-            {design ? <Blade width={40} design={design} onBrand={false} compact /> : null}
+            {design ? (
+              <Blade width={40} design={design} onBrand={false} compact />
+            ) : admin && !ours ? (
+              <a href={addBlade(entry.crew)} class="add small">
+                Add
+              </a>
+            ) : null}
           </span>
           <span class="crew">
             {entry.crew}
@@ -77,6 +87,9 @@ const rows = fullField(event);
   .mark {
     display: flex;
     align-items: center;
+  }
+  .add {
+    font-size: 0.8rem;
   }
   .time {
     font-variant-numeric: tabular-nums;

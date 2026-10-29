@@ -1,11 +1,15 @@
 ---
-import Blade from "../../components/Blade.astro";
-import BladeFields from "../../components/BladeFields.astro";
+import BladeRow from "../../components/BladeRow.astro";
 import Base from "../../layouts/Base.astro";
-import { bladeFor, otherClubs } from "../../lib/blades.js";
+import { safeNext } from "../../lib/auth.js";
+import { bladeFor, crewClub, otherClubs, sameClub } from "../../lib/blades.js";
 import { loadContext } from "../../lib/context.js";
 
-const error = Astro.url.searchParams.get("error");
+const params = Astro.url.searchParams;
+const error = params.get("error");
+// A whole-field list links here with ?club= to edit one club, and ?back= to return to it.
+const focus = params.get("club")?.trim() || null;
+const back = safeNext(params.get("back"), "/admin/blades");
 const { store, records, club } = await loadContext();
 const blades = await store.getBlades();
 // Clubs in the results, most entries first, plus any saved club not raced lately.
@@ -13,9 +17,18 @@ const seen = otherClubs(records, club);
 const clubs = [
   ...seen,
   ...blades.clubs
-    .filter((b) => !seen.some((s) => bladeFor(s.name, { clubs: [b] }, club)))
+    .filter((b) => !seen.some((s) => sameClub(s.name, b.name)))
     .map((b) => ({ name: b.name, entries: 0 })),
-];
+].map((c) => ({ ...c, design: bladeFor(c.name, blades, club) }));
+const focused = focus
+  ? (clubs.find((c) => sameClub(c.name, focus)) ?? {
+      name: crewClub(focus),
+      entries: 0,
+      design: bladeFor(focus, blades, club),
+    })
+  : null;
+const needed = clubs.filter((c) => !c.design);
+const done = clubs.filter((c) => c.design);
 ---
 
 <Base title="Blades">
@@ -29,56 +42,94 @@ const clubs = [
     racing photos. Don't copy images from OarSpotter, which asked us not to use theirs.
   </p>
   {error && <p class="card notice">{error}</p>}
-  {clubs.length === 0 && <p class="card">Add a regatta first. Its clubs will appear here.</p>}
-  {clubs.map(({ name, entries }) => {
-    const design = bladeFor(name, blades, club);
-    const saved = design !== null;
-    return (
-      <form method="post" action="/api/admin/blades" class="card blade-row">
-        <input type="hidden" name="name" value={name} />
-        <div class="who">
-          {design ? (
-            <Blade width={56} design={design} onBrand={false} compact />
-          ) : (
-            <span class="muted small">No blade yet</span>
-          )}
-          <strong>{name}</strong>
-          {entries > 0 && (
-            <span class="muted small">
-              {entries} {entries === 1 ? "entry" : "entries"}
-            </span>
-          )}
-        </div>
-        <details>
-          <summary>{saved ? "Change blade" : "Add blade"}</summary>
-          <BladeFields design={design} />
-          <div class="row">
-            <button type="submit" name="action" value="save">
-              Save
-            </button>
-            {saved && (
-              <button type="submit" name="action" value="remove" class="secondary">
-                Remove
-              </button>
-            )}
-          </div>
-        </details>
-      </form>
-    );
-  })}
+  {focused ? (
+    <>
+      <BladeRow {...focused} back={back} open />
+      <p>
+        <a href="/admin/blades">Show all clubs</a>
+      </p>
+    </>
+  ) : clubs.length === 0 ? (
+    <p class="card">Add a regatta first. Its clubs will appear here.</p>
+  ) : (
+    <>
+      <label class="search">
+        Find a club
+        <input type="search" data-blade-search autocomplete="off" placeholder="Club name" />
+      </label>
+      <p class="muted" data-blade-none hidden>
+        No clubs match.
+      </p>
+      {[
+        { title: "Needs a blade", list: needed },
+        { title: "Has a blade", list: done },
+      ].map(({ title, list }) =>
+        list.length === 0 ? null : (
+          <section data-blade-group>
+            <h2>
+              {title} <span class="muted small">({list.length})</span>
+            </h2>
+            {list.map((c) => (
+              <BladeRow {...c} back="/admin/blades" />
+            ))}
+          </section>
+        ),
+      )}
+    </>
+  )}
 </Base>
 
-<style>
-  .blade-row .who {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px 12px;
-    margin-bottom: 8px;
+<script>
+  // Filters the list as you type. The search is kept in the address, so saving a club
+  // comes back to the same search.
+  const input = document.querySelector<HTMLInputElement>("[data-blade-search]");
+  const none = document.querySelector<HTMLElement>("[data-blade-none]");
+  // Ignores case, spacing and punctuation, so "st josephs" finds "St. Joseph's".
+  const loose = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const filter = () => {
+    if (!input) return;
+    const q = loose(input.value);
+    let shown = 0;
+    document.querySelectorAll<HTMLElement>("[data-blade-group]").forEach((group) => {
+      let inGroup = 0;
+      group.querySelectorAll<HTMLElement>("[data-club]").forEach((row) => {
+        const match = loose(row.dataset.club ?? "").includes(q);
+        row.hidden = !match;
+        if (match) inGroup++;
+      });
+      group.hidden = inGroup === 0;
+      shown += inGroup;
+    });
+    if (none) none.hidden = shown > 0;
+    const url = new URL(location.href);
+    if (input.value.trim()) url.searchParams.set("q", input.value.trim());
+    else url.searchParams.delete("q");
+    url.searchParams.delete("error");
+    history.replaceState(null, "", url);
+    const back = url.pathname + url.search;
+    document
+      .querySelectorAll<HTMLInputElement>('[data-blade-group] input[name="back"]')
+      .forEach((el) => (el.value = back));
+  };
+  if (input) {
+    input.value = new URLSearchParams(location.search).get("q") ?? "";
+    input.addEventListener("input", filter);
+    filter();
   }
-  .blade-row .row {
-    display: flex;
-    gap: 8px 12px;
-    margin-top: 12px;
+</script>
+
+<style>
+  .search {
+    display: grid;
+    gap: 4px;
+    margin: 16px 0;
+  }
+  .search input {
+    font-size: 1rem;
+    padding: 8px 10px;
+  }
+  .small {
+    font-size: 0.85rem;
+    font-weight: normal;
   }
 </style>
