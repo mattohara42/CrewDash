@@ -3,6 +3,7 @@ import { addDays, eventDate, regattaDates } from "../crewtimer/normalize.js";
 import { clubEvents } from "./club-view.js";
 import { formatStart, ordinal, startMinutes, statusLabel } from "./format.js";
 import { eventKey, type Settings } from "./settings.js";
+import { staleNote } from "./stale.js";
 import type { StoredRegatta } from "./store.js";
 
 // The race-day view: today's and tomorrow's regattas, the club's events in start order.
@@ -25,6 +26,8 @@ export interface TodayRegatta {
   date: string;
   when: "Today" | "Tomorrow";
   events: TodayEvent[];
+  // Set when results that should be in by now aren't. See stale.ts.
+  stale: string | null;
 }
 
 /** "2026-10-12" for the given instant in the given time zone. */
@@ -105,6 +108,7 @@ export function todayRegattas(
         date,
         when: date === today ? ("Today" as const) : ("Tomorrow" as const),
         events,
+        stale: date === today ? staleNote(record, date, timeZone, now) : null,
       };
     });
 }

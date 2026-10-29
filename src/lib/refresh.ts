@@ -4,6 +4,7 @@ import { conditionsFor } from "./conditions.js";
 import { club } from "./config.js";
 import { seriesName } from "./history.js";
 import { recordResultTimes } from "./speed.js";
+import { resultsChangedAt } from "./stale.js";
 import type { RegattaStore, StoredRegatta } from "./store.js";
 import { localDate } from "./today.js";
 import { venueForSeries } from "./venues.js";
@@ -49,6 +50,7 @@ export async function fetchAndStore(
     fetchedAt: now.toISOString(),
     parserVersion: PARSER_VERSION,
     resultTimes: recordResultTimes(previous, regatta, now),
+    resultsChangedAt: resultsChangedAt(previous, regatta, now),
     // A manual refresh passes no marker, which clears the old one so the next check starts fresh.
     marker: marker ?? undefined,
   };

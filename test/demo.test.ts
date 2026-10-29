@@ -37,6 +37,7 @@ describe("demo club", () => {
     const done = today!.events.filter((e) => e.done).length;
     expect(done).toBeGreaterThan(0);
     expect(done).toBeLessThan(today!.events.length);
+    expect(today!.stale).toBeNull();
     expect(await store.getAlertLog()).not.toHaveLength(0);
   });
 
