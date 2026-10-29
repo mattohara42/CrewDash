@@ -83,7 +83,8 @@ describe("the settings form", () => {
     secondary: "#2e8b57",
     accent: "#f2c14e",
     bladeBase: "#2e8b57",
-    bladeTip: "#f2c14e",
+    bladeShape0: "tips",
+    bladeColor0: "#f2c14e",
     chartLightStrong: "#3b5bb0",
     chartLightMuted: "#a3b4de",
     chartDarkStrong: "#b8860b",
@@ -103,7 +104,7 @@ describe("the settings form", () => {
         locale: "en-GB",
         seasonStartMonth: 9,
         units: "metric",
-        colors: { blade: { base: "#2e8b57", tip: "#f2c14e" } },
+        colors: { blade: { base: "#2e8b57", layers: [{ shape: "tips", color: "#f2c14e" }] } },
       },
     });
   });

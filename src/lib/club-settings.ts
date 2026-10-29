@@ -1,3 +1,4 @@
+import { designFromForm } from "./blade.js";
 import { colorProblems, normalizeName, parseClubConfig, type ClubConfig } from "../club.js";
 import { club, clubFromFile } from "./config.js";
 import type { Settings } from "./settings.js";
@@ -72,7 +73,7 @@ export function clubFromForm(field: (name: string) => string): Record<string, un
       primary: field("primary"),
       secondary: field("secondary"),
       accent: field("accent"),
-      blade: { base: field("bladeBase"), tip: field("bladeTip") },
+      blade: designFromForm(field, "blade"),
       chart: {
         light: { strong: field("chartLightStrong"), muted: field("chartLightMuted") },
         dark: { strong: field("chartDarkStrong"), muted: field("chartDarkMuted") },

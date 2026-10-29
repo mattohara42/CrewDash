@@ -1,6 +1,6 @@
 ---
 import { club } from "../lib/config.js";
-import { BLADE, SHAFT, TIP } from "../lib/blade.js";
+import { BLADE, SHAFT, shapePath } from "../lib/blade.js";
 
 interface Props {
   title: string;
@@ -21,7 +21,12 @@ const data = JSON.stringify({
   lines,
   filename,
   colors: club.colors,
-  blade: { shaft: SHAFT, blade: BLADE, tip: TIP },
+  blade: {
+    shaft: SHAFT,
+    blade: BLADE,
+    base: club.colors.blade.base,
+    layers: club.colors.blade.layers.map((l) => ({ path: shapePath(l.shape), color: l.color })),
+  },
 });
 ---
 
@@ -44,9 +49,13 @@ const data = JSON.stringify({
       primary: string;
       secondary: string;
       accent: string;
-      blade: { base: string; tip: string };
     };
-    blade: { shaft: string; blade: string; tip: string };
+    blade: {
+      shaft: string;
+      blade: string;
+      base: string;
+      layers: { path: string; color: string }[];
+    };
   };
 
   function wrap(ctx: CanvasRenderingContext2D, text: string, width: number): string[] {
@@ -85,13 +94,19 @@ const data = JSON.stringify({
     ctx.scale(3, 3);
     ctx.fillStyle = "rgba(255,255,255,0.85)";
     ctx.fill(new Path2D(card.blade.shaft));
-    ctx.fillStyle = card.colors.blade.base;
-    ctx.fill(new Path2D(card.blade.blade));
+    const blade = new Path2D(card.blade.blade);
+    ctx.fillStyle = card.blade.base;
+    ctx.fill(blade);
+    ctx.save();
+    ctx.clip(blade);
+    for (const layer of card.blade.layers) {
+      ctx.fillStyle = layer.color;
+      ctx.fill(new Path2D(layer.path));
+    }
+    ctx.restore();
     ctx.strokeStyle = "#ffffff";
     ctx.lineWidth = 1.5;
-    ctx.stroke(new Path2D(card.blade.blade));
-    ctx.fillStyle = card.colors.blade.tip;
-    ctx.fill(new Path2D(card.blade.tip));
+    ctx.stroke(blade);
     ctx.restore();
 
     let y = 130;
