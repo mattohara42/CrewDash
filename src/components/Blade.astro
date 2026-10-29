@@ -1,6 +1,6 @@
 ---
 import { club } from "../lib/config.js";
-import { BLADE, BLADE_VIEWBOX, SHAFT, accentPath, type BladeDesign } from "../lib/blade.js";
+import { BLADE, BLADE_VIEWBOX, SHAFT, shapePath, type BladeDesign } from "../lib/blade.js";
 import { ownBlade } from "../lib/blades.js";
 
 interface Props {
@@ -15,7 +15,6 @@ interface Props {
 
 // An oar blade in a club's colors. Decorative: the club's name is always next to it.
 const { width = 48, design = ownBlade(club), onBrand = true, compact = false } = Astro.props;
-const accent = accentPath(design.pattern);
 // Each SVG on the page needs its own clip id.
 const clipId = `blade-${Math.random().toString(36).slice(2, 10)}`;
 const line = onBrand ? "#ffffff" : "currentColor";
@@ -34,8 +33,12 @@ const COMPACT_VIEWBOX = "58 0 62 30";
     <path d={BLADE}></path>
   </clipPath>
   {!compact && <path d={SHAFT} fill={line} opacity={onBrand ? 0.85 : 0.45}></path>}
-  <path d={BLADE} fill={design.base}></path>
-  {accent && <path d={accent} fill={design.accent} clip-path={`url(#${clipId})`}></path>}
+  <path d={BLADE} fill={design.base} data-blade-base></path>
+  <g clip-path={`url(#${clipId})`} data-blade-layers>
+    {design.layers.map((layer) => (
+      <path d={shapePath(layer.shape)} fill={layer.color}></path>
+    ))}
+  </g>
   <path
     d={BLADE}
     fill="none"

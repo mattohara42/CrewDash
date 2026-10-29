@@ -1,4 +1,5 @@
 ---
+import BladeFields from "../../components/BladeFields.astro";
 import Base from "../../layouts/Base.astro";
 import { clubIsSetUp } from "../../lib/club-settings.js";
 import { club } from "../../lib/config.js";
@@ -125,14 +126,6 @@ const example = `${formatDate("2026-10-11")}, ${formatClock(13 * 60 + 5)}`;
           Second stripe
           <input type="color" name="accent" value={colors.accent} />
         </label>
-        <label>
-          Blade
-          <input type="color" name="bladeBase" value={colors.blade.base} />
-        </label>
-        <label>
-          Blade tip
-          <input type="color" name="bladeTip" value={colors.blade.tip} />
-        </label>
       </div>
       <p class="muted small">
         The header sits behind white text, so it must be dark. Saving checks that it's readable.
@@ -161,6 +154,14 @@ const example = `${formatDate("2026-10-11")}, ${formatClock(13 * 60 + 5)}`;
           </label>
         </div>
       </details>
+    </section>
+
+    <section class="card">
+      <h2>Blade</h2>
+      <p class="muted small">
+        Shows in the header, on share images and next to your crews in each regatta's whole field.
+      </p>
+      <BladeFields design={colors.blade} />
     </section>
 
     <p>
@@ -218,7 +219,8 @@ const example = `${formatDate("2026-10-11")}, ${formatClock(13 * 60 + 5)}`;
           el.value = value;
         }
       }
-      paint();
+      // Redraws every preview, the blade's included.
+      form.dispatchEvent(new Event("input"));
     }
   } catch {
     // Nothing saved, or storage blocked.

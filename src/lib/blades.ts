@@ -1,9 +1,9 @@
 import { matchClub, normalizeName, type ClubConfig } from "../club.js";
 import type { Entry, Event } from "../crewtimer/normalize.js";
-import { PATTERNS, type BladeDesign, type BladePattern } from "./blade.js";
+import { parseDesign, type BladeDesign } from "./blade.js";
 import type { StoredRegatta } from "./store.js";
 
-// Other clubs' blades, entered by the admin as a pattern and two colors (see blade.ts).
+// Other clubs' blades, entered by the admin as a base color and layered shapes (see blade.ts).
 // OarSpotter declined to let us use its images, so CrewDash draws its own.
 
 export interface ClubBlade {
@@ -17,16 +17,6 @@ export interface BladeData {
 }
 
 export const EMPTY_BLADES: BladeData = { clubs: [] };
-
-const HEX = /^#[0-9a-f]{6}$/i;
-
-export function parseDesign(value: unknown): BladeDesign | null {
-  const v = value as Partial<BladeDesign> | null;
-  if (!v || !PATTERNS.includes(v.pattern as BladePattern)) return null;
-  if (typeof v.base !== "string" || !HEX.test(v.base)) return null;
-  if (typeof v.accent !== "string" || !HEX.test(v.accent)) return null;
-  return { pattern: v.pattern as BladePattern, base: v.base, accent: v.accent };
-}
 
 export function parseBladeData(value: unknown): BladeData {
   const clubs = (value as { clubs?: unknown } | null)?.clubs;
@@ -66,7 +56,7 @@ export function removeClubBlade(data: BladeData, name: string): BladeData {
 
 /** This club's own blade, from the club settings. */
 export function ownBlade(club: Pick<ClubConfig, "colors">): BladeDesign {
-  return { pattern: "tips", base: club.colors.blade.base, accent: club.colors.blade.tip };
+  return club.colors.blade;
 }
 
 /** The blade for a crew name: the club's own, an admin-entered one, or null. */

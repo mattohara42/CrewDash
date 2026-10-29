@@ -80,14 +80,35 @@ describe("blade colors", async () => {
       ...base,
       colors: { secondary: "#112233", accent: "#445566" },
     });
-    expect(stripes.colors.blade).toEqual({ base: "#112233", tip: "#445566" });
-    const own = parseClubConfig({
+    expect(stripes.colors.blade).toEqual({
+      base: "#112233",
+      layers: [{ shape: "tips", color: "#445566" }],
+    });
+    // Settings saved before blades had layers.
+    const old = parseClubConfig({
       ...base,
       colors: { blade: { base: "#000000", tip: "#ffffff" } },
     });
-    expect(own.colors.blade).toEqual({ base: "#000000", tip: "#ffffff" });
+    expect(old.colors.blade).toEqual({
+      base: "#000000",
+      layers: [{ shape: "tips", color: "#ffffff" }],
+    });
     expect(() => parseClubConfig({ ...base, colors: { blade: { base: "red" } } })).toThrow(
       /blade.base/,
     );
+  });
+
+  it("accept a layered blade and refuse a bad one", () => {
+    const blade = {
+      base: "#1d3c8f",
+      layers: [
+        { shape: "chevron-tip", color: "#7a1f1f" },
+        { shape: "chevron-edge", color: "#f2c14e" },
+      ],
+    };
+    expect(parseClubConfig({ ...base, colors: { blade } }).colors.blade).toEqual(blade);
+    expect(() =>
+      parseClubConfig({ ...base, colors: { blade: { ...blade, layers: [{ shape: "x" }] } } }),
+    ).toThrow(/blade needs/);
   });
 });

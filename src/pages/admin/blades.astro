@@ -1,7 +1,7 @@
 ---
 import Blade from "../../components/Blade.astro";
+import BladeFields from "../../components/BladeFields.astro";
 import Base from "../../layouts/Base.astro";
-import { PATTERNS, PATTERN_LABELS } from "../../lib/blade.js";
 import { bladeFor, otherClubs } from "../../lib/blades.js";
 import { loadContext } from "../../lib/context.js";
 
@@ -24,9 +24,9 @@ const clubs = [
   </p>
   <h1>Other clubs' blades</h1>
   <p class="muted">
-    Blades show next to each crew in a regatta's "whole field" list. Pick the pattern and colors
-    closest to each club's real blade. Check the club's website or racing photos. Don't copy images
-    from OarSpotter, which asked us not to use theirs.
+    Blades show next to each crew in a regatta's "whole field" list. Build each club's blade from a
+    color and up to three shapes, as close to the real one as you can. Check the club's website or
+    racing photos. Don't copy images from OarSpotter, which asked us not to use theirs.
   </p>
   {error && <p class="card notice">{error}</p>}
   {clubs.length === 0 && <p class="card">Add a regatta first. Its clubs will appear here.</p>}
@@ -49,34 +49,20 @@ const clubs = [
             </span>
           )}
         </div>
-        <div class="row">
-          <label>
-            Pattern
-            <select name="pattern">
-              {PATTERNS.map((p) => (
-                <option value={p} selected={(design?.pattern ?? "plain") === p}>
-                  {PATTERN_LABELS[p]}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Blade
-            <input type="color" name="base" value={design?.base ?? "#ffffff"} />
-          </label>
-          <label>
-            Pattern color
-            <input type="color" name="accent" value={design?.accent ?? "#1f3b73"} />
-          </label>
-          <button type="submit" name="action" value="save">
-            Save
-          </button>
-          {saved && (
-            <button type="submit" name="action" value="remove" class="secondary">
-              Remove
+        <details>
+          <summary>{saved ? "Change blade" : "Add blade"}</summary>
+          <BladeFields design={design} />
+          <div class="row">
+            <button type="submit" name="action" value="save">
+              Save
             </button>
-          )}
-        </div>
+            {saved && (
+              <button type="submit" name="action" value="remove" class="secondary">
+                Remove
+              </button>
+            )}
+          </div>
+        </details>
       </form>
     );
   })}
@@ -92,18 +78,7 @@ const clubs = [
   }
   .blade-row .row {
     display: flex;
-    flex-wrap: wrap;
-    align-items: end;
     gap: 8px 12px;
-  }
-  .blade-row label {
-    display: grid;
-    gap: 4px;
-    font-size: 0.9rem;
-  }
-  .blade-row input[type="color"] {
-    width: 48px;
-    height: 36px;
-    padding: 2px;
+    margin-top: 12px;
   }
 </style>

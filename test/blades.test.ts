@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { parseClubConfig } from "../src/club.js";
 import { normalizeRegatta } from "../src/crewtimer/normalize.js";
 import type { RawRegattaResults } from "../src/crewtimer/raw.js";
-import { PATTERNS, accentPath } from "../src/lib/blade.js";
+import { MAX_LAYERS, SHAPES, designFromForm, parseDesign, shapePath } from "../src/lib/blade.js";
 import {
   EMPTY_BLADES,
   bladeFor,
@@ -20,12 +20,51 @@ const club = parseClubConfig({
   aliases: ["Lakeview Rowing Club", "Lakeview Rowing Club - EXH"],
   colors: { blade: { base: "#112233", tip: "#ddeeff" } },
 });
-const chevron = { pattern: "chevron" as const, base: "#ffffff", accent: "#b22234" };
+const chevron = { base: "#ffffff", layers: [{ shape: "chevron" as const, color: "#b22234" }] };
 const regatta = normalizeRegatta("r1", fixture as RawRegattaResults);
 
-describe("patterns", () => {
-  it("has an accent shape for every pattern except plain", () => {
-    for (const p of PATTERNS) expect(accentPath(p) === "").toBe(p === "plain");
+describe("designs", () => {
+  it("has a path for every shape", () => {
+    for (const s of SHAPES) expect(shapePath(s)).toMatch(/^M/);
+  });
+
+  it("reads blades saved as one pattern and two colors", () => {
+    expect(parseDesign({ pattern: "chevron", base: "#ffffff", accent: "#b22234" })).toEqual(
+      chevron,
+    );
+    expect(parseDesign({ pattern: "plain", base: "#2f4f4f", accent: "#2f4f4f" })).toEqual({
+      base: "#2f4f4f",
+      layers: [],
+    });
+  });
+
+  it("refuses bad shapes, bad colors and too many layers", () => {
+    const layer = { shape: "tips", color: "#000000" };
+    expect(parseDesign({ base: "#ffffff", layers: [{ ...layer, shape: "zigzag" }] })).toBeNull();
+    expect(parseDesign({ base: "#ffffff", layers: [{ ...layer, color: "red" }] })).toBeNull();
+    expect(parseDesign({ base: "white", layers: [] })).toBeNull();
+    expect(parseDesign({ base: "#ffffff" })).toBeNull();
+    const many = Array.from({ length: MAX_LAYERS + 1 }, () => layer);
+    expect(parseDesign({ base: "#ffffff", layers: many })).toBeNull();
+  });
+
+  it("reads an editor's fields in order, skipping layers with no shape", () => {
+    const fields: Record<string, string> = {
+      bladeBase: "#1d3c8f",
+      bladeShape0: "chevron-tip",
+      bladeColor0: "#7a1f1f",
+      bladeShape1: "",
+      bladeColor1: "#123456",
+      bladeShape2: "chevron-edge",
+      bladeColor2: "#f2c14e",
+    };
+    expect(parseDesign(designFromForm((n) => fields[n] ?? "", "blade"))).toEqual({
+      base: "#1d3c8f",
+      layers: [
+        { shape: "chevron-tip", color: "#7a1f1f" },
+        { shape: "chevron-edge", color: "#f2c14e" },
+      ],
+    });
   });
 });
 
@@ -47,17 +86,17 @@ describe("club blades", () => {
 
   it("uses the club's own blade from its settings", () => {
     expect(bladeFor("Lakeview Rowing Club (B)", EMPTY_BLADES, club)).toEqual({
-      pattern: "tips",
       base: "#112233",
-      accent: "#ddeeff",
+      layers: [{ shape: "tips", color: "#ddeeff" }],
     });
   });
 
   it("replaces and removes a club's blade", () => {
     let data = setClubBlade(EMPTY_BLADES, "Hillside Boat Club", chevron);
-    data = setClubBlade(data, "Hillside Boat Club", { ...chevron, pattern: "spots" });
+    const spots = { base: "#ffffff", layers: [{ shape: "spots" as const, color: "#000000" }] };
+    data = setClubBlade(data, "Hillside Boat Club", spots);
     expect(data.clubs).toHaveLength(1);
-    expect(data.clubs[0]!.design.pattern).toBe("spots");
+    expect(data.clubs[0]!.design).toEqual(spots);
     expect(removeClubBlade(data, "Hillside Boat Club (B)").clubs).toEqual([]);
   });
 
@@ -66,7 +105,7 @@ describe("club blades", () => {
       parseBladeData({
         clubs: [
           { name: "Good", design: chevron },
-          { name: "Bad pattern", design: { ...chevron, pattern: "zigzag" } },
+          { name: "Bad shape", design: { ...chevron, layers: [{ shape: "zigzag" }] } },
           { name: "Bad color", design: { ...chevron, base: "red" } },
           { name: "", design: chevron },
         ],

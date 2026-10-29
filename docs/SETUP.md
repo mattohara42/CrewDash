@@ -40,6 +40,7 @@ Open your site, log in with the admin password and go to **Admin**, then **Club 
 - **Weather units**: mph and °F, or km/h and °C.
 - **The season starts in**: January if your season is a calendar year. A club that races September to June would pick September, and a club racing through the southern summer would pick the month its season starts. Season pages, Wrapped and the roster then run from that month, and a season shows as "2026-27".
 - **Colors**: the header sits behind white text, so it must be dark. The two stripes under it are also your blade's default colors. A preview shows them as you pick.
+- **Blade**: a color with up to three shapes on top, like a tip, a chevron or thin stripes. Later shapes sit on top of earlier ones, and a preview follows as you pick. Until you set it, the blade uses the two stripe colors.
 
 Save. Changes show straight away for everyone, with no rebuild. If something isn't right, like a header too light to read, the page says what and keeps what you typed. Settings live in Netlify, not GitHub, so download a copy now and then from the same page.
 

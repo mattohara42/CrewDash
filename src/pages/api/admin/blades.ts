@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { backTo, withError } from "../../../lib/admin-redirect.js";
-import { parseDesign, removeClubBlade, setClubBlade } from "../../../lib/blades.js";
+import { designFromForm, parseDesign } from "../../../lib/blade.js";
+import { removeClubBlade, setClubBlade } from "../../../lib/blades.js";
 import { blobsStore } from "../../../lib/store.js";
 
 const BACK = "/admin/blades";
@@ -19,12 +20,8 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     await store.putBlades(removeClubBlade(data, name));
     return redirect(back, 303);
   }
-  const design = parseDesign({
-    pattern: field("pattern"),
-    base: field("base"),
-    accent: field("accent"),
-  });
-  if (!design) return redirect(withError(back, "Pick a pattern and two colors."), 303);
+  const design = parseDesign(designFromForm(field, "blade"));
+  if (!design) return redirect(withError(back, "Pick a blade color and up to 3 shapes."), 303);
   await store.putBlades(setClubBlade(data, name, design));
   return redirect(back, 303);
 };

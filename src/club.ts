@@ -1,6 +1,7 @@
 // Everything club-specific is in the club's settings, edited by an admin at /admin/club and
 // stored in Netlify Blobs. club.json at the repo root holds the starting values used until
 // then. The same rules check both, so messages name the setting, not the file.
+import { parseDesign, type BladeDesign } from "./lib/blade.js";
 import { contrast } from "./lib/color.js";
 
 export interface ChartColors {
@@ -18,8 +19,8 @@ export interface ClubColors {
   accent: string;
   // Chart colors per theme. Run them through a palette validator before changing.
   chart: { light: ChartColors; dark: ChartColors };
-  // The club's oar blade: its main color and the color of the tip band.
-  blade: { base: string; tip: string };
+  // The club's oar blade, drawn like other clubs' blades (see lib/blade.ts).
+  blade: BladeDesign;
 }
 
 // What results matching needs: the club's name and the names it races under.
@@ -84,7 +85,7 @@ export const DEFAULT_COLORS: ClubColors = {
     light: { strong: "#3b5bb0", muted: "#a3b4de" },
     dark: { strong: "#b8860b", muted: "#6e5414" },
   },
-  blade: { base: "#2f6fb5", tip: "#e0a100" },
+  blade: { base: "#2f6fb5", layers: [{ shape: "tips", color: "#e0a100" }] },
 };
 
 const HEX = /^#[0-9a-f]{6}$/i;
@@ -97,6 +98,25 @@ function hex(value: unknown, fallback: string, field: string): string {
   return value;
 }
 
+function parseBlade(value: unknown, secondary: string, accent: string): BladeDesign {
+  const v = (value ?? {}) as Record<string, unknown>;
+  if (v.layers !== undefined) {
+    const design = parseDesign(v);
+    if (!design) {
+      throw new Error(
+        "The blade needs a hex base color and at most 3 layers, each a shape and a hex color.",
+      );
+    }
+    return design;
+  }
+  // Settings saved before blades had layers hold a base color and a tip color. Without
+  // either, the blade uses the stripe colors.
+  return {
+    base: hex(v.base, secondary, "blade.base"),
+    layers: [{ shape: "tips", color: hex(v.tip, accent, "blade.tip") }],
+  };
+}
+
 function parseColors(value: unknown): ClubColors {
   const v = (value ?? {}) as Record<string, unknown>;
   const chart = (v.chart ?? {}) as Record<string, Record<string, unknown> | undefined>;
@@ -106,17 +126,12 @@ function parseColors(value: unknown): ClubColors {
   });
   const secondary = hex(v.secondary, DEFAULT_COLORS.secondary, "secondary");
   const accent = hex(v.accent, DEFAULT_COLORS.accent, "accent");
-  // Without its own colors, the blade uses the stripe colors.
-  const blade = (v.blade ?? {}) as Record<string, unknown>;
   return {
     primary: hex(v.primary, DEFAULT_COLORS.primary, "primary"),
     secondary,
     accent,
     chart: { light: theme("light"), dark: theme("dark") },
-    blade: {
-      base: hex(blade.base, secondary, "blade.base"),
-      tip: hex(blade.tip, accent, "blade.tip"),
-    },
+    blade: parseBlade(v.blade, secondary, accent),
   };
 }
 

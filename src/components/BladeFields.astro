@@ -1,0 +1,118 @@
+---
+import Blade from "./Blade.astro";
+import { MAX_LAYERS, SHAPES, SHAPE_LABELS, type BladeDesign } from "../lib/blade.js";
+
+interface Props {
+  design: BladeDesign | null;
+  // Field names start with this. designFromForm reads them back.
+  prefix?: string;
+}
+
+// The fields for one blade design, with a preview that follows them. Goes inside a form.
+const { design, prefix = "blade" } = Astro.props;
+const shown = design ?? { base: "#ffffff", layers: [] };
+---
+
+<div class="blade-fields" data-blade-fields={prefix}>
+  <div class="preview">
+    <Blade width={96} design={shown} onBrand={false} compact />
+  </div>
+  <label>
+    Blade
+    <input type="color" name={`${prefix}Base`} value={shown.base} />
+  </label>
+  {Array.from({ length: MAX_LAYERS }, (_, i) => {
+    const layer = shown.layers[i];
+    return (
+      <div class="layer">
+        <label>
+          {i === 0 ? "Shape" : "Then"}
+          <select name={`${prefix}Shape${i}`}>
+            <option value="" selected={!layer}>
+              None
+            </option>
+            {SHAPES.map((s) => (
+              <option value={s} selected={layer?.shape === s}>
+                {SHAPE_LABELS[s]}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Color
+          <input type="color" name={`${prefix}Color${i}`} value={layer?.color ?? "#1f3b73"} />
+        </label>
+      </div>
+    );
+  })}
+  <p class="muted small">
+    Shapes are drawn in order, so later ones sit on top. Use "None" for a plain blade.
+  </p>
+</div>
+
+<script>
+  import { designFromForm, parseDesign, shapePath } from "../lib/blade.js";
+
+  // Redraws each preview as its fields change, before saving.
+  document.querySelectorAll<HTMLElement>("[data-blade-fields]").forEach((el) => {
+    const form = el.closest("form");
+    const svg = el.querySelector("svg");
+    if (!form || !svg) return;
+    const field = (name: string) => {
+      const input = form.elements.namedItem(name);
+      return input instanceof HTMLInputElement || input instanceof HTMLSelectElement
+        ? input.value
+        : "";
+    };
+    const paint = () => {
+      const design = parseDesign(designFromForm(field, el.dataset.bladeFields!));
+      if (!design) return;
+      svg.querySelector("[data-blade-base]")?.setAttribute("fill", design.base);
+      const group = svg.querySelector("[data-blade-layers]");
+      group?.replaceChildren(
+        ...design.layers.map((layer) => {
+          const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+          path.setAttribute("d", shapePath(layer.shape));
+          path.setAttribute("fill", layer.color);
+          return path;
+        }),
+      );
+    };
+    form.addEventListener("input", paint);
+  });
+</script>
+
+<style>
+  .blade-fields {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 8px 12px;
+  }
+  .preview {
+    flex-basis: 100%;
+  }
+  .layer {
+    display: flex;
+    align-items: end;
+    gap: 8px;
+  }
+  label {
+    display: grid;
+    gap: 4px;
+    font-size: 0.9rem;
+  }
+  select {
+    max-width: 16rem;
+  }
+  input[type="color"] {
+    width: 48px;
+    height: 36px;
+    padding: 2px;
+  }
+  .small {
+    flex-basis: 100%;
+    font-size: 0.85rem;
+    margin: 0;
+  }
+</style>

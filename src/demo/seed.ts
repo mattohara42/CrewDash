@@ -42,30 +42,48 @@ const BLADES: BladeData = {
   clubs: [
     {
       name: "Lakeview Rowing Club",
-      design: { pattern: "tips", base: "#1d3c8f", accent: "#ffffff" },
+      design: { base: "#1d3c8f", layers: [{ shape: "tips", color: "#ffffff" }] },
     },
     {
       name: "Hillside Boat Club",
-      design: { pattern: "chevron", base: "#ffffff", accent: "#b22234" },
+      design: {
+        base: "#ffffff",
+        layers: [
+          { shape: "chevron-tip", color: "#b22234" },
+          { shape: "chevron-edge", color: "#1d3c8f" },
+        ],
+      },
     },
-    { name: "Northgate Crew", design: { pattern: "band", base: "#0b2545", accent: "#e8b923" } },
+    {
+      name: "Northgate Crew",
+      design: { base: "#0b2545", layers: [{ shape: "band", color: "#e8b923" }] },
+    },
     {
       name: "Bayport Rowing Association",
-      design: { pattern: "halves", base: "#ffffff", accent: "#00796b" },
+      design: { base: "#ffffff", layers: [{ shape: "halves", color: "#00796b" }] },
     },
     {
       name: "Cedar Falls Crew",
-      design: { pattern: "stripes", base: "#5b2a86", accent: "#ffffff" },
+      design: { base: "#5b2a86", layers: [{ shape: "stripes", color: "#ffffff" }] },
     },
     {
       name: "Harbor Point Rowing",
-      design: { pattern: "spots", base: "#e65100", accent: "#000000" },
+      design: { base: "#e65100", layers: [{ shape: "spots", color: "#000000" }] },
     },
     {
       name: "Maple Valley Rowing",
-      design: { pattern: "quarters", base: "#7a1f1f", accent: "#f5f5f5" },
+      design: { base: "#7a1f1f", layers: [{ shape: "quarters", color: "#f5f5f5" }] },
     },
-    { name: "Stonebridge Crew", design: { pattern: "plain", base: "#2f4f4f", accent: "#2f4f4f" } },
+    {
+      name: "Stonebridge Crew",
+      design: {
+        base: "#ffffff",
+        layers: [
+          { shape: "diagonal", color: "#2f4f4f" },
+          { shape: "diagonal-line", color: "#e8b923" },
+        ],
+      },
+    },
   ],
 };
 
