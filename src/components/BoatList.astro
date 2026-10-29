@@ -127,6 +127,7 @@ const MEDALS: Record<number, string> = { 1: "gold", 2: "silver", 3: "bronze" };
             eventName={lineups.eventName}
             roster={lineups.roster}
             bow={entry.bow}
+            crew={entry.crew}
             lineup={lineups.byKey[lineupKey(lineups.eventNum, entry.bow)]}
             canEdit={lineups.canEdit}
             back={lineups.back}

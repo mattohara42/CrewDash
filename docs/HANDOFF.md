@@ -2,7 +2,7 @@
 
 Where CrewDash stands, so the next person (or the next Claude session) can pick it up. The plan itself is in [PLAN.md](PLAN.md). This file covers status, decisions, findings and open items.
 
-Last updated 2026-10-26.
+Last updated 2026-10-29.
 
 ## Status
 
@@ -87,6 +87,12 @@ These came from the 2026 Head of the Fish (`r16426`), a two-day regatta, fetched
 - A club with two boats in an event races as "Pittsford Crew (A)" and "Pittsford Crew (B)", even with only one boat. Genesee used the plain name. A trailing single boat letter now counts as the club.
 - Sunday's entries, bow numbers and event start times were all there the night before racing. `Stroke` was filled for most boats. This answers experiment A.
 - Each raced entry has `G_Start_time_raw`, the boat's actual start time of day. Saturday's morning events started 13 to 41 minutes behind schedule and caught up after lunch. Boats left about 27 seconds apart. Bow numbers run on across events, so a boat's place in the start order is its bow minus the event's first bow.
+
+These came from the 2026 Pull The Plug (`r15201`), checked on 2026-10-29, two days before racing, against the same regatta's RegattaCentral entries page.
+
+- CrewTimer had an early copy of the entries: 20 events and about 63 entries against RegattaCentral's 87. A Pittsford boat entered in RegattaCentral was missing from CrewTimer. RegattaCentral says bow numbers are assigned after registration closes, and its bows were all still 0.
+- Event numbers differ between the two systems. RegattaCentral's event 16 was CrewTimer's event 2, so a join between them can't use event numbers.
+- We expect CrewTimer to re-import once the draw is final, which can renumber bows and events. Coaches should enter lineups only once CrewTimer has the final entries, usually the night before. Each lineup now keeps the crew name CrewTimer had at its bow when saved. If that bow later holds a different crew, the regatta page warns on the lineup and rower pages leave it out until a coach saves it again. Lineups saved before this have no crew name and can't be checked. A lineup whose bow disappears from the club's boats simply stops showing.
 
 Not yet seen: a sprint regatta. Sprint results may use fields the parser doesn't handle.
 

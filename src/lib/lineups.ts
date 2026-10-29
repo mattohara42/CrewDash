@@ -17,6 +17,11 @@ export interface Lineup {
   // keep their places.
   seats: Seat[];
   cox: Seat | null;
+  // CrewTimer's crew name for this event and bow when the lineup was saved, e.g. "Lakeview
+  // A". CrewTimer can renumber bows and events when it re-imports entries before race day,
+  // so a different crew there now means the lineup may be on the wrong boat. Missing on
+  // lineups saved before this was kept.
+  crew?: string;
   from: string;
   at: string;
 }
@@ -49,14 +54,26 @@ export function parseLineups(value: unknown): RegattaLineups {
   if (!value || typeof value !== "object") return {};
   const out: RegattaLineups = {};
   for (const [key, l] of Object.entries(value as Record<string, unknown>)) {
-    const v = l as { seats?: unknown; cox?: unknown; from?: unknown; at?: unknown } | null;
+    const v = l as {
+      seats?: unknown;
+      cox?: unknown;
+      crew?: unknown;
+      from?: unknown;
+      at?: unknown;
+    } | null;
     if (!v || !Array.isArray(v.seats) || typeof v.from !== "string" || typeof v.at !== "string") {
       continue;
     }
     const seats = v.seats.map(parseSeat);
     if (seats.some((s) => s === null)) continue;
     const cox = parseSeat(v.cox);
-    out[key] = { seats: seats as Seat[], cox: cox?.name ? cox : null, from: v.from, at: v.at };
+    out[key] = {
+      seats: seats as Seat[],
+      cox: cox?.name ? cox : null,
+      ...(typeof v.crew === "string" && { crew: v.crew }),
+      from: v.from,
+      at: v.at,
+    };
   }
   return out;
 }
@@ -67,7 +84,7 @@ const clean = (name: string) => name.replace(/\s+/g, " ").trim().slice(0, MAX_NA
 export function setLineup(
   lineups: RegattaLineups,
   key: string,
-  input: { seats: (Seat | null)[]; cox: Seat | null; from: string },
+  input: { seats: (Seat | null)[]; cox: Seat | null; crew?: string; from: string },
   now: Date = new Date(),
 ): RegattaLineups {
   const tidy = (s: Seat | null): Seat | null =>
@@ -76,8 +93,23 @@ export function setLineup(
   const cox = tidy(input.cox);
   const next = { ...lineups };
   if (seats.every((s) => !s.name) && !cox) delete next[key];
-  else next[key] = { seats, cox, from: input.from, at: now.toISOString() };
+  else {
+    next[key] = {
+      seats,
+      cox,
+      ...(input.crew && { crew: input.crew }),
+      from: input.from,
+      at: now.toISOString(),
+    };
+  }
   return next;
+}
+
+const crewKey = (crew: string) => crew.replace(/\s+/g, " ").trim().toLowerCase();
+
+/** True when the lineup was saved for a different crew than CrewTimer now has at its bow. */
+export function lineupMoved(lineup: Lineup, crew: string): boolean {
+  return lineup.crew !== undefined && crewKey(lineup.crew) !== crewKey(crew);
 }
 
 /** Rowers and whether there's a cox, from the boat class at the end of an event name. */

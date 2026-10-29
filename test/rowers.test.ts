@@ -81,6 +81,28 @@ describe("buildRowers", () => {
     expect(drew.races[0]!.sub).toBe(true);
   });
 
+  it("leaves out a lineup saved for a different crew than now holds its bow", () => {
+    const lineups = setLineup(
+      {},
+      lineupKey("12", "101"),
+      { seats: [{ name: "Avery Example" }], cox: null, crew: "Lakeview B", from: "coach" },
+      now,
+    );
+    expect(buildRowers([newer], new Map([["r2", lineups]]), club)).toEqual([]);
+    const same = setLineup(
+      {},
+      lineupKey("12", "101"),
+      {
+        seats: [{ name: "Avery Example" }],
+        cox: null,
+        crew: "Lakeview Rowing Club",
+        from: "coach",
+      },
+      now,
+    );
+    expect(buildRowers([newer], new Map([["r2", same]]), club)).toHaveLength(1);
+  });
+
   it("uses the roster name for linked seats, so a rename shows everywhere", () => {
     const added = addRower(EMPTY_ROSTER, { name: "Jon Example" }, "2026");
     const id = added.id;

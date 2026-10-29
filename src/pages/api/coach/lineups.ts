@@ -38,9 +38,16 @@ export const POST: APIRoute = async ({ request, redirect, locals }) => {
 
   const count = Math.min(MAX_SEATS, Number(field("count")) || 0);
   const seats = Array.from({ length: count }, (_, i) => seatFrom(`seat${i}`, "rower"));
-  const lineups = setLineup(await store.getLineups(id), lineupKey(field("event"), field("bow")), {
+  const eventNum = field("event");
+  const bow = field("bow");
+  // Kept so a later re-import that moves this bow to another crew can be spotted.
+  const crew = record.regatta.events
+    .find((e) => e.num === eventNum)
+    ?.entries.find((e) => e.bow === bow)?.crew;
+  const lineups = setLineup(await store.getLineups(id), lineupKey(eventNum, bow), {
     seats,
     cox: seatFrom("cox", "cox"),
+    crew,
     from: locals.role === "admin" ? "admin" : "coach",
   });
   // Link any older typed-in seats at this regatta while we're here.
