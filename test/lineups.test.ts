@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { boatSize, lineupKey, parseLineups, seatLabels, setLineup } from "../src/lib/lineups.js";
+import {
+  boatSize,
+  lineupKey,
+  lineupMoved,
+  parseLineups,
+  seatLabels,
+  setLineup,
+} from "../src/lib/lineups.js";
 
 const now = new Date("2026-10-13T12:00:00Z");
 const seat = (name: string) => ({ name });
@@ -23,6 +30,22 @@ describe("lineups", () => {
       from: "coach",
       at: now.toISOString(),
     });
+  });
+
+  it("keeps the crew it was saved for and spots when the bow changes crew", () => {
+    const key = lineupKey("2", "5");
+    const l = setLineup(
+      {},
+      key,
+      { seats: [seat("A")], cox: null, crew: "Lakeview A", from: "coach" },
+      now,
+    );
+    expect(parseLineups(JSON.parse(JSON.stringify(l)))[key]!.crew).toBe("Lakeview A");
+    expect(lineupMoved(l[key]!, " lakeview  a ")).toBe(false);
+    expect(lineupMoved(l[key]!, "Lakeview B")).toBe(true);
+    // Lineups saved before the crew was kept can't be checked.
+    const old = setLineup({}, key, { seats: [seat("A")], cox: null, from: "coach" }, now);
+    expect(lineupMoved(old[key]!, "Lakeview B")).toBe(false);
   });
 
   it("clears a lineup with nobody in it, and caps seats", () => {

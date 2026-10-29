@@ -1,7 +1,7 @@
 import { normalizeName, type ClubIdentity } from "../club.js";
 import type { Event } from "../crewtimer/normalize.js";
 import { clubEvents, type ClubBoat } from "./club-view.js";
-import { lineupKey, seatLabels, type RegattaLineups } from "./lineups.js";
+import { lineupKey, lineupMoved, seatLabels, type RegattaLineups } from "./lineups.js";
 import { EMPTY_ROSTER, findById, type Roster } from "./roster.js";
 import type { StoredRegatta } from "./store.js";
 
@@ -45,7 +45,8 @@ export function buildRowers(
     for (const { event, fieldSize, boats } of clubEvents(record.regatta, club)) {
       for (const boat of boats) {
         const lineup = lineups[lineupKey(event.num, boat.entry.bow)];
-        if (!lineup) continue;
+        // A lineup whose bow now belongs to another crew would credit the wrong result.
+        if (!lineup || lineupMoved(lineup, boat.entry.crew)) continue;
         const labels = seatLabels(lineup.seats.length);
         const people = [
           ...lineup.seats.map((s, i) => ({ s, seat: labels[i]! })),
