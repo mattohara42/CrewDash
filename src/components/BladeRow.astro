@@ -1,0 +1,65 @@
+---
+import Blade from "./Blade.astro";
+import BladeFields from "./BladeFields.astro";
+import type { BladeDesign } from "../lib/blade.js";
+
+interface Props {
+  name: string;
+  entries: number;
+  design: BladeDesign | null;
+  // Where saving returns to.
+  back: string;
+  open?: boolean;
+}
+
+// One club on the blades page: its blade, name and an editor.
+const { name, entries, design, back, open = false } = Astro.props;
+const saved = design !== null;
+---
+
+<form method="post" action="/api/admin/blades" class="card blade-row" data-club={name}>
+  <input type="hidden" name="name" value={name} />
+  <input type="hidden" name="back" value={back} />
+  <div class="who">
+    {design ? (
+      <Blade width={56} design={design} onBrand={false} compact />
+    ) : (
+      <span class="muted small">No blade yet</span>
+    )}
+    <strong>{name}</strong>
+    {entries > 0 && (
+      <span class="muted small">
+        {entries} {entries === 1 ? "entry" : "entries"}
+      </span>
+    )}
+  </div>
+  <details open={open}>
+    <summary>{saved ? "Change blade" : "Add blade"}</summary>
+    <BladeFields design={design} />
+    <div class="row">
+      <button type="submit" name="action" value="save">
+        Save
+      </button>
+      {saved && (
+        <button type="submit" name="action" value="remove" class="secondary">
+          Remove
+        </button>
+      )}
+    </div>
+  </details>
+</form>
+
+<style>
+  .who {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    margin-bottom: 8px;
+  }
+  .row {
+    display: flex;
+    gap: 8px 12px;
+    margin-top: 12px;
+  }
+</style>

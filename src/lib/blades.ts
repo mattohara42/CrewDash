@@ -43,6 +43,11 @@ function clubKey(name: string): string {
   return normalizeName(crewClub(name));
 }
 
+/** True when two crew names are the same club, ignoring boat letters, "- EXH" and spacing. */
+export function sameClub(a: string, b: string): boolean {
+  return clubKey(a) === clubKey(b);
+}
+
 /** Adds or replaces a club's blade. */
 export function setClubBlade(data: BladeData, name: string, design: BladeDesign): BladeData {
   const clean = crewClub(name);
