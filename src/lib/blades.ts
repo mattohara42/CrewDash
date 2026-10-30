@@ -1,4 +1,4 @@
-import { matchClub, normalizeName, type ClubConfig } from "../club.js";
+import { matchClub, normalizeName, stripBoatLetter, type ClubConfig } from "../club.js";
 import type { Entry, Event } from "../crewtimer/normalize.js";
 import { parseDesign, type BladeDesign } from "./blade.js";
 import type { StoredRegatta } from "./store.js";
@@ -30,13 +30,14 @@ export function parseBladeData(value: unknown): BladeData {
   };
 }
 
-/** "Hillside Boat Club (B)" and "Hillside Boat Club - EXH" -> "Hillside Boat Club". */
+/** "Hillside Boat Club (B)", "Hillside Boat Club B" and "Hillside Boat Club - EXH" -> "Hillside Boat Club". */
 export function crewClub(crew: string): string {
-  return crew
-    .trim()
-    .replace(/\s+/g, " ")
-    .replace(/\s*-\s*exh(ibition)?$/i, "")
-    .replace(/\s*\([a-z]\)$/i, "");
+  return stripBoatLetter(
+    crew
+      .trim()
+      .replace(/\s+/g, " ")
+      .replace(/\s*-\s*exh(ibition)?$/i, ""),
+  );
 }
 
 function clubKey(name: string): string {
