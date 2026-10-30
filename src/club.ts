@@ -160,6 +160,16 @@ export function normalizeName(name: string): string {
   return name.trim().replace(/\s+/g, " ").toLowerCase();
 }
 
+// Clubs with more than one boat in an event race as "Club (A)", "Club (B)", or in some
+// regattas "Club A", "Club B". A bare letter only counts up to H, so a name like
+// "Team X" keeps its last word.
+const BOAT_LETTER = /\s*\([a-z]\)$|\s+[a-h]$/i;
+
+/** "Hillside BC (A)" and "Hillside BC A" -> "Hillside BC". */
+export function stripBoatLetter(name: string): string {
+  return name.replace(BOAT_LETTER, "");
+}
+
 export function parseClubConfig(value: unknown): ClubConfig {
   const v = value as Partial<ClubConfig> | null;
   if (
@@ -191,15 +201,15 @@ export function parseClubConfig(value: unknown): ClubConfig {
 
 /**
  * "match" when the crew name is one of the club's aliases (ignoring case and
- * spacing), with or without a boat letter such as "(A)" or "(B)". "near" when
+ * spacing), with or without a boat letter such as "(A)" or "B". "near" when
  * it contains an alias but isn't one, such as "Pittsford Crew - Masters".
  * Near misses go to an admin to confirm, never counted automatically.
  */
 export function matchClub(crew: string, club: ClubIdentity): ClubMatch {
-  // Clubs with more than one boat in an event race as "Club (A)", "Club (B)".
-  const name = normalizeName(crew).replace(/\s*\([a-z]\)$/, "");
+  const name = normalizeName(crew);
   const aliases = club.aliases.map(normalizeName);
-  if (aliases.includes(name)) return "match";
+  // An alias may itself end in a letter, so the name as written is checked too.
+  if (aliases.includes(name) || aliases.includes(stripBoatLetter(name))) return "match";
   if (aliases.some((alias) => name.includes(alias))) return "near";
   return "none";
 }
