@@ -72,6 +72,9 @@ describe("designs", () => {
 describe("crewClub", () => {
   it.each([
     ["Hillside Boat Club (B)", "Hillside Boat Club"],
+    ["Hillside BC A", "Hillside BC"],
+    ["Hillside BC B - EXH", "Hillside BC"],
+    ["Team X", "Team X"],
     ["Hillside Boat Club - EXH", "Hillside Boat Club"],
     ["  Hillside   Boat Club ", "Hillside Boat Club"],
   ])("%s -> %s", (crew, name) => expect(crewClub(crew)).toBe(name));
@@ -81,6 +84,7 @@ describe("sameClub", () => {
   it("ignores boat letters, exhibition crews, case and spacing", () => {
     expect(sameClub("Hillside Boat Club (B)", "hillside  boat club - EXH")).toBe(true);
     expect(sameClub("Hillside Boat Club", "Hillside Rowing Club")).toBe(false);
+    expect(sameClub("Hillside BC A", "Hillside BC (B)")).toBe(true);
   });
 });
 
