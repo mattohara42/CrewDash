@@ -2,7 +2,7 @@
 import BladeRow from "../../components/BladeRow.astro";
 import Base from "../../layouts/Base.astro";
 import { safeNext } from "../../lib/auth.js";
-import { bladeFor, crewClub, otherClubs, sameClub } from "../../lib/blades.js";
+import { bladeFor, crewClub, findClub, otherClubs, sameClub } from "../../lib/blades.js";
 import { loadContext } from "../../lib/context.js";
 
 const params = Astro.url.searchParams;
@@ -13,18 +13,23 @@ const back = safeNext(params.get("back"), "/admin/blades");
 const { store, records, club } = await loadContext();
 const blades = await store.getBlades();
 // Clubs in the results, most entries first, plus any saved club not raced lately.
-const seen = otherClubs(records, club);
+const seen = otherClubs(records, club, blades);
 const clubs = [
   ...seen,
   ...blades.clubs
     .filter((b) => !seen.some((s) => sameClub(s.name, b.name)))
     .map((b) => ({ name: b.name, entries: 0 })),
-].map((c) => ({ ...c, design: bladeFor(c.name, blades, club) }));
-const focused = focus
-  ? (clubs.find((c) => sameClub(c.name, focus)) ?? {
-      name: crewClub(focus),
+].map((c) => {
+  const saved = findClub(blades, c.name);
+  return { ...c, design: saved?.design ?? null, aliases: saved?.aliases ?? [] };
+});
+const focusName = focus ? (findClub(blades, focus)?.name ?? crewClub(focus)) : null;
+const focused = focusName
+  ? (clubs.find((c) => sameClub(c.name, focusName)) ?? {
+      name: focusName,
       entries: 0,
-      design: bladeFor(focus, blades, club),
+      design: bladeFor(focusName, blades, club),
+      aliases: [],
     })
   : null;
 const needed = clubs.filter((c) => !c.design);
@@ -42,6 +47,11 @@ const done = clubs.filter((c) => c.design);
     racing photos. Don't copy images from OarSpotter, which asked us not to use theirs.
   </p>
   {error && <p class="card notice">{error}</p>}
+  <datalist id="blade-club-names">
+    {clubs.map((c) => (
+      <option value={c.name} />
+    ))}
+  </datalist>
   {focused ? (
     <>
       <BladeRow {...focused} back={back} open />

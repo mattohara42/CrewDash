@@ -7,19 +7,21 @@ interface Props {
   name: string;
   entries: number;
   design: BladeDesign | null;
+  // Other names merged into this club.
+  aliases?: string[];
   // Where saving returns to.
   back: string;
   open?: boolean;
 }
 
-// One club on the blades page: its blade, name and an editor.
-const { name, entries, design, back, open = false } = Astro.props;
+// One club on the blades page: its blade, name, merged names and editors. The page
+// supplies the club-names datalist the merge field suggests from.
+const { name, entries, design, aliases = [], back, open = false } = Astro.props;
 const saved = design !== null;
+const api = "/api/admin/blades";
 ---
 
-<form method="post" action="/api/admin/blades" class="card blade-row" data-club={name}>
-  <input type="hidden" name="name" value={name} />
-  <input type="hidden" name="back" value={back} />
+<div class="card blade-row" data-club={[name, ...aliases].join(" ")}>
   <div class="who">
     {design ? (
       <Blade width={56} design={design} onBrand={false} compact />
@@ -33,21 +35,60 @@ const saved = design !== null;
       </span>
     )}
   </div>
-  <details open={open}>
-    <summary>{saved ? "Change blade" : "Add blade"}</summary>
-    <BladeFields design={design} />
-    <div class="row">
-      <button type="submit" name="action" value="save">
-        Save
-      </button>
-      {saved && (
-        <button type="submit" name="action" value="remove" class="secondary">
-          Remove
+  {aliases.length > 0 && (
+    <form method="post" action={api} class="aliases">
+      <input type="hidden" name="name" value={name} />
+      <input type="hidden" name="back" value={back} />
+      <span class="muted small">Also races as</span>
+      {aliases.map((a) => (
+        <button
+          type="submit"
+          name="unmerge"
+          value={a}
+          class="secondary small"
+          aria-label={`Count ${a} as its own club`}
+        >
+          {a} ✕
         </button>
-      )}
-    </div>
-  </details>
-</form>
+      ))}
+    </form>
+  )}
+  <form method="post" action={api}>
+    <input type="hidden" name="name" value={name} />
+    <input type="hidden" name="back" value={back} />
+    <details open={open}>
+      <summary>{saved ? "Change blade" : "Add blade"}</summary>
+      <BladeFields design={design} />
+      <div class="row">
+        <button type="submit" name="action" value="save">
+          Save
+        </button>
+        {saved && (
+          <button type="submit" name="action" value="remove" class="secondary">
+            Remove
+          </button>
+        )}
+      </div>
+    </details>
+  </form>
+  <form method="post" action={api}>
+    <input type="hidden" name="name" value={name} />
+    <input type="hidden" name="back" value={back} />
+    <details>
+      <summary>Same club as…</summary>
+      <p class="muted small">
+        For a club that races under more than one name, like "Hillside RC" and "Hillside Rowing
+        Club". Pick the name to keep. {name} will count as that club and share its blade.
+      </p>
+      <div class="row">
+        <input name="into" list="blade-club-names" autocomplete="off" aria-label="Club to keep" />
+        <button type="submit" name="action" value="merge">
+          Merge
+        </button>
+      </div>
+    </details>
+  </form>
+</div>
 
 <style>
   .who {
@@ -61,5 +102,21 @@ const saved = design !== null;
     display: flex;
     gap: 8px 12px;
     margin-top: 12px;
+  }
+  .row input {
+    flex: 1;
+    min-width: 0;
+    font-size: 1rem;
+    padding: 6px 8px;
+  }
+  .aliases {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 8px;
+    margin-bottom: 8px;
+  }
+  .aliases button {
+    padding: 2px 8px;
   }
 </style>
